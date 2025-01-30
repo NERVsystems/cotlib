@@ -12,7 +12,9 @@ Security Considerations:
 
 Reference:
   - "Cursor on Target Developer Guide"
+    https://apps.dtic.mil/sti/citations/ADA637348
   - "Cursor on Target Message Router User's Guide"
+    https://www.mitre.org/sites/default/files/pdf/09_4937.pdf
   - http://cot.mitre.org
 
 Key Goals:
@@ -30,6 +32,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"time"
 )
 
@@ -48,6 +51,30 @@ func SetLogger(l *slog.Logger) {
 	}
 }
 
+// Common CoT type predicates as defined in CoTtypes.xml
+const (
+	TypePredAtom    = "a"     // Atomic type (single item)
+	TypePredFriend  = "a-f"   // Friendly force
+	TypePredHostile = "a-h"   // Hostile force
+	TypePredUnknown = "a-u"   // Unknown force
+	TypePredNeutral = "a-n"   // Neutral force
+	TypePredGround  = "a-.-G" // Ground track
+	TypePredAir     = "a-.-A" // Air track
+	TypePredPending = "a-.-P" // Pending or planned track
+)
+
+// typePredicateMap maps type strings to their semantic meanings
+var typePredicateMap = map[string]*regexp.Regexp{
+	"atom":    regexp.MustCompile(`^a-`),
+	"friend":  regexp.MustCompile(`^a-f`),
+	"hostile": regexp.MustCompile(`^a-h`),
+	"unknown": regexp.MustCompile(`^a-u`),
+	"neutral": regexp.MustCompile(`^a-n`),
+	"ground":  regexp.MustCompile(`a-.-G`),
+	"air":     regexp.MustCompile(`a-.-A`),
+	"pending": regexp.MustCompile(`a-.-P`),
+}
+
 // Event represents a basic CoT message (the "event" element).
 // The mandatory fields (version, uid, type, time, start, stale, point)
 // are modelled as struct fields or nested sub-structures.
@@ -59,25 +86,24 @@ type Event struct {
 
 	// Required top-level XML attributes.
 	Version string `xml:"version,attr"` // Must typically be "2.0"
-	Uid     string `xml:"uid,attr"`
-	Type    string `xml:"type,attr"`
+	Uid     string `xml:"uid,attr"`     // Unique identifier for this event
+	Type    string `xml:"type,attr"`    // CoT type string (e.g., "a-f-G")
 
-	// CoT times
-	Time  string `xml:"time,attr"`
-	Start string `xml:"start,attr"`
-	Stale string `xml:"stale,attr"`
+	// CoT times (all RFC3339)
+	Time  string `xml:"time,attr"`  // When the event was generated
+	Start string `xml:"start,attr"` // When the event became valid
+	Stale string `xml:"stale,attr"` // When the event becomes invalid
 
 	// 'how' field: often "m-g" (machine-gps), "h" (human), etc.
 	How string `xml:"how,attr,omitempty"`
 
-	// If you require QoS and OPEX fields from the docs,
-	// you can add them here with `,attr,omitempty`.
+	// Links to other events for complex relationships
+	Links []Link `xml:"link,omitempty"`
 
 	// Detail element (optional or sub-schema).
-	// We keep it flexible to allow custom expansions.
 	DetailContent Detail `xml:"detail,omitempty"`
 
-	// Required "point" child element with mandatory attributes: lat, lon, hae, ce, le
+	// Required "point" child element
 	Point Point `xml:"point"`
 }
 
@@ -90,6 +116,38 @@ type Point struct {
 	Le  float64 `xml:"le,attr"`  // linear error, in meters
 }
 
+// Link represents relationships between events, forming directed graphs
+// as described in the CoT Developer Guide.
+type Link struct {
+	XMLName  xml.Name `xml:"link"`
+	Uid      string   `xml:"uid,attr"`      // UID of the linked event
+	Type     string   `xml:"type,attr"`     // Relationship type
+	Relation string   `xml:"relation,attr"` // Nature of the relationship
+}
+
+// Is checks if this event matches a given type predicate
+// as defined in CoTtypes.xml (e.g., "friend", "hostile", "ground")
+func (e *Event) Is(predicate string) bool {
+	if pattern, exists := typePredicateMap[predicate]; exists {
+		return pattern.MatchString(e.Type)
+	}
+	return false
+}
+
+// AddLink creates a relationship to another event
+func (e *Event) AddLink(targetUID, linkType, relation string) {
+	e.Links = append(e.Links, Link{
+		Uid:      targetUID,
+		Type:     linkType,
+		Relation: relation,
+	})
+	Logger.Debug("added link to event",
+		"source_uid", e.Uid,
+		"target_uid", targetUID,
+		"type", linkType,
+		"relation", relation)
+}
+
 // Detail holds arbitrary sub-schema expansions.
 //
 // In a real system, you'd define more typed fields for known sub-schemas (e.g. <__flow-tags__>).
@@ -98,6 +156,12 @@ type Point struct {
 type Detail struct {
 	// A catch-all for unknown or experimental detail fields
 	RawXML []byte `xml:",innerxml"`
+
+	// Common sub-schemas (add more as needed)
+	Shape      *Shape      `xml:"shape,omitempty"`         // Geographic shapes
+	Request    *Request    `xml:"request,omitempty"`       // CoT tasking
+	FlowTags   *FlowTags   `xml:"__flow-tags__,omitempty"` // Workflow metadata
+	UidAliases *UidAliases `xml:"uid,omitempty"`           // System-specific UIDs
 
 	// Example custom extension
 	MyCustomDetail *MyCustomDetail `xml:"mycustomdetail,omitempty"`
@@ -108,6 +172,56 @@ type Detail struct {
 type MyCustomDetail struct {
 	XMLName xml.Name `xml:"mycustomdetail"`
 	Value   string   `xml:"value,attr,omitempty"`
+}
+
+// Shape represents geographic shapes in CoT
+type Shape struct {
+	XMLName xml.Name `xml:"shape"`
+	Type    string   `xml:"type,attr,omitempty"` // e.g., "circle", "ellipse", "polygon"
+	Points  string   `xml:"points,attr,omitempty"`
+	Radius  float64  `xml:"radius,attr,omitempty"`
+}
+
+// Request represents CoT tasking elements
+type Request struct {
+	XMLName xml.Name `xml:"request"`
+	Type    string   `xml:"type,attr"`
+}
+
+// FlowTags represents workflow metadata
+type FlowTags struct {
+	XMLName xml.Name `xml:"__flow-tags__"`
+	Status  string   `xml:"status,attr,omitempty"`
+	Chain   string   `xml:"chain,attr,omitempty"`
+}
+
+// UidAliases represents system-specific UIDs
+type UidAliases struct {
+	XMLName  xml.Name `xml:"uid"`
+	Droid    string   `xml:"droid,attr,omitempty"`    // Android device ID
+	Callsign string   `xml:"callsign,attr,omitempty"` // Radio callsign
+	Platform string   `xml:"platform,attr,omitempty"` // Platform identifier
+}
+
+// MarshalXML implements the xml.Marshaler interface
+func (u *UidAliases) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	if u == nil {
+		return nil
+	}
+	start.Name = xml.Name{Local: "uid"}
+	type Alias UidAliases // Create alias to avoid recursion
+	return e.EncodeElement((*Alias)(u), start)
+}
+
+// UnmarshalXML implements the xml.Unmarshaler interface
+func (u *UidAliases) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	type Alias UidAliases // Create alias to avoid recursion
+	aux := &Alias{}
+	if err := d.DecodeElement(aux, &start); err != nil {
+		return err
+	}
+	*u = UidAliases(*aux)
+	return nil
 }
 
 const (
@@ -139,6 +253,10 @@ func (e *Event) validateTimes() error {
 	// Ensure logical time ordering
 	if startTime.After(eventTime) {
 		return errors.New("start time cannot be after event time")
+	}
+
+	if staleTime.Before(eventTime) {
+		return errors.New("stale time cannot be before event time")
 	}
 
 	if staleTime.Before(eventTime.Add(MinStaleOffset)) {
@@ -219,28 +337,15 @@ func (e *Event) Validate() error {
 			"lon", e.Point.Lon)
 		return fmt.Errorf("invalid longitude: %f", e.Point.Lon)
 	}
-	// Optional: parse time fields to check if start <= stale, etc.
-	_, errTime := time.Parse(time.RFC3339, e.Time)
-	_, errStart := time.Parse(time.RFC3339, e.Start)
-	_, errStale := time.Parse(time.RFC3339, e.Stale)
-	if errTime != nil {
-		Logger.Error("invalid time field",
+
+	// Validate time fields
+	if err := e.validateTimes(); err != nil {
+		Logger.Error("time validation failed",
 			"uid", e.Uid,
-			"error", errTime)
-		return fmt.Errorf("invalid time field: %v", errTime)
+			"error", err)
+		return err
 	}
-	if errStart != nil {
-		Logger.Error("invalid start field",
-			"uid", e.Uid,
-			"error", errStart)
-		return fmt.Errorf("invalid start field: %v", errStart)
-	}
-	if errStale != nil {
-		Logger.Error("invalid stale field",
-			"uid", e.Uid,
-			"error", errStale)
-		return fmt.Errorf("invalid stale field: %v", errStale)
-	}
+
 	Logger.Debug("CoT event validation successful", "uid", e.Uid)
 	return nil
 }
@@ -277,8 +382,8 @@ func UnmarshalXMLEvent(data []byte) (*Event, error) {
 	return &evt, nil
 }
 
-// MarshalXML produces an XML representation of this CoT Event.
-func (e *Event) MarshalXML() ([]byte, error) {
+// ToXML produces an XML representation of this CoT Event.
+func (e *Event) ToXML() ([]byte, error) {
 	// We want to ensure the struct is valid before encoding.
 	if err := e.Validate(); err != nil {
 		return nil, err
@@ -286,42 +391,35 @@ func (e *Event) MarshalXML() ([]byte, error) {
 	return xml.MarshalIndent(e, "", "  ")
 }
 
-// Example usage function
+// Example usage function showing new features
 func Example() {
-	// 1. Create a new CoT event
-	evt := NewEvent("MyUID", "a-f-G", 30.0090027, -85.9578735)
-	evt.Point.Hae = -42.6
-	evt.Point.Ce = 45.3
-	evt.Point.Le = 99.5
+	// 1. Create a flight lead
+	lead := NewEvent("LEAD1", TypePredFriend+"-A", 30.0090027, -85.9578735)
 
-	// 2. Add an example custom detail extension
-	evt.DetailContent.MyCustomDetail = &MyCustomDetail{
-		Value: "Some extended data",
+	// 2. Create wingman
+	wing := NewEvent("WING1", TypePredFriend+"-A", 30.0090027, -85.9578735)
+
+	// 3. Link them
+	lead.AddLink(wing.Uid, "member", "wingman")
+
+	// 4. Add some shape data to the lead
+	lead.DetailContent.Shape = &Shape{
+		Type:   "circle",
+		Radius: 1000, // meters
 	}
 
-	// 3. Marshal to XML
-	xmlBytes, err := evt.MarshalXML()
+	// 5. Check predicates
+	if lead.Is("friend") && lead.Is("air") {
+		fmt.Println("Lead is a friendly air track")
+	}
+
+	// 6. Marshal to XML
+	xmlBytes, err := lead.ToXML()
 	if err != nil {
-		panic(err)
+		Logger.Error("failed to marshal event", "error", err)
+		return
 	}
-	fmt.Println("Marshalled CoT XML:")
-	fmt.Println(string(xmlBytes))
-
-	// 4. Unmarshal the same XML
-	parsedEvt, err := UnmarshalXMLEvent(xmlBytes)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Parsed event UID: %s\n", parsedEvt.Uid)
-	fmt.Printf("Parsed lat/long:  %.6f, %.6f\n",
-		parsedEvt.Point.Lat, parsedEvt.Point.Lon)
-
-	// 5. Validate
-	if err := parsedEvt.Validate(); err != nil {
-		fmt.Printf("Validation error: %v\n", err)
-	} else {
-		fmt.Println("Event is valid per CoT base schema rules.")
-	}
+	fmt.Printf("XML output:\n%s\n", string(xmlBytes))
 }
 
 /*
@@ -334,13 +432,13 @@ import (
     "log"
     "os"
 
-    "github.com/exampleuser/cotlib"
+    "github.com/nervsystems/cotlib"
 )
 
 func main() {
     // Create
     evt := cot.NewEvent("sampleUID", "a-h-G", 25.5, -120.7)
-    output, err := evt.MarshalXML()
+    output, err := evt.ToXML()
     if err != nil {
         log.Fatal(err)
     }

@@ -149,14 +149,8 @@ func (e *Event) AddLink(targetUID, linkType, relation string) {
 }
 
 // Detail holds arbitrary sub-schema expansions.
-//
-// In a real system, you'd define more typed fields for known sub-schemas (e.g. <__flow-tags__>).
-// For unknown or custom detail sections, we store raw XML.
-// The MyCustomDetail shows an example of a typed extension.
 type Detail struct {
-	// A catch-all for unknown or experimental detail fields
-	RawXML []byte `xml:",innerxml"`
-
+	XMLName xml.Name `xml:"detail"`
 	// Common sub-schemas (add more as needed)
 	Shape      *Shape      `xml:"shape,omitempty"`         // Geographic shapes
 	Request    *Request    `xml:"request,omitempty"`       // CoT tasking
@@ -165,6 +159,87 @@ type Detail struct {
 
 	// Example custom extension
 	MyCustomDetail *MyCustomDetail `xml:"mycustomdetail,omitempty"`
+
+	// A catch-all for unknown or experimental detail fields
+	RawXML []byte `xml:",innerxml,omitempty"`
+}
+
+// MarshalXML implements custom XML marshaling for Detail
+func (d *Detail) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	if d == nil {
+		return nil
+	}
+
+	// Start the detail element
+	start.Name = xml.Name{Local: "detail"}
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+
+	// Encode known sub-schemas
+	if d.Shape != nil {
+		if err := e.Encode(d.Shape); err != nil {
+			return err
+		}
+	}
+	if d.Request != nil {
+		if err := e.Encode(d.Request); err != nil {
+			return err
+		}
+	}
+	if d.FlowTags != nil {
+		if err := e.Encode(d.FlowTags); err != nil {
+			return err
+		}
+	}
+	if d.UidAliases != nil {
+		if err := e.Encode(d.UidAliases); err != nil {
+			return err
+		}
+	}
+	if d.MyCustomDetail != nil {
+		if err := e.Encode(d.MyCustomDetail); err != nil {
+			return err
+		}
+	}
+
+	// Add any raw XML content
+	if len(d.RawXML) > 0 {
+		if err := e.EncodeToken(xml.CharData(d.RawXML)); err != nil {
+			return err
+		}
+	}
+
+	// End the detail element
+	return e.EncodeToken(start.End())
+}
+
+// UnmarshalXML implements custom XML unmarshaling for Detail
+func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	// Create a temporary struct without RawXML to avoid recursion
+	type Temp struct {
+		XMLName        xml.Name        `xml:"detail"`
+		Shape          *Shape          `xml:"shape,omitempty"`
+		Request        *Request        `xml:"request,omitempty"`
+		FlowTags       *FlowTags       `xml:"__flow-tags__,omitempty"`
+		UidAliases     *UidAliases     `xml:"uid,omitempty"`
+		MyCustomDetail *MyCustomDetail `xml:"mycustomdetail,omitempty"`
+	}
+	temp := &Temp{}
+
+	// Decode into the temporary struct
+	if err := dec.DecodeElement(temp, &start); err != nil {
+		return err
+	}
+
+	// Copy the known fields
+	d.Shape = temp.Shape
+	d.Request = temp.Request
+	d.FlowTags = temp.FlowTags
+	d.UidAliases = temp.UidAliases
+	d.MyCustomDetail = temp.MyCustomDetail
+
+	return nil
 }
 
 // MyCustomDetail is an example struct for a sub-schema under <detail>.
@@ -203,25 +278,27 @@ type UidAliases struct {
 	Platform string   `xml:"platform,attr,omitempty"` // Platform identifier
 }
 
-// MarshalXML implements the xml.Marshaler interface
+// MarshalXML implements custom XML marshaling for UidAliases
 func (u *UidAliases) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	if u == nil {
 		return nil
 	}
-	start.Name = xml.Name{Local: "uid"}
-	type Alias UidAliases // Create alias to avoid recursion
-	return e.EncodeElement((*Alias)(u), start)
-}
 
-// UnmarshalXML implements the xml.Unmarshaler interface
-func (u *UidAliases) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	type Alias UidAliases // Create alias to avoid recursion
-	aux := &Alias{}
-	if err := d.DecodeElement(aux, &start); err != nil {
+	// Create the start element with attributes in the exact order expected
+	start.Name = xml.Name{Local: "uid"}
+	start.Attr = []xml.Attr{
+		{Name: xml.Name{Local: "callsign"}, Value: u.Callsign},
+		{Name: xml.Name{Local: "platform"}, Value: u.Platform},
+		{Name: xml.Name{Local: "droid"}, Value: u.Droid},
+	}
+
+	// Encode the empty element with attributes
+	if err := e.EncodeToken(start); err != nil {
 		return err
 	}
-	*u = UidAliases(*aux)
-	return nil
+
+	// Close the element
+	return e.EncodeToken(start.End())
 }
 
 const (

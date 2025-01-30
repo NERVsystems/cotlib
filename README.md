@@ -20,6 +20,37 @@ A Go implementation of the Cursor on Target (CoT) protocol, focusing on security
 - Time-based attack prevention
 - Structured logging with sensitive data protection
 
+## Usage Examples
+
+The library includes comprehensive examples in `examples_test.go` demonstrating common use cases:
+
+```go
+// Create a new friendly ground unit
+evt := cotlib.NewEvent("UNIT1", cotlib.TypePredFriend+"-G", 45.0, -120.0)
+evt.How = "m-g" // GPS measurement
+
+// Add detail extensions
+evt.DetailContent.UidAliases = &cotlib.UidAliases{
+    Callsign: "ALPHA1",
+    Platform: "HMMWV",
+}
+
+// Add a shape for area of operations
+evt.DetailContent.Shape = &cotlib.Shape{
+    Type:   "circle",
+    Radius: 1000, // meters
+}
+
+// Marshal to XML
+xmlData, err := evt.ToXML()
+```
+
+See `examples_test.go` for more examples including:
+- Creating and validating events
+- Working with type predicates
+- Adding links between events
+- Using detail extensions
+
 ## Transport Considerations
 
 CoT typically uses one of these transport patterns:
@@ -59,14 +90,29 @@ CoT typically uses one of these transport patterns:
 
 This library uses Height Above Ellipsoid (HAE) exclusively, as recommended by the CoT specification. If you need Mean Sea Level (MSL) or Above Ground Level (AGL), implement these in a custom detail sub-schema rather than modifying the base `point` element.
 
-## Usage Examples
+## Testing
 
-See the `Example()` function in `cotlib.go` for detailed usage examples, including:
-- Creating events
-- Linking related events
-- Adding shape data
-- Using type predicates
-- Handling custom details
+The library uses a well-organized testing structure:
+
+1. **Integration Tests** (`integration_test.go`)
+   - Tests the public API from a consumer's perspective
+   - Verifies high-level functionality like XML marshaling
+   - Tests real-world usage scenarios
+
+2. **Internal Tests** (`internal/internal_test.go`)
+   - Tests internal implementation details
+   - Focuses on validation and edge cases
+   - Verifies internal invariants
+
+3. **Examples** (`examples_test.go`)
+   - Provides documented examples of common use cases
+   - Serves as both tests and documentation
+   - Shows idiomatic usage patterns
+
+Run tests with:
+```bash
+go test -v ./...
+```
 
 ## Best Practices
 

@@ -5,44 +5,60 @@ A Go implementation of the Cursor on Target (CoT) protocol, focusing on security
 ## Features
 
 - Full support for CoT base schema (Event.xsd)
-- Secure XML parsing with XXE prevention
-- Structured logging via slog
+- Secure XML parsing with XXE prevention and size limits
+- Structured logging via slog with context support
 - Type predicate support (CoTtypes.xml patterns)
 - Event linking for complex relationships
-- Common sub-schema support (shape, request, flow-tags, uid)
+- Detail extensions with validation (shape, remarks, contact, status, flow-tags, uid-aliases)
 - Height Above Ellipsoid (HAE) for all elevations
+- Comprehensive time validation with replay attack prevention
+- XML round-trip support with secure marshaling/unmarshaling
 
 ## Security Features
 
-- Input validation on all fields
-- Size limits on detail content
-- Secure XML parsing (no XXE)
-- Time-based attack prevention
+- Input validation on all fields with detailed error messages
+- Size limits on XML content (2 MiB max) and detail content (1 MiB max)
+- Secure XML parsing with:
+  - XXE prevention
+  - Entity expansion limits
+  - Maximum element depth (32)
+  - Maximum element count (10,000)
+  - Token length limits (1024 bytes)
+- Time-based attack prevention:
+  - Minimum stale time offset (5 seconds)
+  - Maximum stale time offset (7 days)
+  - Past/future time bounds (24 hours)
+- String sanitization for all XML content
 - Structured logging with sensitive data protection
+- Context-aware logging support
 
 ## Usage Examples
 
-The library includes comprehensive examples in `examples_test.go` demonstrating common use cases:
+Basic usage example:
 
 ```go
 // Create a new friendly ground unit
 evt := cotlib.NewEvent("UNIT1", cotlib.TypePredFriend+"-G", 45.0, -120.0)
-evt.How = "m-g" // GPS measurement
-
-// Add detail extensions
-evt.DetailContent.UidAliases = &cotlib.UidAliases{
-    Callsign: "ALPHA1",
-    Platform: "HMMWV",
+if evt == nil {
+    log.Fatal("failed to create event")
 }
 
-// Add a shape for area of operations
-evt.DetailContent.Shape = &cotlib.Shape{
+// Add detail extensions
+evt.DetailContent.Contact.Callsign = "ALPHA1"
+evt.DetailContent.Shape = struct {
+    Type   string  `xml:"type,attr,omitempty"`
+    Points string  `xml:"points,attr,omitempty"`
+    Radius float64 `xml:"radius,attr,omitempty"`
+}{
     Type:   "circle",
     Radius: 1000, // meters
 }
 
 // Marshal to XML
 xmlData, err := evt.ToXML()
+if err != nil {
+    log.Fatal(err)
+}
 ```
 
 See `examples_test.go` for more examples including:
@@ -50,6 +66,24 @@ See `examples_test.go` for more examples including:
 - Working with type predicates
 - Adding links between events
 - Using detail extensions
+- Context-based logging
+
+## Time Validation
+
+The library enforces strict time validation rules:
+
+1. **Event Time**
+   - Must be within 24 hours of current time
+   - Used as reference for start/stale validation
+
+2. **Start Time**
+   - Must be before or equal to event time
+   - Used to indicate when the event becomes valid
+
+3. **Stale Time**
+   - Must be more than 5 seconds after event time
+   - Must be within 7 days of event time
+   - Used to prevent replay attacks
 
 ## Transport Considerations
 
@@ -62,10 +96,20 @@ CoT typically uses one of these transport patterns:
    - Example:
      ```go
      evt := cotlib.NewEvent(...)
-     conn, _ := net.Dial("tcp", "target:port")
+     if evt == nil {
+         return fmt.Errorf("failed to create event")
+     }
+     conn, err := net.Dial("tcp", "target:port")
+     if err != nil {
+         return err
+     }
      defer conn.Close()
-     data, _ := evt.ToXML()
-     conn.Write(data)
+     data, err := evt.ToXML()
+     if err != nil {
+         return err
+     }
+     _, err = conn.Write(data)
+     return err
      ```
 
 2. **UDP Multicast**
@@ -75,39 +119,44 @@ CoT typically uses one of these transport patterns:
    - Example:
      ```go
      evt := cotlib.NewEvent(...)
-     addr, _ := net.ResolveUDPAddr("udp", "239.2.3.1:6969")
-     conn, _ := net.DialUDP("udp", nil, addr)
-     data, _ := evt.ToXML()
-     conn.Write(data)
+     if evt == nil {
+         return fmt.Errorf("failed to create event")
+     }
+     addr, err := net.ResolveUDPAddr("udp", "239.2.3.1:6969")
+     if err != nil {
+         return err
+     }
+     conn, err := net.DialUDP("udp", nil, addr)
+     if err != nil {
+         return err
+     }
+     data, err := evt.ToXML()
+     if err != nil {
+         return err
+     }
+     _, err = conn.Write(data)
+     return err
      ```
-
-3. **Persistent Connections (Not Recommended)**
-   - Requires additional framing protocol
-   - More complex error handling
-   - Not typical in CoT deployments
 
 ## Height Representation
 
-This library uses Height Above Ellipsoid (HAE) exclusively, as recommended by the CoT specification. If you need Mean Sea Level (MSL) or Above Ground Level (AGL), implement these in a custom detail sub-schema rather than modifying the base `point` element.
+This library uses Height Above Ellipsoid (HAE) exclusively, as recommended by the CoT specification. The `Point` struct validates HAE values to be within reasonable bounds (-12,000m to +9,000m, accommodating Mariana Trench to Mount Everest).
 
 ## Testing
 
-The library uses a well-organized testing structure:
+The library includes comprehensive tests:
 
-1. **Integration Tests** (`integration_test.go`)
-   - Tests the public API from a consumer's perspective
-   - Verifies high-level functionality like XML marshaling
+1. **Unit Tests** (`cotlib_test.go`)
+   - Tests all public API functions
+   - Validates XML marshaling/unmarshaling
+   - Verifies time validation rules
+   - Tests type predicates and event linking
+   - Ensures logging functionality
+
+2. **Integration Tests**
    - Tests real-world usage scenarios
-
-2. **Internal Tests** (`internal/internal_test.go`)
-   - Tests internal implementation details
-   - Focuses on validation and edge cases
-   - Verifies internal invariants
-
-3. **Examples** (`examples_test.go`)
-   - Provides documented examples of common use cases
-   - Serves as both tests and documentation
-   - Shows idiomatic usage patterns
+   - Verifies XML round-trip functionality
+   - Tests all detail extensions
 
 Run tests with:
 ```bash
@@ -118,29 +167,25 @@ go test -v ./...
 
 1. **Event Creation**
    - Always use `NewEvent()` to ensure proper initialization
-   - Validate events before transmission
-   - Use type predicates instead of hard-coded strings
+   - Check for nil return value
+   - Use predefined type predicates (e.g., `TypePredFriend`)
+   - Set reasonable stale times (> 5 seconds from event time)
 
-2. **Linking**
-   - Use `AddLink()` to create relationships
-   - Keep relationship graphs acyclic
-   - Document link types and relations
+2. **Validation**
+   - Always check `Validate()` before transmission
+   - Handle validation errors appropriately
+   - Use context-aware logging for debugging
 
 3. **Detail Extensions**
-   - Create typed structs for known sub-schemas
-   - Use `RawXML` only for experimental fields
+   - Use provided structs for known extensions
    - Validate detail content size
+   - Keep extensions minimal and focused
 
-4. **Transport**
-   - Prefer Open-Squirt-Close for reliability
-   - Use UDP for high-frequency updates
-   - Implement appropriate timeouts
-
-5. **Security**
-   - Always validate input
-   - Use structured logging
-   - Handle errors appropriately
-   - Protect sensitive data
+4. **Security**
+   - Use structured logging with appropriate levels
+   - Handle all errors explicitly
+   - Validate all input data
+   - Use context for logger injection
 
 ## License
 

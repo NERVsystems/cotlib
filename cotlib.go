@@ -531,17 +531,23 @@ func (e *Event) validateTimes() error {
 		return fmt.Errorf("%w: stale time must be more than %v after event time", ErrInvalidStale, minStaleOffset)
 	}
 
-	// Skip the tight stale-window check for TAK system messages
-	if !strings.HasPrefix(e.Type, "t-") {
-		if staleDiff > maxStaleOffset {
-			logger.Error("stale time too far from event time",
-				"stale", staleTime,
-				"time", timeTime,
-				"max_offset", maxStaleOffset,
-				"actual_offset", staleDiff,
-				"error", ErrInvalidStale)
-			return fmt.Errorf("%w: stale time must be within %v of event time", ErrInvalidStale, maxStaleOffset)
-		}
+	// Skip the tight stale-window check for TAK system messages and legacy tracks
+	if strings.HasPrefix(e.Type, "t-") || (strings.HasPrefix(e.Type, "a-") && staleDiff > maxStaleOffset) {
+		logger.Debug("legacy track with long stale",
+			"uid", e.Uid,
+			"type", e.Type,
+			"stale_diff", staleDiff)
+		return nil
+	}
+
+	if staleDiff > maxStaleOffset {
+		logger.Error("stale time too far from event time",
+			"stale", staleTime,
+			"time", timeTime,
+			"max_offset", maxStaleOffset,
+			"actual_offset", staleDiff,
+			"error", ErrInvalidStale)
+		return fmt.Errorf("%w: stale time must be within %v of event time", ErrInvalidStale, maxStaleOffset)
 	}
 
 	// Validate against current time

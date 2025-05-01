@@ -129,9 +129,15 @@ const (
 
 // Regular expressions for validation
 var (
-	// typePattern allows for more flexible type strings including digits and uppercase
-	// Format: a-f-G-U-C, a-f-G-U-C-1, etc.
-	typePattern = regexp.MustCompile(`^a-[a-z]-[A-Z0-9]+(-[A-Z0-9]+)*$`)
+	// systemTypePrefixes are whitelisted prefixes for TAK system messages
+	systemTypePrefixes = []string{
+		"t-x-", // TAK protocol / server status / heartbeat
+		"t-a-", // TAK admin
+		"t-m-", // TAK meta
+	}
+
+	// tacticalTypePattern enforces strict validation for tactical symbols
+	tacticalTypePattern = regexp.MustCompile(`^a-[a-z]-[A-Z0-9]+(?:-[A-Z0-9]+)*$`)
 
 	// uidPattern allows for more characters while maintaining security
 	// Format: alphanumeric, hyphen, underscore, dot
@@ -420,7 +426,15 @@ func ValidateType(typ string) error {
 		return fmt.Errorf("%w: length exceeds 100 characters", ErrInvalidType)
 	}
 
-	if !typePattern.MatchString(typ) {
+	// 1) Whitelist TAK-system frames
+	for _, p := range systemTypePrefixes {
+		if strings.HasPrefix(typ, p) {
+			return nil // accept without further checks
+		}
+	}
+
+	// 2) Validate tactical symbols
+	if !tacticalTypePattern.MatchString(typ) {
 		logger.Error("type failed pattern validation",
 			"type", typ,
 			"error", ErrInvalidType)
@@ -517,14 +531,17 @@ func (e *Event) validateTimes() error {
 		return fmt.Errorf("%w: stale time must be more than %v after event time", ErrInvalidStale, minStaleOffset)
 	}
 
-	if staleDiff > maxStaleOffset {
-		logger.Error("stale time too far from event time",
-			"stale", staleTime,
-			"time", timeTime,
-			"max_offset", maxStaleOffset,
-			"actual_offset", staleDiff,
-			"error", ErrInvalidStale)
-		return fmt.Errorf("%w: stale time must be within %v of event time", ErrInvalidStale, maxStaleOffset)
+	// Skip the tight stale-window check for TAK system messages
+	if !strings.HasPrefix(e.Type, "t-") {
+		if staleDiff > maxStaleOffset {
+			logger.Error("stale time too far from event time",
+				"stale", staleTime,
+				"time", timeTime,
+				"max_offset", maxStaleOffset,
+				"actual_offset", staleDiff,
+				"error", ErrInvalidStale)
+			return fmt.Errorf("%w: stale time must be within %v of event time", ErrInvalidStale, maxStaleOffset)
+		}
 	}
 
 	// Validate against current time

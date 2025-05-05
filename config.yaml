@@ -1,2 +1,0 @@
-tak_server:
-  read_timeout: 6s   # Increased to be longer than TAK heartbeat interval (5s) 

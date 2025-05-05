@@ -670,13 +670,12 @@ func (p *Point) Validate() error {
 	}
 
 	// Validate height above ellipsoid (reasonable range check)
-	// Mount Everest is ~8,848m, Mariana Trench is ~-11,034m
 	const (
 		minHae = -12000 // Slightly below Mariana Trench
-		maxHae = 9000   // Slightly above Mount Everest
+		maxHae = 999999 // Allow for special values like 999999.0 — we may be dealing with space systems
 	)
 	if p.Hae < minHae || p.Hae > maxHae {
-		return fmt.Errorf("suspicious height above ellipsoid: %f (expected between %d and %d meters)", p.Hae, minHae, maxHae)
+		return fmt.Errorf("invalid height above ellipsoid: %f (must be between %d and %d meters)", p.Hae, minHae, maxHae)
 	}
 
 	// Validate circular and linear error (must be positive)
@@ -1144,14 +1143,14 @@ func UnmarshalXMLEvent(data []byte) (*Event, error) {
 	if err := decoder.Decode(event); err != nil {
 		logger.Error("failed to decode XML",
 			"error", err)
-		return nil, fmt.Errorf("failed to decode XML: %w", err)
+		return nil, err
 	}
 
 	// Validate the unmarshaled event
 	if err := event.Validate(); err != nil {
 		logger.Error("invalid event data",
 			"error", err)
-		return nil, fmt.Errorf("invalid event data: %w", err)
+		return nil, err
 	}
 
 	// Sanitize all string fields

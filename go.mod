@@ -1,6 +1,6 @@
 module github.com/pdfinn/cotlib
 
-go 1.23.2
+go 1.22
 
 require (
 	golang.org/x/net v0.39.0 // indirect

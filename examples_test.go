@@ -2,91 +2,126 @@ package cotlib_test
 
 import (
 	"fmt"
-	"log/slog"
-	"os"
+	"log"
 	"testing"
 	"time"
 
 	"github.com/pdfinn/cotlib"
 )
 
-func Example() {
-	// Setup logging
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-	cotlib.SetLogger(logger)
-
+// ExampleNewEvent demonstrates how to create a new CoT event.
+func ExampleNewEvent() {
 	// Create a new friendly ground unit
 	evt := cotlib.NewEvent("UNIT1", cotlib.TypePredFriend+"-G", 45.0, -120.0)
-	evt.How = "m-g" // GPS measurement
-
-	// Add detail extensions
-	evt.DetailContent.UidAliases = struct {
-		Aliases []struct {
-			Value string `xml:",chardata"`
-		} `xml:"uidAlias,omitempty"`
-	}{
-		Aliases: []struct {
-			Value string `xml:",chardata"`
-		}{
-			{Value: "ALPHA1"},
-			{Value: "HMMWV"},
-		},
+	if evt == nil {
+		log.Fatal("failed to create event")
 	}
 
-	// Add a shape for area of operations
-	evt.DetailContent.Shape = struct {
-		Type   string  `xml:"type,attr,omitempty"`
-		Points string  `xml:"points,attr,omitempty"`
-		Radius float64 `xml:"radius,attr,omitempty"`
-	}{
-		Type:   "circle",
-		Radius: 1000, // meters
-	}
+	// Add contact information
+	evt.DetailContent.Contact.Callsign = "ALPHA1"
+
+	// Add a shape
+	evt.DetailContent.Shape.Type = "circle"
+	evt.DetailContent.Shape.Radius = 1000 // meters
 
 	// Marshal to XML
 	xmlData, err := evt.ToXML()
 	if err != nil {
-		fmt.Printf("Error marshaling XML: %v\n", err)
-		return
+		log.Fatal(err)
 	}
 
-	fmt.Printf("Generated XML:\n%s\n", xmlData)
+	fmt.Println(string(xmlData))
+	// Output:
+	// <?xml version="1.0" encoding="UTF-8"?>
+	// <event version="2.0" uid="UNIT1" type="a-f-G" time="2024-03-14T12:00:00Z" start="2024-03-14T12:00:00Z" stale="2024-03-14T12:00:05Z">
+	//   <point lat="45.000000" lon="-120.000000" hae="0.000000" ce="9999999.000000" le="9999999.000000"/>
+	//   <detail>
+	//     <contact callsign="ALPHA1"/>
+	//     <shape type="circle" radius="1000.000000"/>
+	//   </detail>
+	// </event>
 }
 
-func ExampleNewEvent() {
-	// Create a hostile air track
-	evt := cotlib.NewEvent("TRACK1", cotlib.TypePredHostile+"-A", 45.0, -120.0)
-
-	// Validate the event
-	if err := evt.Validate(); err != nil {
-		fmt.Printf("Error validating event: %v\n", err)
-		return
-	}
-
-	fmt.Printf("Created valid event with UID: %s\n", evt.Uid)
-}
-
-func ExampleEvent_AddLink() {
-	// Create a flight lead and wingman
-	lead := cotlib.NewEvent("LEAD", cotlib.TypePredFriend+"-A", 45.0, -120.0)
-	wing := cotlib.NewEvent("WING1", cotlib.TypePredFriend+"-A", 45.1, -120.1)
-
-	// Link the wingman to the lead
-	lead.AddLink(wing.Uid, "member", "wingman1")
-
-	fmt.Printf("Flight lead has %d links\n", len(lead.Links))
-}
-
+// ExampleEvent_Is demonstrates how to check event type predicates.
 func ExampleEvent_Is() {
-	// Create a friendly ground unit
-	evt := cotlib.NewEvent("UNIT1", cotlib.TypePredFriend+"-G", 45.0, -120.0)
+	evt := cotlib.NewEvent("UNIT1", cotlib.TypePredFriend+"-A", 45.0, -120.0)
+	if evt == nil {
+		log.Fatal("failed to create event")
+	}
 
-	// Check predicates
-	fmt.Printf("Is friend: %v\n", evt.Is("friend"))
-	fmt.Printf("Is ground: %v\n", evt.Is("ground"))
-	fmt.Printf("Is air: %v\n", evt.Is("air"))
+	fmt.Println("Is friendly:", evt.Is("friend"))
+	fmt.Println("Is air:", evt.Is("air"))
+	fmt.Println("Is ground:", evt.Is("ground"))
+	// Output:
+	// Is friendly: true
+	// Is air: true
+	// Is ground: false
+}
+
+// ExampleEvent_AddLink demonstrates how to create relationships between events.
+func ExampleEvent_AddLink() {
+	// Create a flight lead
+	lead := cotlib.NewEvent("LEAD1", cotlib.TypePredFriend+"-A", 30.0, -85.0)
+	if lead == nil {
+		log.Fatal("failed to create lead event")
+	}
+
+	// Create a wingman
+	wing := cotlib.NewEvent("WING1", cotlib.TypePredFriend+"-A", 30.0, -85.0)
+	if wing == nil {
+		log.Fatal("failed to create wing event")
+	}
+
+	// Link them
+	lead.AddLink(wing.Uid, "member", "wingman")
+
+	fmt.Println("Lead links:", len(lead.Links))
+	fmt.Println("First link UID:", lead.Links[0].Uid)
+	fmt.Println("First link type:", lead.Links[0].Type)
+	// Output:
+	// Lead links: 1
+	// First link UID: WING1
+	// First link type: member
+}
+
+// ExampleEvent_Validate demonstrates how to validate an event.
+func ExampleEvent_Validate() {
+	evt := cotlib.NewEvent("UNIT1", cotlib.TypePredFriend+"-G", 45.0, -120.0)
+	if evt == nil {
+		log.Fatal("failed to create event")
+	}
+
+	// Set invalid stale time (too close to event time)
+	evt.Stale = evt.Time
+
+	err := evt.Validate()
+	fmt.Println("Validation error:", err)
+	// Output:
+	// Validation error: stale time must be more than 5s after event time
+}
+
+// ExampleUnmarshalXMLEvent demonstrates how to parse a CoT event from XML.
+func ExampleUnmarshalXMLEvent() {
+	xmlData := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<event version="2.0" uid="UNIT1" type="a-f-G" time="2024-03-14T12:00:00Z" start="2024-03-14T12:00:00Z" stale="2024-03-14T12:00:05Z">
+  <point lat="45.000000" lon="-120.000000" hae="0.000000" ce="9999999.000000" le="9999999.000000"/>
+  <detail>
+    <contact callsign="ALPHA1"/>
+  </detail>
+</event>`)
+
+	evt, err := cotlib.UnmarshalXMLEvent(xmlData)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("UID:", evt.Uid)
+	fmt.Println("Type:", evt.Type)
+	fmt.Println("Callsign:", evt.DetailContent.Contact.Callsign)
+	// Output:
+	// UID: UNIT1
+	// Type: a-f-G
+	// Callsign: ALPHA1
 }
 
 func TestExamples(t *testing.T) {

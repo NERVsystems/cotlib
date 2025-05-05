@@ -1,28 +1,28 @@
 /*
-Package cotlib provides data structures and utilities for parsing
-and generating Cursor on Target (CoT) XML messages.
+Package cotlib implements the Cursor on Target (CoT) protocol for Go.
 
-Security Considerations:
-  - XML parsing is restricted to prevent XXE attacks
-  - Input validation is performed on all fields before processing
-  - Coordinate ranges are strictly enforced
-  - Time fields are validated to prevent time-based attacks
-  - No sensitive data is logged at Info level or above
-  - Detail extensions are isolated to prevent cross-contamination
+The package provides data structures and utilities for parsing and generating
+CoT XML messages with a focus on security and standards compliance.
 
-Reference:
-  - "Cursor on Target Developer Guide"
-    https://apps.dtic.mil/sti/citations/ADA637348
-  - "Cursor on Target Message Router User's Guide"
-    https://www.mitre.org/sites/default/files/pdf/09_4937.pdf
+Security features include:
+  - XML parsing restrictions to prevent XXE attacks
+  - Input validation on all fields
+  - Strict coordinate range enforcement
+  - Time field validation to prevent time-based attacks
+  - Secure logging practices
+  - Detail extension isolation
+
+For more information about CoT, see:
+  - https://apps.dtic.mil/sti/citations/ADA637348 (Developer Guide)
+  - https://www.mitre.org/sites/default/files/pdf/09_4937.pdf (Message Router Guide)
   - http://cot.mitre.org
 
-Key Goals:
-  - High cohesion: focus on CoT event parsing and serialisation.
-  - Low coupling: keep concern separation for expansions, transport, or advanced routing.
-  - Composition over inheritance: nest sub-structures for detail fields.
-  - Full coverage of base schema fields (Event.xsd), with example detail extension.
-  - Secure by design: validate all inputs and prevent common XML attacks
+The package follows these design principles:
+  - High cohesion: focused on CoT event parsing and serialization
+  - Low coupling: separated concerns for expansions and transport
+  - Composition over inheritance: nested sub-structures for detail fields
+  - Full schema coverage: implements Event.xsd with example extensions
+  - Secure by design: validates inputs and prevents common attacks
 */
 package cotlib
 

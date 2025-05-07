@@ -911,20 +911,17 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 
 // NewEvent creates a new CoT event with the given parameters.
 // It enforces validation of all input parameters and sets default values.
-// Returns nil if validation fails.
-func NewEvent(uid, eventType string, lat, lon float64) *Event {
-	// Assert valid parameters
+// Returns an error if validation fails.
+func NewEvent(uid, eventType string, lat, lon float64) (*Event, error) {
+	// Validate parameters
 	if err := ValidateUID(uid); err != nil {
-		getLogger(context.Background()).Error("invalid uid in NewEvent", "uid", uid, "error", err)
-		return nil
+		return nil, fmt.Errorf("invalid uid: %w", err)
 	}
 	if err := ValidateType(eventType); err != nil {
-		getLogger(context.Background()).Error("invalid type in NewEvent", "type", eventType, "error", err)
-		return nil
+		return nil, fmt.Errorf("invalid type: %w", err)
 	}
 	if err := ValidateLatLon(lat, lon); err != nil {
-		getLogger(context.Background()).Error("invalid coordinates in NewEvent", "lat", lat, "lon", lon, "error", err)
-		return nil
+		return nil, fmt.Errorf("invalid coordinates: %w", err)
 	}
 
 	now := time.Now().UTC()
@@ -941,13 +938,12 @@ func NewEvent(uid, eventType string, lat, lon float64) *Event {
 		Point:   &Point{Lat: lat, Lon: lon},
 	}
 
-	// Assert event state
+	// Validate the event
 	if err := e.Validate(); err != nil {
-		getLogger(context.Background()).Error("event validation failed in NewEvent", "error", err)
-		return nil
+		return nil, fmt.Errorf("event validation failed: %w", err)
 	}
 
-	return e
+	return e, nil
 }
 
 // secureDecoder wraps xml.Decoder with additional security features
@@ -1220,10 +1216,18 @@ func FromXML(data []byte) (*Event, error) {
 // Example usage function showing new features
 func Example() {
 	// 1. Create a flight lead
-	lead := NewEvent("LEAD1", TypePredFriend+"-A", 30.0090027, -85.9578735)
+	lead, err := NewEvent("LEAD1", TypePredFriend+"-A", 30.0090027, -85.9578735)
+	if err != nil {
+		getLogger(nil).Error("failed to create lead event", "error", err)
+		return
+	}
 
 	// 2. Create wingman
-	wing := NewEvent("WING1", TypePredFriend+"-A", 30.0090027, -85.9578735)
+	wing, err := NewEvent("WING1", TypePredFriend+"-A", 30.0090027, -85.9578735)
+	if err != nil {
+		getLogger(nil).Error("failed to create wing event", "error", err)
+		return
+	}
 
 	// 3. Link them
 	lead.AddLink(wing.Uid, "member", "wingman")

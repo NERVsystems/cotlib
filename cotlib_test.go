@@ -21,6 +21,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewEvent(t *testing.T) {
+	// Test without hae parameter (should default to 0)
 	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7)
 	if err != nil {
 		t.Fatalf("NewEvent failed: %v", err)
@@ -43,6 +44,21 @@ func TestNewEvent(t *testing.T) {
 	}
 	if evt.Point.Lon != -120.7 {
 		t.Errorf("Point.Lon = %v, want %v", evt.Point.Lon, -120.7)
+	}
+	if evt.Point.Hae != 0.0 {
+		t.Errorf("Point.Hae = %v, want %v", evt.Point.Hae, 0.0)
+	}
+
+	// Test with hae parameter
+	evt, err = cotlib.NewEvent("testUID2", "a-f-G", 25.5, -120.7, 100.0)
+	if err != nil {
+		t.Fatalf("NewEvent with hae failed: %v", err)
+	}
+	if evt == nil {
+		t.Fatal("NewEvent with hae returned nil event")
+	}
+	if evt.Point.Hae != 100.0 {
+		t.Errorf("Point.Hae = %v, want %v", evt.Point.Hae, 100.0)
 	}
 }
 

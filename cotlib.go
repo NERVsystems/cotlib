@@ -912,7 +912,7 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 // NewEvent creates a new CoT event with the given parameters.
 // It enforces validation of all input parameters and sets default values.
 // Returns an error if validation fails.
-func NewEvent(uid, eventType string, lat, lon float64) (*Event, error) {
+func NewEvent(uid, eventType string, lat, lon float64, hae ...float64) (*Event, error) {
 	// Validate parameters
 	if err := ValidateUID(uid); err != nil {
 		return nil, fmt.Errorf("invalid uid: %w", err)
@@ -922,6 +922,12 @@ func NewEvent(uid, eventType string, lat, lon float64) (*Event, error) {
 	}
 	if err := ValidateLatLon(lat, lon); err != nil {
 		return nil, fmt.Errorf("invalid coordinates: %w", err)
+	}
+
+	// Set default hae to 0 if not provided
+	haeValue := 0.0
+	if len(hae) > 0 {
+		haeValue = hae[0]
 	}
 
 	now := time.Now().UTC()
@@ -935,7 +941,7 @@ func NewEvent(uid, eventType string, lat, lon float64) (*Event, error) {
 		Time:    now.Format(time.RFC3339),
 		Start:   now.Format(time.RFC3339),
 		Stale:   stale.Format(time.RFC3339),
-		Point:   &Point{Lat: lat, Lon: lon},
+		Point:   &Point{Lat: lat, Lon: lon, Hae: haeValue},
 	}
 
 	// Validate the event

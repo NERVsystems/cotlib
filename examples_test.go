@@ -8,7 +8,7 @@ import (
 )
 
 func Example() {
-	// Create a new event
+	// Create a new event without hae (defaults to 0)
 	evt, err := cotlib.NewEvent("sampleUID", "a-h-G", 25.5, -120.7)
 	if err != nil {
 		slog.Error("failed to create event", "error", err)
@@ -22,10 +22,25 @@ func Example() {
 		return
 	}
 	fmt.Println(string(output))
+
+	// Create another event with hae specified
+	evt2, err := cotlib.NewEvent("sampleUID2", "a-h-G", 25.5, -120.7, 100.0)
+	if err != nil {
+		slog.Error("failed to create event with hae", "error", err)
+		return
+	}
+
+	// Marshal to XML
+	output2, err := evt2.ToXML()
+	if err != nil {
+		slog.Error("failed to marshal event with hae", "error", err)
+		return
+	}
+	fmt.Println(string(output2))
 }
 
 func ExampleNewEvent() {
-	// Create a new event
+	// Create a new event without hae (defaults to 0)
 	evt, err := cotlib.NewEvent("sampleUID", "a-h-G", 25.5, -120.7)
 	if err != nil {
 		slog.Error("failed to create event", "error", err)
@@ -36,6 +51,20 @@ func ExampleNewEvent() {
 	fmt.Printf("UID: %s\n", evt.Uid)
 	fmt.Printf("Type: %s\n", evt.Type)
 	fmt.Printf("Location: %.6f, %.6f\n", evt.Point.Lat, evt.Point.Lon)
+	fmt.Printf("HAE: %.1f\n", evt.Point.Hae)
+
+	// Create another event with hae specified
+	evt2, err := cotlib.NewEvent("sampleUID2", "a-h-G", 25.5, -120.7, 100.0)
+	if err != nil {
+		slog.Error("failed to create event with hae", "error", err)
+		return
+	}
+
+	// Print some fields
+	fmt.Printf("\nUID: %s\n", evt2.Uid)
+	fmt.Printf("Type: %s\n", evt2.Type)
+	fmt.Printf("Location: %.6f, %.6f\n", evt2.Point.Lat, evt2.Point.Lon)
+	fmt.Printf("HAE: %.1f\n", evt2.Point.Hae)
 }
 
 func ExampleEvent_Validate() {

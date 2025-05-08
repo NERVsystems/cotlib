@@ -13,6 +13,9 @@ A Go implementation of the Cursor on Target (CoT) protocol, focusing on security
 - Height Above Ellipsoid (HAE) for all elevations
 - Comprehensive time validation with replay attack prevention
 - XML round-trip support with secure marshaling/unmarshaling
+- Strict validation of UID, Type, and coordinates
+- Semantic validation of shape parameters
+- Consistent error wrapping with sentinel errors
 
 ## Security Features
 
@@ -31,6 +34,8 @@ A Go implementation of the Cursor on Target (CoT) protocol, focusing on security
 - String sanitization for all XML content
 - Structured logging with sensitive data protection
 - Context-aware logging support
+- Strict validation of presence events and system messages
+- Semantic validation of shape parameters (radius, points)
 
 ## Usage Examples
 
@@ -38,20 +43,25 @@ Basic usage example:
 
 ```go
 // Create a new friendly ground unit
-evt := cotlib.NewEvent("UNIT1", cotlib.TypePredFriend+"-G", 45.0, -120.0)
-if evt == nil {
-    log.Fatal("failed to create event")
+evt, err := cotlib.NewEvent("UNIT1", cotlib.TypePredFriend+"-G", 45.0, -120.0, 0.0)
+if err != nil {
+    log.Fatal(err)
 }
 
 // Add detail extensions
-evt.DetailContent.Contact.Callsign = "ALPHA1"
-evt.DetailContent.Shape = struct {
-    Type   string  `xml:"type,attr,omitempty"`
-    Points string  `xml:"points,attr,omitempty"`
-    Radius float64 `xml:"radius,attr,omitempty"`
-}{
-    Type:   "circle",
-    Radius: 1000, // meters
+evt.Detail = &cotlib.Detail{
+    Contact: &cotlib.Contact{
+        Callsign: "ALPHA1",
+    },
+    Shape: &cotlib.Shape{
+        Type:   "circle",
+        Radius: 1000, // meters
+    },
+}
+
+// Validate the event
+if err := evt.Validate(); err != nil {
+    log.Fatal(err)
 }
 
 // Marshal to XML
@@ -67,6 +77,8 @@ See `examples_test.go` for more examples including:
 - Adding links between events
 - Using detail extensions
 - Context-based logging
+- Custom stale time configuration
+- Presence event handling
 
 ## Time Validation
 
@@ -84,6 +96,7 @@ The library enforces strict time validation rules:
    - Must be more than 5 seconds after event time
    - Must be within 7 days of event time
    - Used to prevent replay attacks
+   - Customizable via `WithStale()` method
 
 ## Transport Considerations
 
@@ -95,9 +108,9 @@ CoT typically uses one of these transport patterns:
    - Simple and reliable
    - Example:
      ```go
-     evt := cotlib.NewEvent(...)
-     if evt == nil {
-         return fmt.Errorf("failed to create event")
+     evt, err := cotlib.NewEvent(...)
+     if err != nil {
+         return fmt.Errorf("failed to create event: %w", err)
      }
      conn, err := net.Dial("tcp", "target:port")
      if err != nil {
@@ -118,9 +131,9 @@ CoT typically uses one of these transport patterns:
    - Best for situational awareness data
    - Example:
      ```go
-     evt := cotlib.NewEvent(...)
-     if evt == nil {
-         return fmt.Errorf("failed to create event")
+     evt, err := cotlib.NewEvent(...)
+     if err != nil {
+         return fmt.Errorf("failed to create event: %w", err)
      }
      addr, err := net.ResolveUDPAddr("udp", "239.2.3.1:6969")
      if err != nil {
@@ -140,7 +153,7 @@ CoT typically uses one of these transport patterns:
 
 ## Height Representation
 
-This library uses Height Above Ellipsoid (HAE) exclusively, as recommended by the CoT specification. The `Point` struct validates HAE values to be within reasonable bounds (-12,000m to +9,000m, accommodating Mariana Trench to Mount Everest).
+This library uses Height Above Ellipsoid (HAE) exclusively, as recommended by the CoT specification. The `Point` struct validates HAE values to be within reasonable bounds (-12,000m to +999,999m, accommodating Mariana Trench to space systems).
 
 ## Testing
 
@@ -152,11 +165,14 @@ The library includes comprehensive tests:
    - Verifies time validation rules
    - Tests type predicates and event linking
    - Ensures logging functionality
+   - Validates shape parameters
+   - Tests presence event handling
 
 2. **Integration Tests**
    - Tests real-world usage scenarios
    - Verifies XML round-trip functionality
    - Tests all detail extensions
+   - Validates error handling
 
 Run tests with:
 ```bash
@@ -167,25 +183,28 @@ go test -v ./...
 
 1. **Event Creation**
    - Always use `NewEvent()` to ensure proper initialization
-   - Check for nil return value
+   - Check for errors returned by `NewEvent()`
    - Use predefined type predicates (e.g., `TypePredFriend`)
-   - Set reasonable stale times (> 5 seconds from event time)
+   - Set reasonable stale times using `WithStale()`
 
 2. **Validation**
    - Always check `Validate()` before transmission
    - Handle validation errors appropriately
    - Use context-aware logging for debugging
+   - Check shape parameters for semantic validity
 
 3. **Detail Extensions**
    - Use provided structs for known extensions
    - Validate detail content size
    - Keep extensions minimal and focused
+   - Ensure shape parameters are valid
 
 4. **Security**
    - Use structured logging with appropriate levels
    - Handle all errors explicitly
    - Validate all input data
    - Use context for logger injection
+   - Check for presence event validity
 
 ## License
 

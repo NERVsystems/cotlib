@@ -28,100 +28,207 @@ func TestMain(m *testing.M) {
 
 func TestNewEvent(t *testing.T) {
 	// Test creating an event without hae parameter (defaults to 0)
-	evt, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0)
+	evt, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
 	if err != nil {
-		t.Fatalf("NewEvent failed: %v", err)
+		t.Fatalf("NewEvent() error = %v", err)
 	}
 
 	// Verify event properties
 	if evt.Uid != "test123" {
-		t.Errorf("Uid = %v, want test123", evt.Uid)
+		t.Errorf("Uid = %v, want %v", evt.Uid, "test123")
 	}
 	if evt.Type != "a-f-G" {
-		t.Errorf("Type = %v, want a-f-G", evt.Type)
+		t.Errorf("Type = %v, want %v", evt.Type, "a-f-G")
 	}
 	if evt.Point.Lat != 30.0 {
-		t.Errorf("Point.Lat = %v, want 30.0", evt.Point.Lat)
+		t.Errorf("Point.Lat = %v, want %v", evt.Point.Lat, 30.0)
 	}
 	if evt.Point.Lon != -85.0 {
-		t.Errorf("Point.Lon = %v, want -85.0", evt.Point.Lon)
+		t.Errorf("Point.Lon = %v, want %v", evt.Point.Lon, -85.0)
 	}
 	if evt.Point.Hae != 0.0 {
-		t.Errorf("Point.Hae = %v, want 0.0", evt.Point.Hae)
-	}
-
-	// Verify time format
-	now := time.Now().UTC().Truncate(time.Second)
-	if evt.Time != now.Format(cotTimeFormat) {
-		t.Errorf("Time = %v, want %v", evt.Time, now.Format(cotTimeFormat))
-	}
-	if evt.Start != now.Format(cotTimeFormat) {
-		t.Errorf("Start = %v, want %v", evt.Start, now.Format(cotTimeFormat))
-	}
-	stale := now.Add(minStaleOffset + time.Second)
-	if evt.Stale != stale.Format(cotTimeFormat) {
-		t.Errorf("Stale = %v, want %v", evt.Stale, stale.Format(cotTimeFormat))
+		t.Errorf("Point.Hae = %v, want %v", evt.Point.Hae, 0.0)
 	}
 
 	// Test creating an event with hae parameter
 	evt, err = cotlib.NewEvent("test456", "a-f-G", 30.0, -85.0, 100.0)
 	if err != nil {
-		t.Fatalf("NewEvent failed: %v", err)
+		t.Fatalf("NewEvent() error = %v", err)
+	}
+
+	// Verify event properties
+	if evt.Uid != "test456" {
+		t.Errorf("Uid = %v, want %v", evt.Uid, "test456")
+	}
+	if evt.Type != "a-f-G" {
+		t.Errorf("Type = %v, want %v", evt.Type, "a-f-G")
+	}
+	if evt.Point.Lat != 30.0 {
+		t.Errorf("Point.Lat = %v, want %v", evt.Point.Lat, 30.0)
+	}
+	if evt.Point.Lon != -85.0 {
+		t.Errorf("Point.Lon = %v, want %v", evt.Point.Lon, -85.0)
 	}
 	if evt.Point.Hae != 100.0 {
-		t.Errorf("Point.Hae = %v, want 100.0", evt.Point.Hae)
+		t.Errorf("Point.Hae = %v, want %v", evt.Point.Hae, 100.0)
+	}
+
+	// Verify time fields
+	now := time.Now().UTC().Truncate(time.Second)
+	if !evt.Time.Time().Equal(now) {
+		t.Errorf("Time = %v, want %v", evt.Time.Time(), now)
+	}
+	if !evt.Start.Time().Equal(now) {
+		t.Errorf("Start = %v, want %v", evt.Start.Time(), now)
+	}
+
+	// Verify stale time is set correctly (more than 5 seconds after event time)
+	staleDiff := evt.Stale.Time().Sub(evt.Time.Time())
+	if staleDiff <= 5*time.Second {
+		t.Errorf("Stale time difference = %v, want > %v", staleDiff, 5*time.Second)
+	}
+}
+
+func TestNewPresenceEvent(t *testing.T) {
+	evt, err := cotlib.NewPresenceEvent("test123", 30.0, -85.0, 0.0)
+	if err != nil {
+		t.Fatalf("NewPresenceEvent() error = %v", err)
+	}
+
+	// Verify event properties
+	if evt.Uid != "test123" {
+		t.Errorf("Uid = %v, want %v", evt.Uid, "test123")
+	}
+	if evt.Type != "t-x-takp-v" {
+		t.Errorf("Type = %v, want %v", evt.Type, "t-x-takp-v")
+	}
+	if evt.How != "m-g" {
+		t.Errorf("How = %v, want %v", evt.How, "m-g")
+	}
+
+	// Verify stale time is set correctly (more than 5 seconds after event time)
+	staleDiff := evt.Stale.Time().Sub(evt.Time.Time())
+	if staleDiff <= minStaleOffset {
+		t.Errorf("Stale time difference = %v, want > %v", staleDiff, minStaleOffset)
+	}
+}
+
+func TestInjectIdentity(t *testing.T) {
+	evt, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
+	if err != nil {
+		t.Fatalf("NewEvent() error = %v", err)
+	}
+
+	// Test injecting identity
+	evt.InjectIdentity("self123", "Blue", "HQ")
+
+	// Verify group information
+	if evt.Detail == nil {
+		t.Fatal("Detail is nil")
+	}
+	if evt.Detail.Group == nil {
+		t.Fatal("Group is nil")
+	}
+	if evt.Detail.Group.Name != "Blue" {
+		t.Errorf("Group.Name = %v, want %v", evt.Detail.Group.Name, "Blue")
+	}
+	if evt.Detail.Group.Role != "HQ" {
+		t.Errorf("Group.Role = %v, want %v", evt.Detail.Group.Role, "HQ")
+	}
+
+	// Verify p-p link
+	found := false
+	for _, l := range evt.Links {
+		if l.Relation == "p-p" && l.Uid == "self123" && l.Type == "t-x-takp-v" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("p-p link not found")
+	}
+
+	// Test injecting identity again (should not add duplicate link)
+	evt.InjectIdentity("self123", "Blue", "HQ")
+	linkCount := 0
+	for _, l := range evt.Links {
+		if l.Relation == "p-p" && l.Uid == "self123" {
+			linkCount++
+		}
+	}
+	if linkCount != 1 {
+		t.Errorf("Found %d p-p links, want 1", linkCount)
 	}
 }
 
 func TestTimeParsing(t *testing.T) {
+	// Create a reference time within the valid range (within 24 hours)
+	now := time.Now().UTC().Truncate(time.Second)
+	refTime := now.Add(-time.Hour) // 1 hour ago
+
 	tests := []struct {
-		name     string
-		input    string
-		expected string
-		wantErr  bool
+		name    string
+		event   *cotlib.Event
+		wantErr bool
 	}{
 		{
-			name:     "valid Z format",
-			input:    "2024-03-14T12:00:00Z",
-			expected: "2024-03-14T12:00:00Z",
-			wantErr:  false,
+			name: "valid Z format",
+			event: &cotlib.Event{
+				Version: "2.0",
+				Uid:     "test123",
+				Type:    "a-f-G",
+				Time:    cotlib.CoTTime(refTime),
+				Start:   cotlib.CoTTime(refTime),
+				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
+				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0},
+			},
+			wantErr: false,
 		},
 		{
-			name:     "valid with offset",
-			input:    "2024-03-14T12:00:00+07:00",
-			expected: "2024-03-14T05:00:00Z",
-			wantErr:  false,
+			name: "valid with offset",
+			event: &cotlib.Event{
+				Version: "2.0",
+				Uid:     "test124",
+				Type:    "a-f-G",
+				Time:    cotlib.CoTTime(refTime),
+				Start:   cotlib.CoTTime(refTime),
+				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
+				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0},
+			},
+			wantErr: false,
 		},
 		{
-			name:     "valid with negative offset",
-			input:    "2024-03-14T12:00:00-05:00",
-			expected: "2024-03-14T17:00:00Z",
-			wantErr:  false,
+			name: "valid with negative offset",
+			event: &cotlib.Event{
+				Version: "2.0",
+				Uid:     "test125",
+				Type:    "a-f-G",
+				Time:    cotlib.CoTTime(refTime),
+				Start:   cotlib.CoTTime(refTime),
+				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
+				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0},
+			},
+			wantErr: false,
 		},
 		{
-			name:     "invalid format",
-			input:    "2024-03-14 12:00:00",
-			expected: "",
-			wantErr:  true,
+			name: "invalid format",
+			event: &cotlib.Event{
+				Version: "2.0",
+				Uid:     "test126",
+				Type:    "a-f-G",
+				Time:    cotlib.CoTTime(refTime),
+				Start:   cotlib.CoTTime(refTime.Add(time.Hour)), // Invalid: start after time
+				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
+				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0},
+			},
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create an event with the test time
-			evt := &cotlib.Event{
-				Version: "2.0",
-				Uid:     "test123",
-				Type:    "a-f-G",
-				Time:    tt.input,
-				Start:   tt.input,
-				// Set stale time to be 1 minute after the event time
-				Stale: time.Now().UTC().Add(time.Minute).Format(cotTimeFormat),
-				Point: &cotlib.Point{Lat: 30.0, Lon: -85.0},
-			}
-
 			// Validate the event
-			err := evt.Validate()
+			err := tt.event.Validate()
 
 			if tt.wantErr {
 				if err == nil {
@@ -135,14 +242,16 @@ func TestTimeParsing(t *testing.T) {
 				return
 			}
 
-			// Check that times were normalized to Z format
-			if evt.Time != tt.expected {
-				t.Errorf("Time = %v, want %v", evt.Time, tt.expected)
+			// Compare times truncated to seconds since that's our precision
+			if got := tt.event.Time.Time().Truncate(time.Second); !got.Equal(refTime.Truncate(time.Second)) {
+				t.Errorf("Time = %v, want %v", got, refTime.Truncate(time.Second))
 			}
-			if evt.Start != tt.expected {
-				t.Errorf("Start = %v, want %v", evt.Start, tt.expected)
+			if got := tt.event.Start.Time().Truncate(time.Second); !got.Equal(refTime.Truncate(time.Second)) {
+				t.Errorf("Start = %v, want %v", got, refTime.Truncate(time.Second))
 			}
-			// Don't check Stale time as it's set to current time + 1 minute
+			if got := tt.event.Stale.Time().Truncate(time.Second); !got.Equal(refTime.Add(10 * time.Second).Truncate(time.Second)) {
+				t.Errorf("Stale = %v, want %v", got, refTime.Add(10*time.Second).Truncate(time.Second))
+			}
 		})
 	}
 }
@@ -160,10 +269,10 @@ func TestEventValidation(t *testing.T) {
 				Version: "2.0",
 				Uid:     "testUID",
 				Type:    "a-f-G",
-				Time:    now.Format(time.RFC3339),
-				Start:   now.Add(-time.Hour).Format(time.RFC3339),
-				Stale:   now.Add(time.Hour).Format(time.RFC3339),
-				Point:   &cotlib.Point{Lat: 25.5, Lon: -120.7},
+				Time:    cotlib.CoTTime(now),
+				Start:   cotlib.CoTTime(now.Add(-time.Hour)),
+				Stale:   cotlib.CoTTime(now.Add(time.Hour)),
+				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
 			},
 			wantErr: false,
 		},
@@ -173,10 +282,10 @@ func TestEventValidation(t *testing.T) {
 				Version: "2.0",
 				Uid:     "testUID",
 				Type:    "a-f-G",
-				Time:    now.Format(time.RFC3339),
-				Start:   now.Add(time.Hour).Format(time.RFC3339),
-				Stale:   now.Add(2 * time.Hour).Format(time.RFC3339),
-				Point:   &cotlib.Point{Lat: 25.5, Lon: -120.7},
+				Time:    cotlib.CoTTime(now),
+				Start:   cotlib.CoTTime(now.Add(time.Hour)),
+				Stale:   cotlib.CoTTime(now.Add(2 * time.Hour)),
+				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
 			},
 			wantErr: true,
 		},
@@ -186,10 +295,10 @@ func TestEventValidation(t *testing.T) {
 				Version: "2.0",
 				Uid:     "testUID",
 				Type:    "a-f-G",
-				Time:    now.Format(time.RFC3339),
-				Start:   now.Add(-time.Hour).Format(time.RFC3339),
-				Stale:   now.Add(4 * time.Second).Format(time.RFC3339),
-				Point:   &cotlib.Point{Lat: 25.5, Lon: -120.7},
+				Time:    cotlib.CoTTime(now),
+				Start:   cotlib.CoTTime(now.Add(-time.Hour)),
+				Stale:   cotlib.CoTTime(now.Add(4 * time.Second)),
+				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
 			},
 			wantErr: true,
 		},
@@ -199,10 +308,10 @@ func TestEventValidation(t *testing.T) {
 				Version: "2.0",
 				Uid:     "testUID",
 				Type:    "t-x-d-d", // Use a TAK system message type
-				Time:    now.Format(time.RFC3339),
-				Start:   now.Add(-time.Hour).Format(time.RFC3339),
-				Stale:   now.Add(8 * 24 * time.Hour).Format(time.RFC3339),
-				Point:   &cotlib.Point{Lat: 25.5, Lon: -120.7},
+				Time:    cotlib.CoTTime(now),
+				Start:   cotlib.CoTTime(now.Add(-time.Hour)),
+				Stale:   cotlib.CoTTime(now.Add(8 * 24 * time.Hour)),
+				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
 			},
 			wantErr: false, // TAK system messages can have long stale times
 		},
@@ -212,10 +321,10 @@ func TestEventValidation(t *testing.T) {
 				Version: "2.0",
 				Uid:     "testUID",
 				Type:    "a-f-G",
-				Time:    now.Add(-25 * time.Hour).Format(time.RFC3339),
-				Start:   now.Add(-26 * time.Hour).Format(time.RFC3339),
-				Stale:   now.Add(-24 * time.Hour).Format(time.RFC3339),
-				Point:   &cotlib.Point{Lat: 25.5, Lon: -120.7},
+				Time:    cotlib.CoTTime(now.Add(-25 * time.Hour)),
+				Start:   cotlib.CoTTime(now.Add(-26 * time.Hour)),
+				Stale:   cotlib.CoTTime(now.Add(-24 * time.Hour)),
+				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
 			},
 			wantErr: true,
 		},
@@ -225,10 +334,10 @@ func TestEventValidation(t *testing.T) {
 				Version: "2.0",
 				Uid:     "testUID",
 				Type:    "a-f-G",
-				Time:    now.Add(25 * time.Hour).Format(time.RFC3339),
-				Start:   now.Add(24 * time.Hour).Format(time.RFC3339),
-				Stale:   now.Add(26 * time.Hour).Format(time.RFC3339),
-				Point:   &cotlib.Point{Lat: 25.5, Lon: -120.7},
+				Time:    cotlib.CoTTime(now.Add(25 * time.Hour)),
+				Start:   cotlib.CoTTime(now.Add(24 * time.Hour)),
+				Stale:   cotlib.CoTTime(now.Add(26 * time.Hour)),
+				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
 			},
 			wantErr: true,
 		},
@@ -245,14 +354,14 @@ func TestEventValidation(t *testing.T) {
 
 func TestEventXMLRoundTrip(t *testing.T) {
 	now := time.Now().UTC()
-	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7)
+	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
 	if err != nil {
 		t.Fatalf("NewEvent failed: %v", err)
 	}
 	evt.Version = "2.0"
-	evt.Time = now.Format(time.RFC3339)
-	evt.Start = now.Add(-time.Hour).Format(time.RFC3339)
-	evt.Stale = now.Add(time.Hour).Format(time.RFC3339)
+	evt.Time = cotlib.CoTTime(now)
+	evt.Start = cotlib.CoTTime(now.Add(-time.Hour))
+	evt.Stale = cotlib.CoTTime(now.Add(time.Hour))
 
 	xmlData, err := evt.ToXML()
 	if err != nil {
@@ -270,7 +379,7 @@ func TestEventXMLRoundTrip(t *testing.T) {
 }
 
 func TestEventPredicate(t *testing.T) {
-	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7)
+	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
 	if err != nil {
 		t.Fatalf("NewEvent failed: %v", err)
 	}
@@ -297,13 +406,17 @@ func TestEventPredicate(t *testing.T) {
 }
 
 func TestEventLinks(t *testing.T) {
-	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7)
+	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
 	if err != nil {
 		t.Fatalf("NewEvent failed: %v", err)
 	}
 
 	// Add a link
-	evt.AddLink("TARGET1", "member", "wingman")
+	evt.AddLink(&cotlib.Link{
+		Uid:      "TARGET1",
+		Type:     "member",
+		Relation: "wingman",
+	})
 
 	if len(evt.Links) != 1 {
 		t.Errorf("Expected 1 link, got %d", len(evt.Links))
@@ -329,7 +442,7 @@ func TestEventLogging(t *testing.T) {
 	}))
 	ctx = cotlib.WithLogger(ctx, logger)
 
-	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7)
+	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
 	if err != nil {
 		t.Fatalf("NewEvent failed: %v", err)
 	}

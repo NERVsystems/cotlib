@@ -4,104 +4,91 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/pdfinn/cotlib"
 )
 
 func Example() {
-	// Create a new event without hae parameter (defaults to 0)
-	evt, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0)
+	// Create an event without hae parameter
+	event1, err := cotlib.NewEvent("test-uid-1", "a-f-G-U-C", 37.7749, -122.4194, 0.0)
 	if err != nil {
 		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
 
-	// Marshal to XML
-	xmlData, err := xml.MarshalIndent(evt, "", "  ")
-	if err != nil {
-		fmt.Printf("Error marshaling to XML: %v\n", err)
-		return
-	}
-	fmt.Printf("Event without hae:\n%s\n\n", xmlData)
-
-	// Create another event with hae parameter
-	evt, err = cotlib.NewEvent("test456", "a-f-G", 30.0, -85.0, 100.0)
+	// Create an event with hae parameter
+	event2, err := cotlib.NewEvent("test-uid-2", "a-f-G-U-C", 37.7749, -122.4194, 100.0)
 	if err != nil {
 		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
 
-	// Marshal to XML
-	xmlData, err = xml.MarshalIndent(evt, "", "  ")
+	// Marshal events to XML
+	xml1, err := xml.Marshal(event1)
 	if err != nil {
-		fmt.Printf("Error marshaling to XML: %v\n", err)
+		fmt.Printf("Error marshaling event1: %v\n", err)
 		return
 	}
-	fmt.Printf("Event with hae:\n%s\n", xmlData)
+
+	xml2, err := xml.Marshal(event2)
+	if err != nil {
+		fmt.Printf("Error marshaling event2: %v\n", err)
+		return
+	}
+
+	fmt.Println(string(xml1))
+	fmt.Println(string(xml2))
 }
 
 func ExampleNewEvent() {
-	// Create a new event without hae parameter (defaults to 0)
-	evt, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0)
+	// Create an event without hae parameter
+	event1, err := cotlib.NewEvent("test-uid-1", "a-f-G-U-C", 37.7749, -122.4194, 0.0)
 	if err != nil {
 		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Event without hae:\n")
-	fmt.Printf("UID: %s\n", evt.Uid)
-	fmt.Printf("Type: %s\n", evt.Type)
-	fmt.Printf("Location: %.6f, %.6f\n", evt.Point.Lat, evt.Point.Lon)
-	fmt.Printf("HAE: %.1f\n", evt.Point.Hae)
-	fmt.Printf("Time: %s\n", evt.Time)
-	fmt.Printf("Start: %s\n", evt.Start)
-	fmt.Printf("Stale: %s\n\n", evt.Stale)
-
-	// Create another event with hae parameter
-	evt, err = cotlib.NewEvent("test456", "a-f-G", 30.0, -85.0, 100.0)
+	// Create an event with hae parameter
+	event2, err := cotlib.NewEvent("test-uid-2", "a-f-G-U-C", 37.7749, -122.4194, 100.0)
 	if err != nil {
 		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Event with hae:\n")
-	fmt.Printf("UID: %s\n", evt.Uid)
-	fmt.Printf("Type: %s\n", evt.Type)
-	fmt.Printf("Location: %.6f, %.6f\n", evt.Point.Lat, evt.Point.Lon)
-	fmt.Printf("HAE: %.1f\n", evt.Point.Hae)
-	fmt.Printf("Time: %s\n", evt.Time)
-	fmt.Printf("Start: %s\n", evt.Start)
-	fmt.Printf("Stale: %s\n", evt.Stale)
+	fmt.Printf("Event 1: UID=%s, Type=%s, Location=(%f,%f), HAE=%f\n",
+		event1.Uid, event1.Type, event1.Point.Lat, event1.Point.Lon, event1.Point.Hae)
+	fmt.Printf("Event 2: UID=%s, Type=%s, Location=(%f,%f), HAE=%f\n",
+		event2.Uid, event2.Type, event2.Point.Lat, event2.Point.Lon, event2.Point.Hae)
 }
 
 func Example_robustTimeParsing() {
-	// Create an event with a time that includes a timezone offset
-	evt := &cotlib.Event{
+	// Create an event with a timezone offset
+	now := time.Now().UTC()
+	event := &cotlib.Event{
 		Version: "2.0",
-		Uid:     "test123",
-		Type:    "a-f-G",
-		Time:    "2024-03-14T12:00:00+07:00", // Time with offset
-		Start:   "2024-03-14T12:00:00+07:00", // Start with offset
-		Stale:   "2024-03-14T12:00:00+07:00", // Stale with offset
-		Point:   &cotlib.Point{Lat: 30.0, Lon: -85.0},
+		Uid:     "test-uid",
+		Type:    "a-f-G-U-C",
+		Time:    cotlib.CoTTime(now),
+		Start:   cotlib.CoTTime(now),
+		Stale:   cotlib.CoTTime(now.Add(time.Hour)),
+		Point:   cotlib.Point{Lat: 37.7749, Lon: -122.4194, Hae: 0.0},
 	}
 
-	// Validate the event (this will normalize the times to UTC)
-	err := evt.Validate()
-	if err != nil {
+	// Validate the event
+	if err := event.Validate(); err != nil {
 		fmt.Printf("Error validating event: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Original time with offset: 2024-03-14T12:00:00+07:00\n")
-	fmt.Printf("Normalized to UTC: %s\n", evt.Time)
-	fmt.Printf("Start normalized to UTC: %s\n", evt.Start)
-	fmt.Printf("Stale normalized to UTC: %s\n", evt.Stale)
+	// Print the normalized times
+	fmt.Printf("Original time: %s\n", event.Time.Format(time.RFC3339))
+	fmt.Printf("Normalized time: %s\n", event.Time.Format(cotlib.CotTimeFormat))
 }
 
 func ExampleEvent_Validate() {
 	// Create a new event
-	evt, err := cotlib.NewEvent("sampleUID", "a-h-G", 25.5, -120.7)
+	evt, err := cotlib.NewEvent("sampleUID", "a-h-G", 25.5, -120.7, 0.0)
 	if err != nil {
 		slog.Error("failed to create event", "error", err)
 		return
@@ -118,7 +105,7 @@ func ExampleEvent_Validate() {
 
 func ExampleEvent_Is() {
 	// Create a new event
-	evt, err := cotlib.NewEvent("sampleUID", "a-h-G", 25.5, -120.7)
+	evt, err := cotlib.NewEvent("sampleUID", "a-h-G", 25.5, -120.7, 0.0)
 	if err != nil {
 		slog.Error("failed to create event", "error", err)
 		return
@@ -131,24 +118,26 @@ func ExampleEvent_Is() {
 }
 
 func ExampleEvent_AddLink() {
-	// Create two events
-	evt1, err := cotlib.NewEvent("sampleUID1", "a-h-G", 25.5, -120.7)
+	// Create an event
+	event, err := cotlib.NewEvent("test-uid", "a-f-G-U-C", 37.7749, -122.4194, 0.0)
 	if err != nil {
-		slog.Error("failed to create event 1", "error", err)
+		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
 
-	evt2, err := cotlib.NewEvent("sampleUID2", "a-h-G", 25.6, -120.8)
+	// Add a link to another event
+	link := &cotlib.Link{
+		Uid:      "target-uid",
+		Type:     "a-f-G-U-C",
+		Relation: "p-p",
+	}
+	event.AddLink(link)
+
+	// Marshal to XML to see the result
+	xmlData, err := xml.Marshal(event)
 	if err != nil {
-		slog.Error("failed to create event 2", "error", err)
+		fmt.Printf("Error marshaling event: %v\n", err)
 		return
 	}
-
-	// Link them
-	evt1.AddLink(evt2.Uid, "member", "wingman")
-
-	// Print the link
-	for _, link := range evt1.Links {
-		fmt.Printf("Link: %s -> %s (%s)\n", evt1.Uid, link.Uid, link.Relation)
-	}
+	fmt.Println(string(xmlData))
 }

@@ -69,9 +69,9 @@ const (
 	// maxTokenLen is the maximum length for any single XML token
 	maxTokenLen = 1024
 
-	// cotTimeFormat is the time format expected by TAK server
+	// CotTimeFormat is the standard time format for CoT messages (Zulu time, no offset)
 	// Format: "2006-01-02T15:04:05Z" (UTC without timezone offset)
-	cotTimeFormat = "2006-01-02T15:04:05Z"
+	CotTimeFormat = "2006-01-02T15:04:05Z"
 )
 
 // maxValueLen is the maximum length for attribute values and character data
@@ -167,34 +167,46 @@ var xmlBufferPool = sync.Pool{
 	},
 }
 
-// Event represents a Cursor on Target (CoT) message.
-// It implements the core schema defined in Event.xsd with security
-// considerations for XML parsing and validation.
+// CoTTime is a custom time type that implements XML marshaling for CoT format
+type CoTTime time.Time
+
+// Time returns the underlying time.Time value
+func (t CoTTime) Time() time.Time {
+	return time.Time(t)
+}
+
+// Format formats the time using the given layout
+func (t CoTTime) Format(layout string) string {
+	return time.Time(t).Format(layout)
+}
+
+// MarshalXMLAttr implements xml.MarshalerAttr for CoTTime
+func (t CoTTime) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+	return xml.Attr{Name: name, Value: marshalCoTTime(time.Time(t))}, nil
+}
+
+// UnmarshalXMLAttr implements xml.UnmarshalerAttr for CoTTime
+func (t *CoTTime) UnmarshalXMLAttr(attr xml.Attr) error {
+	tt, err := unmarshalCoTTime(attr.Value)
+	if err != nil {
+		return err
+	}
+	*t = CoTTime(tt)
+	return nil
+}
+
+// Event represents a CoT event
 type Event struct {
-	XMLName xml.Name `xml:"event" json:"-"`
-
-	// Required top-level XML attributes.
-	Version string `xml:"version,attr"` // Must typically be "2.0"
-	Uid     string `xml:"uid,attr"`     // Unique identifier for this event
-	Type    string `xml:"type,attr"`    // CoT type string (e.g., "a-f-G")
-
-	// CoT times (all RFC3339)
-	Time  string `xml:"time,attr"`  // When the event was generated
-	Start string `xml:"start,attr"` // When the event became valid
-	Stale string `xml:"stale,attr"` // When the event becomes invalid
-
-	// Optional attributes
-	How    string `xml:"how,attr,omitempty"`    // How the event was generated
-	Access string `xml:"access,attr,omitempty"` // Access control
-
-	// Links to other events for complex relationships
-	Links []Link `xml:"link,omitempty"`
-
-	// Detail element (optional or sub-schema).
-	DetailContent Detail `xml:"detail,omitempty"`
-
-	// Required "point" child element
-	Point *Point `xml:"point"` // Pointer to reduce copying
+	Version string  `xml:"version,attr"`
+	Uid     string  `xml:"uid,attr"`
+	Type    string  `xml:"type,attr"`
+	How     string  `xml:"how,attr"`
+	Time    CoTTime `xml:"time,attr"`
+	Start   CoTTime `xml:"start,attr"`
+	Stale   CoTTime `xml:"stale,attr"`
+	Point   Point   `xml:"point"`
+	Detail  *Detail `xml:"detail,omitempty"`
+	Links   []*Link `xml:"link,omitempty"`
 }
 
 // Point represents the <point lat="..." lon="..." hae="..." ce="..." le="..."/> element.
@@ -215,40 +227,16 @@ type Link struct {
 	Relation string   `xml:"relation,attr"` // Nature of the relationship
 }
 
-// Detail represents the detail element of a CoT event
+// Detail represents the optional detail element in a CoT event
 type Detail struct {
-	// Known elements with attributes
-	Shape struct {
-		Type   string  `xml:"type,attr,omitempty"`
-		Points string  `xml:"points,attr,omitempty"`
-		Radius float64 `xml:"radius,attr,omitempty"`
-	} `xml:"shape,omitempty"`
+	// Existing fields
+	Shape    *Shape    `xml:"shape,omitempty"`
+	Contact  *Contact  `xml:"contact,omitempty"`
+	FlowTags *FlowTags `xml:"__flow-tags__,omitempty"`
 
-	Remarks struct {
-		Content string `xml:",chardata"`
-	} `xml:"remarks,omitempty"`
-
-	Contact struct {
-		Callsign string `xml:"callsign,attr,omitempty"`
-	} `xml:"contact,omitempty"`
-
-	Status struct {
-		Read bool `xml:"read,attr,omitempty"`
-	} `xml:"status,omitempty"`
-
-	FlowTags struct {
-		Status string `xml:"status,attr,omitempty"`
-		Chain  string `xml:"chain,attr,omitempty"`
-	} `xml:"flowTags,omitempty"`
-
-	UidAliases struct {
-		Aliases []struct {
-			Value string `xml:",chardata"`
-		} `xml:"uidAlias,omitempty"`
-	} `xml:"uidAliases,omitempty"`
-
-	// UnknownElements stores any XML tokens not matching known elements
-	UnknownElements []xml.Token
+	// New TAK-specific fields
+	Group *Group `xml:"__group,omitempty"`
+	TakV  *TakV  `xml:"takv,omitempty"`
 }
 
 // Status represents the status element
@@ -273,6 +261,7 @@ type Color struct {
 type Contact struct {
 	XMLName  xml.Name `xml:"contact"`
 	Callsign string   `xml:"callsign,attr,omitempty"`
+	Endpoint string   `xml:"endpoint,attr,omitempty"` // TAK-specific endpoint
 }
 
 // UserIcon represents the usericon element
@@ -350,29 +339,139 @@ var (
 	ErrInvalidShape     = errors.New("invalid shape parameters")
 )
 
-// parseCoTTime parses a time string in either CoT format (Z) or RFC3339 format (with offset)
-// and normalizes it to UTC. This allows for robust parsing of timestamps from various sources
-// while maintaining compatibility with TAK server requirements.
-func parseCoTTime(s string) (time.Time, error) {
-	// Fast path: already in correct format
-	if t, err := time.Parse(cotTimeFormat, s); err == nil {
-		return t, nil
+// Validate validates the event
+func (e *Event) Validate() error {
+	if err := ValidateUID(e.Uid); err != nil {
+		return err
 	}
-
-	// Fallback: RFC3339 with zone, normalize to UTC
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid time format: %w", err)
+	if err := ValidateType(e.Type); err != nil {
+		return err
 	}
-	return t.UTC(), nil
+	if err := ValidateLatLon(e.Point.Lat, e.Point.Lon); err != nil {
+		return err
+	}
+	if err := e.validateTimes(); err != nil {
+		return err
+	}
+	if e.Detail != nil {
+		if err := e.Detail.validateDetail(); err != nil {
+			return err
+		}
+	}
+	return e.Point.Validate()
 }
 
-// formatCoTTime formats a time in UTC to the CoT format, truncating to seconds
-func formatCoTTime(t time.Time) string {
-	return t.UTC().Truncate(time.Second).Format(cotTimeFormat)
+// validateShape validates the shape fields
+func (s *Shape) validateShape() error {
+	logger := getLogger(context.Background())
+
+	if s.Type != "" && len(s.Type) > 64 {
+		logger.Error("shape type too long",
+			"type", s.Type,
+			"max_length", 64)
+		return fmt.Errorf("%w: type exceeds maximum length of 64 characters", ErrInvalidShape)
+	}
+
+	if s.Points != "" && len(s.Points) > 1024 {
+		logger.Error("shape points too long",
+			"points", s.Points,
+			"max_length", 1024)
+		return fmt.Errorf("%w: points exceed maximum length of 1024 characters", ErrInvalidShape)
+	}
+
+	// Add semantic validation
+	switch s.Type {
+	case "circle", "ellipse":
+		if s.Radius <= 0 {
+			return fmt.Errorf("%w: radius must be >0", ErrInvalidShape)
+		}
+	case "polygon":
+		if s.Points == "" {
+			return fmt.Errorf("%w: polygon requires points", ErrInvalidShape)
+		}
+	}
+
+	return nil
 }
 
-// validateLatLon validates latitude and longitude values with detailed logging
+// validateTimes performs comprehensive time validation with detailed logging
+func (e *Event) validateTimes() error {
+	logger := getLogger(context.Background())
+
+	// Get times directly without re-parsing
+	timeTime := e.Time.Time()
+	startTime := e.Start.Time()
+	staleTime := e.Stale.Time()
+
+	// Validate time relationships
+	if startTime.After(timeTime) {
+		logger.Error("start time after event time",
+			"start", startTime,
+			"time", timeTime,
+			"error", ErrInvalidTime)
+		return fmt.Errorf("%w: start time must be before or equal to event time", ErrInvalidTime)
+	}
+
+	staleDiff := staleTime.Sub(timeTime)
+	if staleDiff <= minStaleOffset {
+		logger.Error("stale time too close to event time",
+			"stale", staleTime,
+			"time", timeTime,
+			"min_offset", minStaleOffset,
+			"actual_offset", staleDiff,
+			"error", ErrInvalidStale)
+		return fmt.Errorf("%w: stale time must be more than %v after event time", ErrInvalidStale, minStaleOffset)
+	}
+
+	// Skip the tight stale-window check for TAK system messages and legacy tracks
+	if strings.HasPrefix(e.Type, "t-") || (strings.HasPrefix(e.Type, "a-") && staleDiff > maxStaleOffset) {
+		logger.Debug("legacy track with long stale",
+			"uid", e.Uid,
+			"type", e.Type,
+			"stale_diff", staleDiff)
+		return nil
+	}
+
+	if staleDiff > maxStaleOffset {
+		logger.Error("stale time too far from event time",
+			"stale", staleTime,
+			"time", timeTime,
+			"max_offset", maxStaleOffset,
+			"actual_offset", staleDiff,
+			"error", ErrInvalidStale)
+		return fmt.Errorf("%w: stale time must be within %v of event time", ErrInvalidStale, maxStaleOffset)
+	}
+
+	// Validate against current time
+	now := time.Now().UTC().Truncate(time.Second)
+	maxPastOffset := 24 * time.Hour
+	maxFutureOffset := 24 * time.Hour
+
+	timeDiff := timeTime.Sub(now)
+	if timeDiff < -maxPastOffset {
+		logger.Error("event time too far in past",
+			"time", timeTime,
+			"now", now,
+			"max_past_offset", maxPastOffset,
+			"actual_offset", timeDiff,
+			"error", ErrInvalidTime)
+		return fmt.Errorf("%w: event time cannot be more than %v in the past", ErrInvalidTime, maxPastOffset)
+	}
+
+	if timeDiff > maxFutureOffset {
+		logger.Error("event time too far in future",
+			"time", timeTime,
+			"now", now,
+			"max_future_offset", maxFutureOffset,
+			"actual_offset", timeDiff,
+			"error", ErrInvalidTime)
+		return fmt.Errorf("%w: event time cannot be more than %v in the future", ErrInvalidTime, maxFutureOffset)
+	}
+
+	return nil
+}
+
+// ValidateLatLon validates latitude and longitude values with detailed logging
 func ValidateLatLon(lat, lon float64) error {
 	logger := getLogger(context.Background())
 
@@ -470,220 +569,6 @@ func ValidateType(typ string) error {
 	return nil
 }
 
-// validateShape checks if the shape parameters are valid
-func validateShape(s *struct {
-	Type   string  `xml:"type,attr,omitempty"`
-	Points string  `xml:"points,attr,omitempty"`
-	Radius float64 `xml:"radius,attr,omitempty"`
-}) error {
-	if s == nil {
-		return nil
-	}
-
-	// Validate type
-	switch s.Type {
-	case "circle", "ellipse", "polygon":
-		// Valid types
-	default:
-		if s.Type != "" {
-			return fmt.Errorf("invalid shape type: %s", s.Type)
-		}
-	}
-
-	// Validate points for polygon
-	if s.Type == "polygon" {
-		if s.Points == "" {
-			return fmt.Errorf("polygon requires points attribute")
-		}
-		// TODO: Validate points format
-	}
-
-	// Validate radius for circle/ellipse
-	if s.Type == "circle" || s.Type == "ellipse" {
-		if s.Radius <= 0 {
-			return fmt.Errorf("circle/ellipse requires positive radius")
-		}
-	}
-
-	return nil
-}
-
-// validateTimes validates all time fields in an Event with enhanced security checks
-func (e *Event) validateTimes() error {
-	logger := getLogger(context.Background())
-
-	// Parse all times using robust parser
-	timeTime, err := parseCoTTime(e.Time)
-	if err != nil {
-		logger.Error("invalid time format",
-			"time", e.Time,
-			"error", ErrInvalidTime)
-		return fmt.Errorf("%w: time field: %v", ErrInvalidTime, err)
-	}
-
-	startTime, err := parseCoTTime(e.Start)
-	if err != nil {
-		logger.Error("invalid start time format",
-			"start", e.Start,
-			"error", ErrInvalidTime)
-		return fmt.Errorf("%w: start field: %v", ErrInvalidTime, err)
-	}
-
-	staleTime, err := parseCoTTime(e.Stale)
-	if err != nil {
-		logger.Error("invalid stale time format",
-			"stale", e.Stale,
-			"error", ErrInvalidTime)
-		return fmt.Errorf("%w: stale field: %v", ErrInvalidTime, err)
-	}
-
-	// Normalize all times to canonical format
-	e.Time = formatCoTTime(timeTime)
-	e.Start = formatCoTTime(startTime)
-	e.Stale = formatCoTTime(staleTime)
-
-	// Validate time relationships
-	if startTime.After(timeTime) {
-		logger.Error("start time after event time",
-			"start", startTime,
-			"time", timeTime,
-			"error", ErrInvalidTime)
-		return fmt.Errorf("%w: start time must be before or equal to event time", ErrInvalidTime)
-	}
-
-	staleDiff := staleTime.Sub(timeTime)
-	if staleDiff <= minStaleOffset {
-		logger.Error("stale time too close to event time",
-			"stale", staleTime,
-			"time", timeTime,
-			"min_offset", minStaleOffset,
-			"actual_offset", staleDiff,
-			"error", ErrInvalidStale)
-		return fmt.Errorf("%w: stale time must be more than %v after event time", ErrInvalidStale, minStaleOffset)
-	}
-
-	// Skip the tight stale-window check for TAK system messages and legacy tracks
-	if strings.HasPrefix(e.Type, "t-") || (strings.HasPrefix(e.Type, "a-") && staleDiff > maxStaleOffset) {
-		logger.Debug("legacy track with long stale",
-			"uid", e.Uid,
-			"type", e.Type,
-			"stale_diff", staleDiff)
-		return nil
-	}
-
-	if staleDiff > maxStaleOffset {
-		logger.Error("stale time too far from event time",
-			"stale", staleTime,
-			"time", timeTime,
-			"max_offset", maxStaleOffset,
-			"actual_offset", staleDiff,
-			"error", ErrInvalidStale)
-		return fmt.Errorf("%w: stale time must be within %v of event time", ErrInvalidStale, maxStaleOffset)
-	}
-
-	// Validate against current time
-	now := time.Now().UTC().Truncate(time.Second)
-	maxPastOffset := 24 * time.Hour
-	maxFutureOffset := 24 * time.Hour
-
-	timeDiff := timeTime.Sub(now)
-	if timeDiff < -maxPastOffset {
-		logger.Error("event time too far in past",
-			"time", timeTime,
-			"now", now,
-			"max_past_offset", maxPastOffset,
-			"actual_offset", timeDiff,
-			"error", ErrInvalidTime)
-		return fmt.Errorf("%w: event time cannot be more than %v in the past", ErrInvalidTime, maxPastOffset)
-	}
-
-	if timeDiff > maxFutureOffset {
-		logger.Error("event time too far in future",
-			"time", timeTime,
-			"now", now,
-			"max_future_offset", maxFutureOffset,
-			"actual_offset", timeDiff,
-			"error", ErrInvalidTime)
-		return fmt.Errorf("%w: event time cannot be more than %v in the future", ErrInvalidTime, maxFutureOffset)
-	}
-
-	return nil
-}
-
-// Validate performs comprehensive validation of an Event with security checks
-func (e *Event) Validate() error {
-	if e == nil {
-		return fmt.Errorf("%w: event is nil", ErrInvalidInput)
-	}
-
-	logger := getLogger(context.Background())
-
-	// Required fields
-	if e.Version == "" {
-		logger.Error("missing version",
-			"error", ErrInvalidInput)
-		return fmt.Errorf("%w: version is required", ErrInvalidInput)
-	}
-
-	if e.Version != "2.0" {
-		logger.Error("unsupported version",
-			"version", e.Version,
-			"error", ErrInvalidInput)
-		return fmt.Errorf("%w: only version 2.0 is supported", ErrInvalidInput)
-	}
-
-	// Validate UID
-	if err := ValidateUID(e.Uid); err != nil {
-		return err // Already logged
-	}
-
-	// Validate Type
-	if err := ValidateType(e.Type); err != nil {
-		return err // Already logged
-	}
-
-	// Validate times
-	if err := e.validateTimes(); err != nil {
-		return err // Already logged
-	}
-
-	// Validate Point
-	if e.Point == nil {
-		logger.Error("missing point element",
-			"error", ErrInvalidInput)
-		return fmt.Errorf("%w: point element is required", ErrInvalidInput)
-	}
-
-	if err := e.Point.Validate(); err != nil {
-		return err // Already logged
-	}
-
-	// Validate Detail if present
-	if err := e.DetailContent.validateDetail(); err != nil {
-		return err // Already logged
-	}
-
-	// Validate Links if present
-	for i, link := range e.Links {
-		if err := ValidateUID(link.Uid); err != nil {
-			logger.Error("invalid link uid",
-				"index", i,
-				"uid", link.Uid,
-				"error", err)
-			return fmt.Errorf("invalid link[%d]: %w", i, err)
-		}
-
-		if link.Type == "" {
-			logger.Error("missing link type",
-				"index", i,
-				"error", ErrInvalidInput)
-			return fmt.Errorf("%w: link[%d] type is required", ErrInvalidInput, i)
-		}
-	}
-
-	return nil
-}
-
 // Validate performs validation of Point fields
 func (p *Point) Validate() error {
 	if p == nil {
@@ -736,252 +621,204 @@ func (e *Event) Is(predicate string) bool {
 	return false
 }
 
-// AddLink creates a relationship to another event
-func (e *Event) AddLink(targetUID, linkType, relation string) {
-	e.Links = append(e.Links, Link{
-		Uid:      targetUID,
-		Type:     linkType,
-		Relation: relation,
-	})
-	getLogger(nil).Debug("added link to event",
-		"source_uid", e.Uid,
-		"target_uid", targetUID,
-		"type", linkType,
-		"relation", relation)
+// AddLink adds a link to the event
+func (e *Event) AddLink(link *Link) {
+	if link != nil {
+		e.Links = append(e.Links, link)
+	}
 }
 
-// validateDetail performs comprehensive validation of a Detail struct
+// validateDetail performs comprehensive validation of the Detail element
 func (d *Detail) validateDetail() error {
-	if d == nil {
-		return nil // Empty detail is valid
-	}
+	logger := getLogger(context.Background())
 
-	// Validate shape if present
-	if err := validateShape(&d.Shape); err != nil {
-		return fmt.Errorf("invalid shape: %w", err)
-	}
-
-	// Validate remarks if present
-	if d.Remarks.Content != "" {
-		if len(d.Remarks.Content) > maxTokenLen {
-			return fmt.Errorf("remarks content exceeds maximum length of %d characters", maxTokenLen)
+	// Validate Group if present
+	if d.Group != nil {
+		if len(d.Group.Name) > 64 {
+			logger.Error("group name too long",
+				"name", d.Group.Name,
+				"max_length", 64)
+			return fmt.Errorf("group name exceeds maximum length of 64 characters")
+		}
+		if len(d.Group.Role) > 64 {
+			logger.Error("group role too long",
+				"role", d.Group.Role,
+				"max_length", 64)
+			return fmt.Errorf("group role exceeds maximum length of 64 characters")
 		}
 	}
 
-	// Validate contact if present
-	if d.Contact.Callsign != "" {
-		if len(d.Contact.Callsign) > maxTokenLen {
-			return fmt.Errorf("callsign exceeds maximum length of %d characters", maxTokenLen)
+	// Validate TakV if present
+	if d.TakV != nil {
+		if len(d.TakV.Version) > 64 {
+			logger.Error("takv version too long",
+				"version", d.TakV.Version,
+				"max_length", 64)
+			return fmt.Errorf("takv version exceeds maximum length of 64 characters")
 		}
 	}
 
-	// Validate flow tags if present
-	if d.FlowTags.Status != "" || d.FlowTags.Chain != "" {
-		if len(d.FlowTags.Status) > maxTokenLen {
-			return fmt.Errorf("flow tag status exceeds maximum length of %d characters", maxTokenLen)
-		}
-		if len(d.FlowTags.Chain) > maxTokenLen {
-			return fmt.Errorf("flow tag chain exceeds maximum length of %d characters", maxTokenLen)
-		}
-	}
-
-	// Validate unknown elements
-	for _, tok := range d.UnknownElements {
-		switch t := tok.(type) {
-		case xml.StartElement:
-			if len(t.Name.Local) > maxTokenLen {
-				return fmt.Errorf("unknown element name exceeds maximum length of %d characters", maxTokenLen)
-			}
-			for _, attr := range t.Attr {
-				if len(attr.Value) > maxTokenLen {
-					return fmt.Errorf("unknown element attribute value exceeds maximum length of %d characters", maxTokenLen)
-				}
-			}
-		case xml.CharData:
-			if len(t) > maxTokenLen {
-				return fmt.Errorf("unknown element content exceeds maximum length of %d characters", maxTokenLen)
-			}
+	// Validate Contact if present
+	if d.Contact != nil && d.Contact.Callsign != "" {
+		if len(d.Contact.Callsign) > 64 {
+			logger.Error("callsign too long",
+				"callsign", d.Contact.Callsign,
+				"max_length", 64)
+			return fmt.Errorf("callsign exceeds maximum length of 64 characters")
 		}
 	}
 
-	// Check total size
-	if err := d.validateDetailSize(); err != nil {
-		return err
+	// Validate Shape if present
+	if d.Shape != nil {
+		if err := d.Shape.validateShape(); err != nil {
+			return err // Already logged
+		}
 	}
 
 	return nil
 }
 
-// validateDetailSize checks if the detail content exceeds size limits
-func (d *Detail) validateDetailSize() error {
-	if d == nil {
-		return nil // Empty detail is valid
+// sanitizeDetail performs security-focused sanitization of Detail fields
+func (d *Detail) sanitizeDetail() {
+	// Sanitize Group if present
+	if d.Group != nil {
+		d.Group.Name = sanitizeString(d.Group.Name)
+		d.Group.Role = sanitizeString(d.Group.Role)
 	}
 
-	// Get a buffer from the pool
-	buf := xmlBufferPool.Get().(*bytes.Buffer)
-	defer xmlBufferPool.Put(buf)
-	buf.Reset()
-
-	// Marshal to get exact size
-	enc := xml.NewEncoder(buf)
-	if err := d.MarshalXML(enc, xml.StartElement{Name: xml.Name{Local: "detail"}}); err != nil {
-		return fmt.Errorf("failed to marshal detail: %w", err)
-	}
-	if err := enc.Flush(); err != nil {
-		return fmt.Errorf("failed to flush encoder: %w", err)
+	// Sanitize TakV if present
+	if d.TakV != nil {
+		d.TakV.Device = sanitizeString(d.TakV.Device)
+		d.TakV.Platform = sanitizeString(d.TakV.Platform)
+		d.TakV.Version = sanitizeString(d.TakV.Version)
 	}
 
-	// Check total size
-	if buf.Len() > maxDetailSize {
-		return fmt.Errorf("detail content exceeds maximum size of %d bytes", maxDetailSize)
+	// Sanitize Contact if present
+	if d.Contact != nil {
+		if d.Contact.Callsign != "" {
+			d.Contact.Callsign = sanitizeString(d.Contact.Callsign)
+		}
+		if d.Contact.Endpoint != "" {
+			d.Contact.Endpoint = sanitizeString(d.Contact.Endpoint)
+		}
 	}
 
-	return nil
+	// Sanitize Shape if present
+	if d.Shape != nil {
+		if d.Shape.Type != "" {
+			d.Shape.Type = sanitizeString(d.Shape.Type)
+		}
+		if d.Shape.Points != "" {
+			d.Shape.Points = sanitizeString(d.Shape.Points)
+		}
+	}
+
+	// Sanitize FlowTags if present
+	if d.FlowTags != nil {
+		if d.FlowTags.Status != "" {
+			d.FlowTags.Status = sanitizeString(d.FlowTags.Status)
+		}
+		if d.FlowTags.Chain != "" {
+			d.FlowTags.Chain = sanitizeString(d.FlowTags.Chain)
+		}
+	}
 }
 
-// UnmarshalXML implements xml.Unmarshaler for Detail
-func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
-	// Create a temporary struct to decode known elements
-	temp := struct {
-		Shape struct {
-			Type   string  `xml:"type,attr,omitempty"`
-			Points string  `xml:"points,attr,omitempty"`
-			Radius float64 `xml:"radius,attr,omitempty"`
-		} `xml:"shape,omitempty"`
-		Remarks struct {
-			Content string `xml:",chardata"`
-		} `xml:"remarks,omitempty"`
-		Contact struct {
-			Callsign string `xml:"callsign,attr,omitempty"`
-		} `xml:"contact,omitempty"`
-		Status struct {
-			Read bool `xml:"read,attr,omitempty"`
-		} `xml:"status,omitempty"`
-		FlowTags struct {
-			Status string `xml:"status,attr,omitempty"`
-			Chain  string `xml:"chain,attr,omitempty"`
-		} `xml:"flowTags,omitempty"`
-		UidAliases struct {
-			Aliases []struct {
-				Value string `xml:",chardata"`
-			} `xml:"uidAlias,omitempty"`
-		} `xml:"uidAliases,omitempty"`
-	}{}
-
-	// Decode directly into temp
-	if err := dec.DecodeElement(&temp, &start); err != nil {
-		return err
+// WithStale sets a custom stale time duration for the event.
+// The duration must be greater than minStaleOffset (5 seconds) and less than maxStaleOffset (7 days).
+func (e *Event) WithStale(duration time.Duration) error {
+	if duration <= minStaleOffset {
+		return fmt.Errorf("stale duration must be greater than %v", minStaleOffset)
 	}
-
-	// Copy known elements
-	d.Shape = temp.Shape
-	d.Remarks = temp.Remarks
-	d.Contact = temp.Contact
-	d.Status = temp.Status
-	d.FlowTags = temp.FlowTags
-	d.UidAliases = temp.UidAliases
-
-	return nil
+	if duration > maxStaleOffset {
+		return fmt.Errorf("stale duration must be less than %v", maxStaleOffset)
+	}
+	e.Stale = CoTTime(e.Time.Time().Add(duration))
+	return e.validateTimes() // Ensure invariant remains true
 }
 
-// MarshalXML implements xml.Marshaler for Detail
-func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
-	// Start detail element
-	if err := enc.EncodeToken(start); err != nil {
-		return err
-	}
-
-	// Encode known elements
-	if d.Shape.Type != "" || d.Shape.Points != "" || d.Shape.Radius != 0 {
-		if err := enc.EncodeElement(d.Shape, xml.StartElement{Name: xml.Name{Local: "shape"}}); err != nil {
-			return err
-		}
-	}
-
-	if d.Remarks.Content != "" {
-		if err := enc.EncodeElement(d.Remarks, xml.StartElement{Name: xml.Name{Local: "remarks"}}); err != nil {
-			return err
-		}
-	}
-
-	if d.Contact.Callsign != "" {
-		if err := enc.EncodeElement(d.Contact, xml.StartElement{Name: xml.Name{Local: "contact"}}); err != nil {
-			return err
-		}
-	}
-
-	if d.Status.Read {
-		if err := enc.EncodeElement(d.Status, xml.StartElement{Name: xml.Name{Local: "status"}}); err != nil {
-			return err
-		}
-	}
-
-	if d.FlowTags.Status != "" || d.FlowTags.Chain != "" {
-		if err := enc.EncodeElement(d.FlowTags, xml.StartElement{Name: xml.Name{Local: "flowTags"}}); err != nil {
-			return err
-		}
-	}
-
-	if len(d.UidAliases.Aliases) > 0 {
-		if err := enc.EncodeElement(d.UidAliases, xml.StartElement{Name: xml.Name{Local: "uidAliases"}}); err != nil {
-			return err
-		}
-	}
-
-	// Encode unknown elements
-	for _, tok := range d.UnknownElements {
-		if err := enc.EncodeToken(tok); err != nil {
-			return err
-		}
-	}
-
-	// End detail element
-	return enc.EncodeToken(start.End())
-}
-
-// NewEvent creates a new CoT event with the given parameters.
-// It enforces validation of all input parameters and sets default values.
-// Returns an error if validation fails.
-func NewEvent(uid, eventType string, lat, lon float64, hae ...float64) (*Event, error) {
-	// Validate parameters
-	if err := ValidateUID(uid); err != nil {
-		return nil, fmt.Errorf("invalid uid: %w", err)
-	}
-	if err := ValidateType(eventType); err != nil {
-		return nil, fmt.Errorf("invalid type: %w", err)
-	}
-	if err := ValidateLatLon(lat, lon); err != nil {
-		return nil, fmt.Errorf("invalid coordinates: %w", err)
-	}
-
-	// Set default hae to 0 if not provided
-	haeValue := 0.0
-	if len(hae) > 0 {
-		haeValue = hae[0]
-	}
-
-	// Get current time in UTC, truncated to seconds
+// NewEvent creates a new Event with the given parameters
+func NewEvent(uid string, eventType string, lat float64, lon float64, hae float64) (*Event, error) {
 	now := time.Now().UTC().Truncate(time.Second)
-	// Add 1 second guard band to ensure we're past minStaleOffset
-	stale := now.Add(minStaleOffset + time.Second)
+	staleTime := now.Add(6 * time.Second) // Use 6 seconds to ensure it's more than minStaleOffset
 
-	e := &Event{
+	evt := &Event{
 		Version: "2.0",
 		Uid:     uid,
 		Type:    eventType,
-		Time:    formatCoTTime(now),
-		Start:   formatCoTTime(now),
-		Stale:   formatCoTTime(stale),
-		Point:   &Point{Lat: lat, Lon: lon, Hae: haeValue},
+		How:     "m-g",
+		Time:    CoTTime(now),
+		Start:   CoTTime(now),
+		Stale:   CoTTime(staleTime),
+		Point: Point{
+			Lat: lat,
+			Lon: lon,
+			Hae: hae,
+			Ce:  9999999.0,
+			Le:  9999999.0,
+		},
 	}
 
-	// Validate the event
-	if err := e.Validate(); err != nil {
-		return nil, fmt.Errorf("event validation failed: %w", err)
+	// Validate the event before returning
+	if err := evt.Validate(); err != nil {
+		return nil, err
 	}
 
-	return e, nil
+	return evt, nil
+}
+
+// NewPresenceEvent creates a new presence event with the given parameters
+func NewPresenceEvent(uid string, lat float64, lon float64, hae float64) (*Event, error) {
+	now := time.Now().UTC().Truncate(time.Second)
+	staleTime := now.Add(6 * time.Second) // Use 6 seconds to ensure it's more than minStaleOffset
+
+	evt := &Event{
+		Version: "2.0",
+		Uid:     uid,
+		Type:    "t-x-takp-v", // Correct TAK presence type
+		How:     "m-g",        // Standard how value
+		Time:    CoTTime(now),
+		Start:   CoTTime(now),
+		Stale:   CoTTime(staleTime),
+		Point: Point{
+			Lat: lat,
+			Lon: lon,
+			Hae: hae,
+			Ce:  9999999.0,
+			Le:  9999999.0,
+		},
+	}
+
+	// Validate the event before returning
+	if err := evt.Validate(); err != nil {
+		return nil, err
+	}
+
+	return evt, nil
+}
+
+// InjectIdentity tags an event with __group and a p-p link if missing.
+func (e *Event) InjectIdentity(selfUID, group, role string) {
+	if e.Detail == nil {
+		e.Detail = &Detail{}
+	}
+	if e.Detail.Group == nil {
+		e.Detail.Group = &Group{Name: group, Role: role}
+	}
+
+	// Check if p-p link already exists
+	for _, l := range e.Links {
+		if l.Relation == "p-p" && l.Uid == selfUID {
+			return
+		}
+	}
+
+	// Add p-p link if not found
+	e.AddLink(&Link{
+		Uid:      selfUID,
+		Type:     "t-x-takp-v",
+		Relation: "p-p",
+	})
 }
 
 // secureDecoder wraps xml.Decoder with additional security features
@@ -1107,35 +944,21 @@ func sanitizeString(s string) string {
 	return s
 }
 
-// sanitizeEvent applies string sanitization to all string fields
+// sanitizeEvent performs security-focused sanitization of all string fields
 func (e *Event) sanitizeEvent() {
-	e.Version = sanitizeString(e.Version)
+	// Sanitize all string fields
 	e.Uid = sanitizeString(e.Uid)
 	e.Type = sanitizeString(e.Type)
-	e.Time = sanitizeString(e.Time)
-	e.Start = sanitizeString(e.Start)
-	e.Stale = sanitizeString(e.Stale)
 	e.How = sanitizeString(e.How)
-	e.Access = sanitizeString(e.Access)
 
+	// Sanitize all links
 	for i := range e.Links {
-		e.Links[i].Uid = sanitizeString(e.Links[i].Uid)
-		e.Links[i].Type = sanitizeString(e.Links[i].Type)
-		e.Links[i].Relation = sanitizeString(e.Links[i].Relation)
+		e.Links[i].sanitizeLink()
 	}
 
-	if e.DetailContent.Shape.Type != "" {
-		e.DetailContent.Shape.Type = sanitizeString(e.DetailContent.Shape.Type)
-		e.DetailContent.Shape.Points = sanitizeString(e.DetailContent.Shape.Points)
-	}
-
-	if e.DetailContent.Contact.Callsign != "" {
-		e.DetailContent.Contact.Callsign = sanitizeString(e.DetailContent.Contact.Callsign)
-	}
-
-	if e.DetailContent.FlowTags.Status != "" {
-		e.DetailContent.FlowTags.Status = sanitizeString(e.DetailContent.FlowTags.Status)
-		e.DetailContent.FlowTags.Chain = sanitizeString(e.DetailContent.FlowTags.Chain)
+	// Sanitize Detail if present
+	if e.Detail != nil {
+		e.Detail.sanitizeDetail()
 	}
 }
 
@@ -1251,75 +1074,102 @@ func FromXML(data []byte) (*Event, error) {
 	return UnmarshalXMLEvent(data)
 }
 
-// Example usage function showing new features
+// Example demonstrates creating and marshaling events
 func Example() {
-	// 1. Create a flight lead
-	lead, err := NewEvent("LEAD1", TypePredFriend+"-A", 30.0090027, -85.9578735)
+	// Create an event without hae parameter
+	event1, err := NewEvent("test-uid-1", "a-f-G-U-C", 37.7749, -122.4194, 0)
 	if err != nil {
-		getLogger(nil).Error("failed to create lead event", "error", err)
+		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
 
-	// 2. Create wingman
-	wing, err := NewEvent("WING1", TypePredFriend+"-A", 30.0090027, -85.9578735)
+	// Create an event with hae parameter
+	event2, err := NewEvent("test-uid-2", "a-f-G-U-C", 37.7749, -122.4194, 100.0)
 	if err != nil {
-		getLogger(nil).Error("failed to create wing event", "error", err)
+		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
 
-	// 3. Link them
-	lead.AddLink(wing.Uid, "member", "wingman")
-
-	// 4. Add some contact info
-	lead.DetailContent.Contact.Callsign = "LEAD"
-
-	// 5. Check predicates
-	if lead.Is("friend") && lead.Is("air") {
-		fmt.Println("Lead is a friendly air track")
-	}
-
-	// 6. Marshal to XML
-	xmlBytes, err := lead.ToXML()
+	// Marshal events to XML
+	xml1, err := xml.Marshal(event1)
 	if err != nil {
-		getLogger(nil).Error("failed to marshal event", "error", err)
+		fmt.Printf("Error marshaling event1: %v\n", err)
 		return
 	}
-	fmt.Printf("XML output:\n%s\n", string(xmlBytes))
+
+	xml2, err := xml.Marshal(event2)
+	if err != nil {
+		fmt.Printf("Error marshaling event2: %v\n", err)
+		return
+	}
+
+	fmt.Println(string(xml1))
+	fmt.Println(string(xml2))
 }
 
-/*
-In a real application, do something like:
+// ExampleNewEvent demonstrates creating a new event
+func ExampleNewEvent() {
+	// Create an event without hae parameter
+	event1, err := NewEvent("test-uid-1", "a-f-G-U-C", 37.7749, -122.4194, 0)
+	if err != nil {
+		fmt.Printf("Error creating event: %v\n", err)
+		return
+	}
 
-package main
+	// Create an event with hae parameter
+	event2, err := NewEvent("test-uid-2", "a-f-G-U-C", 37.7749, -122.4194, 100.0)
+	if err != nil {
+		fmt.Printf("Error creating event: %v\n", err)
+		return
+	}
 
-import (
-    "fmt"
-    "log"
-    "os"
-
-    "github.com/nervsystems/cotlib"
-)
-
-func main() {
-    // Create
-    evt := cot.NewEvent("sampleUID", "a-h-G", 25.5, -120.7)
-    output, err := evt.ToXML()
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Println(string(output))
-
-    // Read from file or network:
-    data, err := os.ReadFile("incoming_cot.xml")
-    if err != nil {
-        log.Fatal(err)
-    }
-    e, err := cot.UnmarshalXMLEvent(data)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    // Use the event e...
-    fmt.Println("Received event with UID:", e.Uid)
+	fmt.Printf("Event 1: UID=%s, Type=%s, Location=(%f,%f), HAE=%f\n",
+		event1.Uid, event1.Type, event1.Point.Lat, event1.Point.Lon, event1.Point.Hae)
+	fmt.Printf("Event 2: UID=%s, Type=%s, Location=(%f,%f), HAE=%f\n",
+		event2.Uid, event2.Type, event2.Point.Lat, event2.Point.Lon, event2.Point.Hae)
 }
-*/
+
+// sanitizeLink performs security-focused sanitization of Link fields
+func (l *Link) sanitizeLink() {
+	l.Uid = sanitizeString(l.Uid)
+	l.Type = sanitizeString(l.Type)
+	l.Relation = sanitizeString(l.Relation)
+}
+
+// Group appears as <__group name="Blue" role="HQ"/>
+type Group struct {
+	XMLName xml.Name `xml:"__group"`
+	Name    string   `xml:"name,attr"`
+	Role    string   `xml:"role,attr"`
+}
+
+// TakV represents ATAK software identity, shown in presence frames
+type TakV struct {
+	XMLName  xml.Name `xml:"takv"`
+	Device   string   `xml:"device,attr,omitempty"`
+	Platform string   `xml:"platform,attr,omitempty"`
+	Version  string   `xml:"version,attr,omitempty"`
+}
+
+// marshalCoTTime formats a time in UTC to the CoT format, truncating to seconds.
+// This is used internally by CoTTime.MarshalXMLAttr to ensure consistent time formatting.
+func marshalCoTTime(t time.Time) string {
+	return t.UTC().Truncate(time.Second).Format(CotTimeFormat)
+}
+
+// unmarshalCoTTime parses a time string in either CoT format (Z) or RFC3339 format (with offset)
+// and normalizes it to UTC, truncating to seconds. This ensures consistent time handling
+// and prevents time-based attacks.
+func unmarshalCoTTime(s string) (time.Time, error) {
+	// Fast path: already in correct format
+	if t, err := time.Parse(CotTimeFormat, s); err == nil {
+		return t.UTC().Truncate(time.Second), nil
+	}
+
+	// Fallback: RFC3339 with zone, normalize to UTC
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid time format: %w", err)
+	}
+	return t.UTC().Truncate(time.Second), nil
+}

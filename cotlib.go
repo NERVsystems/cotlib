@@ -68,6 +68,10 @@ const (
 
 	// maxTokenLen is the maximum length for any single XML token
 	maxTokenLen = 1024
+
+	// cotTimeFormat is the time format expected by TAK server
+	// Format: "2006-01-02T15:04:05Z" (UTC without timezone offset)
+	cotTimeFormat = "2006-01-02T15:04:05Z"
 )
 
 // maxValueLen is the maximum length for attribute values and character data
@@ -346,6 +350,28 @@ var (
 	ErrInvalidShape     = errors.New("invalid shape parameters")
 )
 
+// parseCoTTime parses a time string in either CoT format (Z) or RFC3339 format (with offset)
+// and normalizes it to UTC. This allows for robust parsing of timestamps from various sources
+// while maintaining compatibility with TAK server requirements.
+func parseCoTTime(s string) (time.Time, error) {
+	// Fast path: already in correct format
+	if t, err := time.Parse(cotTimeFormat, s); err == nil {
+		return t, nil
+	}
+
+	// Fallback: RFC3339 with zone, normalize to UTC
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid time format: %w", err)
+	}
+	return t.UTC(), nil
+}
+
+// formatCoTTime formats a time in UTC to the CoT format, truncating to seconds
+func formatCoTTime(t time.Time) string {
+	return t.UTC().Truncate(time.Second).Format(cotTimeFormat)
+}
+
 // validateLatLon validates latitude and longitude values with detailed logging
 func ValidateLatLon(lat, lon float64) error {
 	logger := getLogger(context.Background())
@@ -486,8 +512,8 @@ func validateShape(s *struct {
 func (e *Event) validateTimes() error {
 	logger := getLogger(context.Background())
 
-	// Parse all times
-	timeTime, err := time.Parse(time.RFC3339, e.Time)
+	// Parse all times using robust parser
+	timeTime, err := parseCoTTime(e.Time)
 	if err != nil {
 		logger.Error("invalid time format",
 			"time", e.Time,
@@ -495,7 +521,7 @@ func (e *Event) validateTimes() error {
 		return fmt.Errorf("%w: time field: %v", ErrInvalidTime, err)
 	}
 
-	startTime, err := time.Parse(time.RFC3339, e.Start)
+	startTime, err := parseCoTTime(e.Start)
 	if err != nil {
 		logger.Error("invalid start time format",
 			"start", e.Start,
@@ -503,13 +529,18 @@ func (e *Event) validateTimes() error {
 		return fmt.Errorf("%w: start field: %v", ErrInvalidTime, err)
 	}
 
-	staleTime, err := time.Parse(time.RFC3339, e.Stale)
+	staleTime, err := parseCoTTime(e.Stale)
 	if err != nil {
 		logger.Error("invalid stale time format",
 			"stale", e.Stale,
 			"error", ErrInvalidTime)
 		return fmt.Errorf("%w: stale field: %v", ErrInvalidTime, err)
 	}
+
+	// Normalize all times to canonical format
+	e.Time = formatCoTTime(timeTime)
+	e.Start = formatCoTTime(startTime)
+	e.Stale = formatCoTTime(staleTime)
 
 	// Validate time relationships
 	if startTime.After(timeTime) {
@@ -551,7 +582,7 @@ func (e *Event) validateTimes() error {
 	}
 
 	// Validate against current time
-	now := time.Now().UTC()
+	now := time.Now().UTC().Truncate(time.Second)
 	maxPastOffset := 24 * time.Hour
 	maxFutureOffset := 24 * time.Hour
 
@@ -930,7 +961,8 @@ func NewEvent(uid, eventType string, lat, lon float64, hae ...float64) (*Event, 
 		haeValue = hae[0]
 	}
 
-	now := time.Now().UTC()
+	// Get current time in UTC, truncated to seconds
+	now := time.Now().UTC().Truncate(time.Second)
 	// Add 1 second guard band to ensure we're past minStaleOffset
 	stale := now.Add(minStaleOffset + time.Second)
 
@@ -938,9 +970,9 @@ func NewEvent(uid, eventType string, lat, lon float64, hae ...float64) (*Event, 
 		Version: "2.0",
 		Uid:     uid,
 		Type:    eventType,
-		Time:    now.Format(time.RFC3339),
-		Start:   now.Format(time.RFC3339),
-		Stale:   stale.Format(time.RFC3339),
+		Time:    formatCoTTime(now),
+		Start:   formatCoTTime(now),
+		Stale:   formatCoTTime(stale),
 		Point:   &Point{Lat: lat, Lon: lon, Hae: haeValue},
 	}
 

@@ -11,6 +11,12 @@ import (
 	"github.com/pdfinn/cotlib"
 )
 
+// Constants for testing
+const (
+	cotTimeFormat  = "2006-01-02T15:04:05Z"
+	minStaleOffset = 5 * time.Second
+)
+
 func TestMain(m *testing.M) {
 	// Set up logger for tests
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
@@ -21,44 +27,123 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewEvent(t *testing.T) {
-	// Test without hae parameter (should default to 0)
-	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7)
+	// Test creating an event without hae parameter (defaults to 0)
+	evt, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0)
 	if err != nil {
 		t.Fatalf("NewEvent failed: %v", err)
 	}
-	if evt == nil {
-		t.Fatal("NewEvent returned nil event")
-	}
 
-	if evt.Uid != "testUID" {
-		t.Errorf("Uid = %v, want %v", evt.Uid, "testUID")
+	// Verify event properties
+	if evt.Uid != "test123" {
+		t.Errorf("Uid = %v, want test123", evt.Uid)
 	}
 	if evt.Type != "a-f-G" {
-		t.Errorf("Type = %v, want %v", evt.Type, "a-f-G")
+		t.Errorf("Type = %v, want a-f-G", evt.Type)
 	}
-	if evt.Point == nil {
-		t.Fatal("Point is nil")
+	if evt.Point.Lat != 30.0 {
+		t.Errorf("Point.Lat = %v, want 30.0", evt.Point.Lat)
 	}
-	if evt.Point.Lat != 25.5 {
-		t.Errorf("Point.Lat = %v, want %v", evt.Point.Lat, 25.5)
-	}
-	if evt.Point.Lon != -120.7 {
-		t.Errorf("Point.Lon = %v, want %v", evt.Point.Lon, -120.7)
+	if evt.Point.Lon != -85.0 {
+		t.Errorf("Point.Lon = %v, want -85.0", evt.Point.Lon)
 	}
 	if evt.Point.Hae != 0.0 {
-		t.Errorf("Point.Hae = %v, want %v", evt.Point.Hae, 0.0)
+		t.Errorf("Point.Hae = %v, want 0.0", evt.Point.Hae)
 	}
 
-	// Test with hae parameter
-	evt, err = cotlib.NewEvent("testUID2", "a-f-G", 25.5, -120.7, 100.0)
-	if err != nil {
-		t.Fatalf("NewEvent with hae failed: %v", err)
+	// Verify time format
+	now := time.Now().UTC().Truncate(time.Second)
+	if evt.Time != now.Format(cotTimeFormat) {
+		t.Errorf("Time = %v, want %v", evt.Time, now.Format(cotTimeFormat))
 	}
-	if evt == nil {
-		t.Fatal("NewEvent with hae returned nil event")
+	if evt.Start != now.Format(cotTimeFormat) {
+		t.Errorf("Start = %v, want %v", evt.Start, now.Format(cotTimeFormat))
+	}
+	stale := now.Add(minStaleOffset + time.Second)
+	if evt.Stale != stale.Format(cotTimeFormat) {
+		t.Errorf("Stale = %v, want %v", evt.Stale, stale.Format(cotTimeFormat))
+	}
+
+	// Test creating an event with hae parameter
+	evt, err = cotlib.NewEvent("test456", "a-f-G", 30.0, -85.0, 100.0)
+	if err != nil {
+		t.Fatalf("NewEvent failed: %v", err)
 	}
 	if evt.Point.Hae != 100.0 {
-		t.Errorf("Point.Hae = %v, want %v", evt.Point.Hae, 100.0)
+		t.Errorf("Point.Hae = %v, want 100.0", evt.Point.Hae)
+	}
+}
+
+func TestTimeParsing(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "valid Z format",
+			input:    "2024-03-14T12:00:00Z",
+			expected: "2024-03-14T12:00:00Z",
+			wantErr:  false,
+		},
+		{
+			name:     "valid with offset",
+			input:    "2024-03-14T12:00:00+07:00",
+			expected: "2024-03-14T05:00:00Z",
+			wantErr:  false,
+		},
+		{
+			name:     "valid with negative offset",
+			input:    "2024-03-14T12:00:00-05:00",
+			expected: "2024-03-14T17:00:00Z",
+			wantErr:  false,
+		},
+		{
+			name:     "invalid format",
+			input:    "2024-03-14 12:00:00",
+			expected: "",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create an event with the test time
+			evt := &cotlib.Event{
+				Version: "2.0",
+				Uid:     "test123",
+				Type:    "a-f-G",
+				Time:    tt.input,
+				Start:   tt.input,
+				// Set stale time to be 1 minute after the event time
+				Stale: time.Now().UTC().Add(time.Minute).Format(cotTimeFormat),
+				Point: &cotlib.Point{Lat: 30.0, Lon: -85.0},
+			}
+
+			// Validate the event
+			err := evt.Validate()
+
+			if tt.wantErr {
+				if err == nil {
+					t.Error("Validate() expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Validate() unexpected error: %v", err)
+				return
+			}
+
+			// Check that times were normalized to Z format
+			if evt.Time != tt.expected {
+				t.Errorf("Time = %v, want %v", evt.Time, tt.expected)
+			}
+			if evt.Start != tt.expected {
+				t.Errorf("Start = %v, want %v", evt.Start, tt.expected)
+			}
+			// Don't check Stale time as it's set to current time + 1 minute
+		})
 	}
 }
 

@@ -2,6 +2,7 @@ package cotlib_test
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/NERVsystems/cotlib"
 )
@@ -164,4 +165,56 @@ func Example_typePredicates() {
 	//
 	// Event type: t-s-i-e
 	//   Matches predicate: atom
+}
+
+func ExampleGetTypeFullName() {
+	fullName, err := cotlib.GetTypeFullName("a-f-G-E-X-N")
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+	fmt.Printf("Full name: %s\n", fullName)
+	// Output: Full name: Gnd/Equip/Nbc Equipment
+}
+
+func ExampleGetTypeDescription() {
+	desc, err := cotlib.GetTypeDescription("a-f-G-E-X-N")
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+	fmt.Printf("Description: %s\n", desc)
+	// Output: Description: NBC EQUIPMENT
+}
+
+func ExampleFindTypesByDescription() {
+	types := cotlib.FindTypesByDescription("NBC EQUIPMENT")
+	// Sort by name for consistent output
+	sort.Slice(types, func(i, j int) bool {
+		return types[i].Name < types[j].Name
+	})
+	for _, t := range types {
+		fmt.Printf("Found type: %s (%s)\n", t.Name, t.Description)
+	}
+	// Output:
+	// Found type: a-f-G-E-X-N (NBC EQUIPMENT)
+	// Found type: a-h-G-E-X-N (NBC EQUIPMENT)
+	// Found type: a-n-G-E-X-N (NBC EQUIPMENT)
+	// Found type: a-u-G-E-X-N (NBC EQUIPMENT)
+}
+
+func ExampleFindTypesByFullName() {
+	types := cotlib.FindTypesByFullName("Gnd/Equip/Nbc Equipment")
+	// Sort by name for consistent output
+	sort.Slice(types, func(i, j int) bool {
+		return types[i].Name < types[j].Name
+	})
+	for _, t := range types {
+		fmt.Printf("Found type: %s (%s)\n", t.Name, t.FullName)
+	}
+	// Output:
+	// Found type: a-f-G-E-X-N (Gnd/Equip/Nbc Equipment)
+	// Found type: a-h-G-E-X-N (Gnd/Equip/Nbc Equipment)
+	// Found type: a-n-G-E-X-N (Gnd/Equip/Nbc Equipment)
+	// Found type: a-u-G-E-X-N (Gnd/Equip/Nbc Equipment)
 }

@@ -2,7 +2,52 @@
 Package cotlib implements the Cursor on Target (CoT) protocol for Go.
 
 The package provides data structures and utilities for parsing and generating
-CoT XML messages with a focus on security and standards compliance.
+CoT messages, as well as a comprehensive type catalog system for working with
+CoT type codes.
+
+# Type Catalog
+
+The type catalog system provides a way to work with CoT type codes and their
+metadata. Each type code (e.g., "a-f-G-E-X-N") has associated metadata:
+
+  - Full Name: A hierarchical name (e.g., "Gnd/Equip/Nbc Equipment")
+  - Description: A human-readable description (e.g., "NBC EQUIPMENT")
+
+The catalog supports several operations:
+
+  - Looking up metadata for a specific type code
+  - Searching for types by description or full name
+  - Validating type codes
+  - Registering custom type codes
+
+Example usage:
+
+	// Look up type metadata
+	fullName, err := cotlib.GetTypeFullName("a-f-G-E-X-N")
+	if err != nil {
+	    log.Fatal(err)
+	}
+	fmt.Printf("Full name: %s\n", fullName)
+
+	// Search for types
+	types := cotlib.FindTypesByDescription("NBC")
+	for _, t := range types {
+	    fmt.Printf("Found type: %s (%s)\n", t.Name, t.Description)
+	}
+
+# Thread Safety
+
+All operations on the type catalog are thread-safe. The catalog uses internal
+synchronization to ensure safe concurrent access.
+
+# Custom Types
+
+Applications can register custom type codes using RegisterCoTType. These custom
+types must follow the standard CoT type format and will be validated before
+registration.
+
+For more information about CoT types and their format, see:
+https://www.mitre.org/sites/default/files/pdf/09_4937.pdf
 
 Security features include:
   - XML parsing restrictions to prevent XXE attacks
@@ -554,22 +599,52 @@ func WithLogger(ctx context.Context, l *slog.Logger) context.Context {
 
 type loggerKey struct{}
 
-// GetTypeFullName returns the full name for a CoT type
+// GetTypeFullName returns the full hierarchical name for a CoT type.
+// For example, "a-f-G-E-X-N" returns "Gnd/Equip/Nbc Equipment".
+//
+// The full name represents the type's position in the CoT type hierarchy,
+// making it useful for building user interfaces and documentation.
+//
+// Returns an error if the type is not registered in the catalog.
 func GetTypeFullName(name string) (string, error) {
 	return cottypes.GetCatalog().GetFullName(name)
 }
 
-// GetTypeDescription returns the description for a CoT type
+// GetTypeDescription returns the human-readable description for a CoT type.
+// For example, "a-f-G-E-X-N" returns "NBC EQUIPMENT".
+//
+// The description is a concise explanation of what the type represents,
+// suitable for display in user interfaces and logs.
+//
+// Returns an error if the type is not registered in the catalog.
 func GetTypeDescription(name string) (string, error) {
 	return cottypes.GetCatalog().GetDescription(name)
 }
 
-// FindTypesByDescription searches for types matching the given description
+// FindTypesByDescription searches for types matching the given description.
+// The search is case-insensitive and matches partial descriptions.
+//
+// For example:
+//   - "NBC" finds all types containing "NBC" in their description
+//   - "EQUIPMENT" finds all equipment-related types
+//   - "COMBAT" finds all combat-related types
+//
+// This is useful for building search interfaces and type discovery tools.
+// Returns an empty slice if no matches are found.
 func FindTypesByDescription(desc string) []cottypes.Type {
 	return cottypes.GetCatalog().FindByDescription(desc)
 }
 
-// FindTypesByFullName searches for types matching the given full name
+// FindTypesByFullName searches for types matching the given full name.
+// The search is case-insensitive and matches partial names.
+//
+// For example:
+//   - "Nbc Equipment" finds all NBC equipment types
+//   - "Ground" finds all ground-based types
+//   - "Vehicle" finds all vehicle types
+//
+// This is useful for finding types based on their hierarchical classification.
+// Returns an empty slice if no matches are found.
 func FindTypesByFullName(name string) []cottypes.Type {
 	return cottypes.GetCatalog().FindByFullName(name)
 }

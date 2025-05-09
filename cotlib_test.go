@@ -1,4 +1,4 @@
-package cotlib_test
+package cotlib
 
 import (
 	"context"
@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/NERVsystems/cotlib"
 )
 
 // Constants for testing
@@ -22,13 +20,13 @@ func TestMain(m *testing.M) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
-	cotlib.SetLogger(logger)
+	SetLogger(logger)
 	os.Exit(m.Run())
 }
 
 func TestNewEvent(t *testing.T) {
 	// Test creating an event without hae parameter (defaults to 0)
-	evt, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
+	evt, err := NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
 	if err != nil {
 		t.Fatalf("NewEvent() error = %v", err)
 	}
@@ -51,7 +49,7 @@ func TestNewEvent(t *testing.T) {
 	}
 
 	// Test creating an event with hae parameter
-	evt, err = cotlib.NewEvent("test456", "a-f-G", 30.0, -85.0, 100.0)
+	evt, err = NewEvent("test456", "a-f-G", 30.0, -85.0, 100.0)
 	if err != nil {
 		t.Fatalf("NewEvent() error = %v", err)
 	}
@@ -90,7 +88,7 @@ func TestNewEvent(t *testing.T) {
 }
 
 func TestNewPresenceEvent(t *testing.T) {
-	evt, err := cotlib.NewPresenceEvent("test123", 30.0, -85.0, 0.0)
+	evt, err := NewPresenceEvent("test123", 30.0, -85.0, 0.0)
 	if err != nil {
 		t.Fatalf("NewPresenceEvent() error = %v", err)
 	}
@@ -114,7 +112,7 @@ func TestNewPresenceEvent(t *testing.T) {
 }
 
 func TestInjectIdentity(t *testing.T) {
-	evt, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
+	evt, err := NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
 	if err != nil {
 		t.Fatalf("NewEvent() error = %v", err)
 	}
@@ -168,58 +166,58 @@ func TestTimeParsing(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		event   *cotlib.Event
+		event   *Event
 		wantErr bool
 	}{
 		{
 			name: "valid Z format",
-			event: &cotlib.Event{
+			event: &Event{
 				Version: "2.0",
 				Uid:     "test123",
 				Type:    "a-f-G",
-				Time:    cotlib.CoTTime(refTime),
-				Start:   cotlib.CoTTime(refTime),
-				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
-				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
+				Time:    CoTTime(refTime),
+				Start:   CoTTime(refTime),
+				Stale:   CoTTime(refTime.Add(10 * time.Second)),
+				Point:   Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid with offset",
-			event: &cotlib.Event{
+			event: &Event{
 				Version: "2.0",
 				Uid:     "test124",
 				Type:    "a-f-G",
-				Time:    cotlib.CoTTime(refTime),
-				Start:   cotlib.CoTTime(refTime),
-				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
-				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
+				Time:    CoTTime(refTime),
+				Start:   CoTTime(refTime),
+				Stale:   CoTTime(refTime.Add(10 * time.Second)),
+				Point:   Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid with negative offset",
-			event: &cotlib.Event{
+			event: &Event{
 				Version: "2.0",
 				Uid:     "test125",
 				Type:    "a-f-G",
-				Time:    cotlib.CoTTime(refTime),
-				Start:   cotlib.CoTTime(refTime),
-				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
-				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
+				Time:    CoTTime(refTime),
+				Start:   CoTTime(refTime),
+				Stale:   CoTTime(refTime.Add(10 * time.Second)),
+				Point:   Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
 			},
 			wantErr: false,
 		},
 		{
 			name: "invalid format",
-			event: &cotlib.Event{
+			event: &Event{
 				Version: "2.0",
 				Uid:     "test126",
 				Type:    "a-f-G",
-				Time:    cotlib.CoTTime(refTime),
-				Start:   cotlib.CoTTime(refTime.Add(time.Hour)), // Invalid: start after time
-				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
-				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
+				Time:    CoTTime(refTime),
+				Start:   CoTTime(refTime.Add(time.Hour)), // Invalid: start after time
+				Stale:   CoTTime(refTime.Add(10 * time.Second)),
+				Point:   Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
 			},
 			wantErr: true,
 		},
@@ -258,15 +256,15 @@ func TestTimeParsing(t *testing.T) {
 
 func TestEventValidation(t *testing.T) {
 	now := time.Now().UTC()
-	validEvent := &cotlib.Event{
+	validEvent := &Event{
 		Version: "2.0",
 		Uid:     "test-uid",
 		Type:    "a-f-G",
 		How:     "m-g",
-		Time:    cotlib.CoTTime(now),
-		Start:   cotlib.CoTTime(now),
-		Stale:   cotlib.CoTTime(now.Add(6 * time.Second)),
-		Point: cotlib.Point{
+		Time:    CoTTime(now),
+		Start:   CoTTime(now),
+		Stale:   CoTTime(now.Add(6 * time.Second)),
+		Point: Point{
 			Lat: 0,
 			Lon: 0,
 			Hae: 0,
@@ -283,7 +281,7 @@ func TestEventValidation(t *testing.T) {
 
 	t.Run("invalid_start_time", func(t *testing.T) {
 		event := *validEvent
-		event.Start = cotlib.CoTTime(event.Time.Time().Add(time.Hour))
+		event.Start = CoTTime(event.Time.Time().Add(time.Hour))
 		if err := event.Validate(); err == nil {
 			t.Error("Event.Validate() error = nil, wantErr true")
 		}
@@ -291,7 +289,7 @@ func TestEventValidation(t *testing.T) {
 
 	t.Run("invalid_stale_time", func(t *testing.T) {
 		event := *validEvent
-		event.Stale = cotlib.CoTTime(event.Time.Time().Add(4 * time.Second))
+		event.Stale = CoTTime(event.Time.Time().Add(4 * time.Second))
 		if err := event.Validate(); err == nil {
 			t.Error("Event.Validate() error = nil, wantErr true")
 		}
@@ -301,7 +299,7 @@ func TestEventValidation(t *testing.T) {
 		event := *validEvent
 		// Use a non-TAK type to ensure stale time validation
 		event.Type = "a-f-G"
-		event.Stale = cotlib.CoTTime(event.Time.Time().Add(8 * 24 * time.Hour))
+		event.Stale = CoTTime(event.Time.Time().Add(8 * 24 * time.Hour))
 		if err := event.Validate(); err == nil {
 			t.Error("Event.Validate() error = nil, wantErr true for non-TAK type with stale > 7 days")
 		}
@@ -315,9 +313,9 @@ func TestEventValidation(t *testing.T) {
 
 	t.Run("event_too_far_in_past", func(t *testing.T) {
 		event := *validEvent
-		event.Time = cotlib.CoTTime(now.Add(-25 * time.Hour))
-		event.Start = cotlib.CoTTime(event.Time.Time())
-		event.Stale = cotlib.CoTTime(event.Time.Time().Add(6 * time.Second))
+		event.Time = CoTTime(now.Add(-25 * time.Hour))
+		event.Start = CoTTime(event.Time.Time())
+		event.Stale = CoTTime(event.Time.Time().Add(6 * time.Second))
 		if err := event.Validate(); err == nil {
 			t.Error("Event.Validate() error = nil, wantErr true")
 		}
@@ -325,9 +323,9 @@ func TestEventValidation(t *testing.T) {
 
 	t.Run("event_too_far_in_future", func(t *testing.T) {
 		event := *validEvent
-		event.Time = cotlib.CoTTime(now.Add(25 * time.Hour))
-		event.Start = cotlib.CoTTime(event.Time.Time())
-		event.Stale = cotlib.CoTTime(event.Time.Time().Add(6 * time.Second))
+		event.Time = CoTTime(now.Add(25 * time.Hour))
+		event.Start = CoTTime(event.Time.Time())
+		event.Stale = CoTTime(event.Time.Time().Add(6 * time.Second))
 		if err := event.Validate(); err == nil {
 			t.Error("Event.Validate() error = nil, wantErr true")
 		}
@@ -335,7 +333,7 @@ func TestEventValidation(t *testing.T) {
 }
 
 func TestEventPredicate(t *testing.T) {
-	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
+	evt, err := NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
 	if err != nil {
 		t.Fatalf("NewEvent failed: %v", err)
 	}
@@ -362,13 +360,13 @@ func TestEventPredicate(t *testing.T) {
 }
 
 func TestEventLinks(t *testing.T) {
-	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
+	evt, err := NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
 	if err != nil {
 		t.Fatalf("NewEvent failed: %v", err)
 	}
 
 	// Add a link
-	evt.AddLink(&cotlib.Link{
+	evt.AddLink(&Link{
 		Uid:      "TARGET1",
 		Type:     "member",
 		Relation: "wingman",
@@ -396,9 +394,9 @@ func TestEventLogging(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
-	ctx = cotlib.WithLogger(ctx, logger)
+	ctx = WithLogger(ctx, logger)
 
-	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
+	evt, err := NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
 	if err != nil {
 		t.Fatalf("NewEvent failed: %v", err)
 	}
@@ -426,7 +424,7 @@ func TestValidateType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := cotlib.ValidateType(tt.typ)
+			err := ValidateType(tt.typ)
 			if (err == nil) != tt.expected {
 				t.Errorf("ValidateType(%q) = %v, want %v", tt.typ, err == nil, tt.expected)
 			}
@@ -445,7 +443,7 @@ func TestWildcardExpansion(t *testing.T) {
 	}
 
 	for _, typ := range expandedTypes {
-		if err := cotlib.ValidateType(typ); err != nil {
+		if err := ValidateType(typ); err != nil {
 			t.Errorf("Expected expanded type %s to be valid, got error: %v", typ, err)
 		}
 	}
@@ -454,15 +452,15 @@ func TestWildcardExpansion(t *testing.T) {
 func TestRegisterCoTType(t *testing.T) {
 	// Test registering a valid custom type that extends a standard prefix
 	customType := "a-f-G-E-V-custom"
-	cotlib.RegisterCoTType(customType)
-	if err := cotlib.ValidateType(customType); err != nil {
+	RegisterCoTType(customType)
+	if err := ValidateType(customType); err != nil {
 		t.Errorf("Expected type %s with standard prefix to be valid after registration, got error: %v", customType, err)
 	}
 
 	// Test that invalid types cannot be registered
 	invalidType := "a-f"
-	cotlib.RegisterCoTType(invalidType)
-	if err := cotlib.ValidateType(invalidType); err == nil {
+	RegisterCoTType(invalidType)
+	if err := ValidateType(invalidType); err == nil {
 		t.Error("Expected incomplete type to remain invalid even after registration")
 	}
 }
@@ -479,7 +477,7 @@ func TestEmbeddedTypesValidation(t *testing.T) {
 	}
 
 	for _, typ := range tacticalTypes {
-		if err := cotlib.ValidateType(typ); err != nil {
+		if err := ValidateType(typ); err != nil {
 			t.Errorf("Embedded tactical type %q failed validation: %v", typ, err)
 		}
 	}
@@ -494,7 +492,7 @@ func TestEmbeddedTypesValidation(t *testing.T) {
 	}
 
 	for _, typ := range bitsTypes {
-		if err := cotlib.ValidateType(typ); err != nil {
+		if err := ValidateType(typ); err != nil {
 			t.Errorf("Embedded bits type %q failed validation: %v", typ, err)
 		}
 	}
@@ -509,7 +507,7 @@ func TestEmbeddedTypesValidation(t *testing.T) {
 	}
 
 	for _, typ := range takTypes {
-		if err := cotlib.ValidateType(typ); err != nil {
+		if err := ValidateType(typ); err != nil {
 			t.Errorf("Embedded TAK type %q failed validation: %v", typ, err)
 		}
 	}
@@ -525,7 +523,7 @@ func TestEmbeddedTypesValidation(t *testing.T) {
 	}
 
 	for _, typ := range taskingTypes {
-		if err := cotlib.ValidateType(typ); err != nil {
+		if err := ValidateType(typ); err != nil {
 			t.Errorf("Embedded tasking type %q failed validation: %v", typ, err)
 		}
 	}
@@ -538,7 +536,7 @@ func TestEmbeddedTypesValidation(t *testing.T) {
 	}
 
 	for _, typ := range replyTypes {
-		if err := cotlib.ValidateType(typ); err != nil {
+		if err := ValidateType(typ); err != nil {
 			t.Errorf("Embedded reply type %q failed validation: %v", typ, err)
 		}
 	}
@@ -553,7 +551,7 @@ func TestEmbeddedTypesValidation(t *testing.T) {
 	}
 
 	for _, typ := range capabilityTypes {
-		if err := cotlib.ValidateType(typ); err != nil {
+		if err := ValidateType(typ); err != nil {
 			t.Errorf("Embedded capability type %q failed validation: %v", typ, err)
 		}
 	}
@@ -562,12 +560,12 @@ func TestEmbeddedTypesValidation(t *testing.T) {
 func TestPointValidation(t *testing.T) {
 	tests := []struct {
 		name    string
-		point   *cotlib.Point
+		point   *Point
 		wantErr bool
 	}{
 		{
 			name: "valid point",
-			point: &cotlib.Point{
+			point: &Point{
 				Lat: 37.7749,
 				Lon: -122.4194,
 				Hae: 100.0,
@@ -578,7 +576,7 @@ func TestPointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid latitude",
-			point: &cotlib.Point{
+			point: &Point{
 				Lat: 91.0,
 				Lon: -122.4194,
 				Hae: 100.0,
@@ -589,7 +587,7 @@ func TestPointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid longitude",
-			point: &cotlib.Point{
+			point: &Point{
 				Lat: 37.7749,
 				Lon: 181.0,
 				Hae: 100.0,
@@ -600,7 +598,7 @@ func TestPointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid HAE",
-			point: &cotlib.Point{
+			point: &Point{
 				Lat: 37.7749,
 				Lon: -122.4194,
 				Hae: -13000.0,
@@ -611,7 +609,7 @@ func TestPointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid CE",
-			point: &cotlib.Point{
+			point: &Point{
 				Lat: 37.7749,
 				Lon: -122.4194,
 				Hae: 100.0,
@@ -622,7 +620,7 @@ func TestPointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid LE",
-			point: &cotlib.Point{
+			point: &Point{
 				Lat: 37.7749,
 				Lon: -122.4194,
 				Hae: 100.0,
@@ -641,4 +639,88 @@ func TestPointValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTypeCatalogFunctions(t *testing.T) {
+	// Test GetTypeFullName
+	t.Run("get_full_name", func(t *testing.T) {
+		fullName, err := GetTypeFullName("a-f-G-E-X-N")
+		if err != nil {
+			t.Fatalf("GetTypeFullName() error = %v", err)
+		}
+		if fullName != "Gnd/Equip/Nbc Equipment" {
+			t.Errorf("GetTypeFullName() = %v, want %v", fullName, "Gnd/Equip/Nbc Equipment")
+		}
+
+		// Test non-existent type
+		_, err = GetTypeFullName("nonexistent-type")
+		if err == nil {
+			t.Error("GetTypeFullName() expected error for non-existent type")
+		}
+	})
+
+	// Test GetTypeDescription
+	t.Run("get_description", func(t *testing.T) {
+		desc, err := GetTypeDescription("a-f-G-E-X-N")
+		if err != nil {
+			t.Fatalf("GetTypeDescription() error = %v", err)
+		}
+		if desc != "NBC EQUIPMENT" {
+			t.Errorf("GetTypeDescription() = %v, want %v", desc, "NBC EQUIPMENT")
+		}
+
+		// Test non-existent type
+		_, err = GetTypeDescription("nonexistent-type")
+		if err == nil {
+			t.Error("GetTypeDescription() expected error for non-existent type")
+		}
+	})
+
+	// Test FindTypesByDescription
+	t.Run("find_by_description", func(t *testing.T) {
+		types := FindTypesByDescription("NBC")
+		if len(types) == 0 {
+			t.Error("FindTypesByDescription() returned no matches")
+		}
+		found := false
+		for _, typ := range types {
+			if typ.Name == "a-f-G-E-X-N" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("FindTypesByDescription() did not find expected type")
+		}
+
+		// Test no matches
+		types = FindTypesByDescription("nonexistent")
+		if len(types) != 0 {
+			t.Error("FindTypesByDescription() returned matches for nonexistent description")
+		}
+	})
+
+	// Test FindTypesByFullName
+	t.Run("find_by_full_name", func(t *testing.T) {
+		types := FindTypesByFullName("Nbc Equipment")
+		if len(types) == 0 {
+			t.Error("FindTypesByFullName() returned no matches")
+		}
+		found := false
+		for _, typ := range types {
+			if typ.Name == "a-f-G-E-X-N" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("FindTypesByFullName() did not find expected type")
+		}
+
+		// Test no matches
+		types = FindTypesByFullName("nonexistent")
+		if len(types) != 0 {
+			t.Error("FindTypesByFullName() returned matches for nonexistent name")
+		}
+	})
 }

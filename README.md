@@ -40,7 +40,7 @@ A Go implementation of the Cursor on Target (CoT) protocol, focusing on security
 ## Installation
 
 ```bash
-go get github.com/NERVsystems/cotlib/v0.2.0
+go get github.com/NERVsystems/cotlib
 ```
 
 ## CoT Types

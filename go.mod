@@ -1,4 +1,4 @@
-module github.com/NERVsystems/cotlib/v0.2.0
+module github.com/NERVsystems/cotlib
 
 go 1.22.0
 

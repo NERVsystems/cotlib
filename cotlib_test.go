@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pdfinn/cotlib"
+	"github.com/NERVsystems/cotlib"
 )
 
 // Constants for testing

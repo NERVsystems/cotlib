@@ -1,4 +1,4 @@
-module github.com/pdfinn/cotlib
+module github.com/NERVsystems/cotlib
 
 go 1.23.0
 

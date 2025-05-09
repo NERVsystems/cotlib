@@ -39,9 +39,9 @@ func TestTypeValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, ok := GetCatalog().GetType(tt.typ)
-			if ok == tt.wantErr {
-				t.Errorf("GetType() ok = %v, wantErr %v", ok, tt.wantErr)
+			_, err := GetCatalog().GetType(tt.typ)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetType() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

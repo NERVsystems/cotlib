@@ -2,6 +2,7 @@ package cottypes_test
 
 import (
 	"fmt"
+	"log/slog"
 	"sort"
 	"testing"
 
@@ -9,7 +10,14 @@ import (
 )
 
 func TestTypeMetadata(t *testing.T) {
+	// Create a test logger
+	logger := slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	cottypes.SetLogger(logger)
+
 	cat := cottypes.GetCatalog()
+	if cat == nil {
+		t.Fatal("GetCatalog() returned nil")
+	}
 
 	// Test a known type
 	typ := "a-f-G-E-X-N" // NBC Equipment
@@ -100,8 +108,28 @@ func TestTypeMetadata(t *testing.T) {
 
 func TestTypeCatalogFunctions(t *testing.T) {
 	cat := cottypes.GetCatalog()
+	if cat == nil {
+		t.Fatal("GetCatalog() returned nil")
+	}
 
-	// Test GetTypeFullName
+	// Test GetType
+	t.Run("get_type", func(t *testing.T) {
+		typ, err := cat.GetType("a-f-G-E-X-N")
+		if err != nil {
+			t.Fatalf("GetType() error = %v", err)
+		}
+		if typ.Name != "a-f-G-E-X-N" {
+			t.Errorf("GetType() = %v, want %v", typ.Name, "a-f-G-E-X-N")
+		}
+
+		// Test non-existent type
+		_, err = cat.GetType("nonexistent-type")
+		if err == nil {
+			t.Error("GetType() expected error for non-existent type")
+		}
+	})
+
+	// Test GetFullName
 	t.Run("get_full_name", func(t *testing.T) {
 		fullName, err := cat.GetFullName("a-f-G-E-X-N")
 		if err != nil {
@@ -118,7 +146,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 		}
 	})
 
-	// Test GetTypeDescription
+	// Test GetDescription
 	t.Run("get_description", func(t *testing.T) {
 		desc, err := cat.GetDescription("a-f-G-E-X-N")
 		if err != nil {
@@ -184,6 +212,70 @@ func TestTypeCatalogFunctions(t *testing.T) {
 	})
 }
 
+func TestCatalogContents(t *testing.T) {
+	cat := cottypes.GetCatalog()
+	if cat == nil {
+		t.Fatal("GetCatalog() returned nil")
+	}
+
+	// Get all types
+	var types []cottypes.Type
+	for _, typ := range cat.FindByDescription("") {
+		types = append(types, typ)
+	}
+
+	// Sort by name for consistent output
+	sort.Slice(types, func(i, j int) bool {
+		return types[i].Name < types[j].Name
+	})
+
+	// Verify we have some types
+	if len(types) == 0 {
+		t.Error("Catalog is empty")
+	}
+
+	// Verify each type has required fields
+	for _, typ := range types {
+		if typ.Name == "" {
+			t.Errorf("Type has empty name: %+v", typ)
+		}
+		if typ.FullName == "" {
+			t.Errorf("Type has empty full name: %+v", typ)
+		}
+		if typ.Description == "" {
+			t.Errorf("Type has empty description: %+v", typ)
+		}
+	}
+}
+
+func TestCatalogInitialization(t *testing.T) {
+	// Test that GetCatalog returns the same instance
+	cat1 := cottypes.GetCatalog()
+	cat2 := cottypes.GetCatalog()
+	if cat1 != cat2 {
+		t.Error("GetCatalog() returned different instances")
+	}
+
+	// Test that catalog is properly initialized
+	if cat1 == nil {
+		t.Fatal("GetCatalog() returned nil")
+	}
+
+	// Test that we have some types
+	types := cat1.GetAllTypes()
+	if len(types) == 0 {
+		t.Error("Catalog is empty")
+	}
+
+	// Test that critical types exist
+	criticalTypes := []string{"a-f-G-E-X-N", "a-h-G-E-X-N", "a-n-G-E-X-N", "a-u-G-E-X-N"}
+	for _, typ := range criticalTypes {
+		if _, err := cat1.GetType(typ); err != nil {
+			t.Errorf("Critical type %s not found: %v", typ, err)
+		}
+	}
+}
+
 func ExampleCatalog_GetFullName() {
 	cat := cottypes.GetCatalog()
 	fullName, err := cat.GetFullName("a-f-G-E-X-N")
@@ -191,8 +283,8 @@ func ExampleCatalog_GetFullName() {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	fmt.Printf("Full name: %s\n", fullName)
-	// Output: Full name: Gnd/Equip/Nbc Equipment
+	fmt.Println(fullName)
+	// Output: Gnd/Equip/Nbc Equipment
 }
 
 func ExampleCatalog_GetDescription() {
@@ -202,40 +294,30 @@ func ExampleCatalog_GetDescription() {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	fmt.Printf("Description: %s\n", desc)
-	// Output: Description: NBC EQUIPMENT
+	fmt.Println(desc)
+	// Output: NBC EQUIPMENT
 }
 
 func ExampleCatalog_FindByDescription() {
 	cat := cottypes.GetCatalog()
-	types := cat.FindByDescription("NBC EQUIPMENT")
-	// Sort by name for consistent output
-	sort.Slice(types, func(i, j int) bool {
-		return types[i].Name < types[j].Name
-	})
+	types := cat.FindByDescription("NBC")
 	for _, t := range types {
-		fmt.Printf("Found type: %s (%s)\n", t.Name, t.Description)
+		fmt.Printf("%s: %s\n", t.Name, t.Description)
 	}
-	// Output:
-	// Found type: a-f-G-E-X-N (NBC EQUIPMENT)
-	// Found type: a-h-G-E-X-N (NBC EQUIPMENT)
-	// Found type: a-n-G-E-X-N (NBC EQUIPMENT)
-	// Found type: a-u-G-E-X-N (NBC EQUIPMENT)
+	// Output: a-f-G-E-X-N: NBC EQUIPMENT
+	// a-h-G-E-X-N: NBC EQUIPMENT
+	// a-n-G-E-X-N: NBC EQUIPMENT
+	// a-u-G-E-X-N: NBC EQUIPMENT
 }
 
 func ExampleCatalog_FindByFullName() {
 	cat := cottypes.GetCatalog()
-	types := cat.FindByFullName("Gnd/Equip/Nbc Equipment")
-	// Sort by name for consistent output
-	sort.Slice(types, func(i, j int) bool {
-		return types[i].Name < types[j].Name
-	})
+	types := cat.FindByFullName("Nbc Equipment")
 	for _, t := range types {
-		fmt.Printf("Found type: %s (%s)\n", t.Name, t.FullName)
+		fmt.Printf("%s: %s\n", t.Name, t.FullName)
 	}
-	// Output:
-	// Found type: a-f-G-E-X-N (Gnd/Equip/Nbc Equipment)
-	// Found type: a-h-G-E-X-N (Gnd/Equip/Nbc Equipment)
-	// Found type: a-n-G-E-X-N (Gnd/Equip/Nbc Equipment)
-	// Found type: a-u-G-E-X-N (Gnd/Equip/Nbc Equipment)
+	// Output: a-f-G-E-X-N: Gnd/Equip/Nbc Equipment
+	// a-h-G-E-X-N: Gnd/Equip/Nbc Equipment
+	// a-n-G-E-X-N: Gnd/Equip/Nbc Equipment
+	// a-u-G-E-X-N: Gnd/Equip/Nbc Equipment
 }

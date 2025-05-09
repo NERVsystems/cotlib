@@ -258,7 +258,8 @@ func LoadCoTTypesFromFile(path string) error {
 
 // LookupType returns the Type for the given name if it exists
 func LookupType(name string) (cottypes.Type, bool) {
-	return cottypes.GetCatalog().GetType(name)
+	t, err := cottypes.GetCatalog().GetType(name)
+	return t, err == nil
 }
 
 // FindTypes returns all types matching the given query

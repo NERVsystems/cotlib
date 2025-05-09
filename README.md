@@ -45,34 +45,56 @@ go get github.com/pdfinn/cotlib
 
 ## CoT Types
 
-This library uses the official CoT types specification from [NERVsystems/cot-types](https://github.com/NERVsystems/cot-types) as a git submodule. The types are used in two ways:
-
-1. **Embedded Types**: For fast validation without XML parsing
-2. **XML Specification**: For complete type information including descriptions
-
-### Setting up the Submodule
-
-To use the complete type specification, initialize the submodule:
-
-```bash
-git submodule update --init
-```
+This library implements a comprehensive set of CoT types directly embedded in the code for fast and secure validation. The types are derived from the official CoT specification and cover all common use cases.
 
 ### Type Validation
 
-The library provides two ways to validate CoT types:
-
-1. **Fast Validation** (default): Uses embedded types for quick validation
-2. **Complete Validation**: Loads the full XML specification
+The library provides fast, secure type validation through embedded types:
 
 ```go
-// Fast validation (uses embedded types)
-err := cotlib.ValidateType("a-f-G")
+// Validate a CoT type
+err := cotlib.ValidateType("a-f-G") // Friendly ground unit
+if err != nil {
+    log.Fatal(err)
+}
 
-// Complete validation (loads XML specification)
-err := cotlib.LoadTypesFromXML()
-err = cotlib.ValidateType("a-f-G")
+// Register a custom type if needed
+cotlib.RegisterCoTType("a-c-my-custom-type")
 ```
+
+The embedded types include:
+- All standard tactical symbols (a-*)
+- Common bits types (b-*)
+- Message types (t-*)
+- Tasking types (t-k, t-s, etc.)
+- Reply types (y-*)
+- Capability types (c-*)
+
+### Type Predicates
+
+The library provides type predicates for common patterns:
+
+```go
+// Check if an event is a friendly unit
+if evt.Is("friend") {
+    // Handle friendly unit
+}
+
+// Check if an event is a ground track
+if evt.Is("ground") {
+    // Handle ground track
+}
+```
+
+Available predicates:
+- `atom`: Any type starting with "a"
+- `friend`: Friendly force (a-f)
+- `hostile`: Hostile force (a-h)
+- `unknown`: Unknown force (a-u)
+- `neutral`: Neutral force (a-n)
+- `ground`: Ground track (-G)
+- `air`: Air track (-A)
+- `pending`: Pending/planned track (-P)
 
 ## Usage Examples
 

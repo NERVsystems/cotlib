@@ -1,4 +1,4 @@
-package cotlib
+package cotlib_test
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 
 // Constants for testing
 const (
-	cotTimeFormat  = "2006-01-02T15:04:05Z"
-	minStaleOffset = 5 * time.Second
+	cotTimeFormat   = "2006-01-02T15:04:05Z"
+	testStaleOffset = 5 * time.Second
 )
 
 func TestMain(m *testing.M) {
@@ -108,8 +108,8 @@ func TestNewPresenceEvent(t *testing.T) {
 
 	// Verify stale time is set correctly (more than 5 seconds after event time)
 	staleDiff := evt.Stale.Time().Sub(evt.Time.Time())
-	if staleDiff <= minStaleOffset {
-		t.Errorf("Stale time difference = %v, want > %v", staleDiff, minStaleOffset)
+	if staleDiff <= testStaleOffset {
+		t.Errorf("Stale time difference = %v, want > %v", staleDiff, testStaleOffset)
 	}
 }
 
@@ -180,7 +180,7 @@ func TestTimeParsing(t *testing.T) {
 				Time:    cotlib.CoTTime(refTime),
 				Start:   cotlib.CoTTime(refTime),
 				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
-				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0},
+				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
 			},
 			wantErr: false,
 		},
@@ -193,7 +193,7 @@ func TestTimeParsing(t *testing.T) {
 				Time:    cotlib.CoTTime(refTime),
 				Start:   cotlib.CoTTime(refTime),
 				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
-				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0},
+				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
 			},
 			wantErr: false,
 		},
@@ -206,7 +206,7 @@ func TestTimeParsing(t *testing.T) {
 				Time:    cotlib.CoTTime(refTime),
 				Start:   cotlib.CoTTime(refTime),
 				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
-				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0},
+				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
 			},
 			wantErr: false,
 		},
@@ -219,7 +219,7 @@ func TestTimeParsing(t *testing.T) {
 				Time:    cotlib.CoTTime(refTime),
 				Start:   cotlib.CoTTime(refTime.Add(time.Hour)), // Invalid: start after time
 				Stale:   cotlib.CoTTime(refTime.Add(10 * time.Second)),
-				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0},
+				Point:   cotlib.Point{Lat: 30.0, Lon: -85.0, Ce: 9999999.0, Le: 9999999.0},
 			},
 			wantErr: true,
 		},
@@ -556,5 +556,89 @@ func TestEmbeddedTypesValidation(t *testing.T) {
 		if err := cotlib.ValidateType(typ); err != nil {
 			t.Errorf("Embedded capability type %q failed validation: %v", typ, err)
 		}
+	}
+}
+
+func TestPointValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		point   *cotlib.Point
+		wantErr bool
+	}{
+		{
+			name: "valid point",
+			point: &cotlib.Point{
+				Lat: 37.7749,
+				Lon: -122.4194,
+				Hae: 100.0,
+				Ce:  9999999.0,
+				Le:  9999999.0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid latitude",
+			point: &cotlib.Point{
+				Lat: 91.0,
+				Lon: -122.4194,
+				Hae: 100.0,
+				Ce:  9999999.0,
+				Le:  9999999.0,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid longitude",
+			point: &cotlib.Point{
+				Lat: 37.7749,
+				Lon: 181.0,
+				Hae: 100.0,
+				Ce:  9999999.0,
+				Le:  9999999.0,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid HAE",
+			point: &cotlib.Point{
+				Lat: 37.7749,
+				Lon: -122.4194,
+				Hae: -13000.0,
+				Ce:  9999999.0,
+				Le:  9999999.0,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid CE",
+			point: &cotlib.Point{
+				Lat: 37.7749,
+				Lon: -122.4194,
+				Hae: 100.0,
+				Ce:  0.0,
+				Le:  9999999.0,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid LE",
+			point: &cotlib.Point{
+				Lat: 37.7749,
+				Lon: -122.4194,
+				Hae: 100.0,
+				Ce:  9999999.0,
+				Le:  0.0,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.point.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Point.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }

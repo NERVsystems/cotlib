@@ -1,4 +1,4 @@
-package cotlib
+package cotlib_test
 
 import (
 	"fmt"
@@ -124,4 +124,44 @@ func ExampleValidateType() {
 	// Type b-d: true
 	// Type t-x-takp-v: true
 	// Type invalid: false
+}
+
+// Example_typePredicates demonstrates using type predicates
+func Example_typePredicates() {
+	// Create some example events
+	events := []*cotlib.Event{
+		{Type: "a-f-G-U-C"}, // Friendly ground combat unit
+		{Type: "a-h-A-M-F"}, // Hostile fixed wing aircraft
+		{Type: "b-d-c-n-r"}, // NBC radiation detection
+		{Type: "t-s-i-e"},   // ISR EO tasking
+	}
+
+	// Test various predicates
+	predicates := []string{"atom", "friend", "hostile", "ground", "air"}
+
+	for _, evt := range events {
+		fmt.Printf("\nEvent type: %s\n", evt.Type)
+		for _, pred := range predicates {
+			if evt.Is(pred) {
+				fmt.Printf("  Matches predicate: %s\n", pred)
+			}
+		}
+	}
+
+	// Output:
+	// Event type: a-f-G-U-C
+	//   Matches predicate: atom
+	//   Matches predicate: friend
+	//   Matches predicate: ground
+	//
+	// Event type: a-h-A-M-F
+	//   Matches predicate: atom
+	//   Matches predicate: hostile
+	//   Matches predicate: air
+	//
+	// Event type: b-d-c-n-r
+	//   Matches predicate: atom
+	//
+	// Event type: t-s-i-e
+	//   Matches predicate: atom
 }

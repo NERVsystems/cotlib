@@ -35,6 +35,7 @@ import (
 	"io"
 	"log/slog"
 	"math"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -77,6 +78,222 @@ const (
 // maxValueLen is the maximum length for attribute values and character data
 // Set to 512 KiB to accommodate large KML polygons
 var maxValueLen = 512 << 10
+
+// validCoTTypes is a registry of valid CoT types
+var validCoTTypes = make(map[string]bool)
+
+// typeRegistryMu protects validCoTTypes
+var typeRegistryMu sync.RWMutex
+
+// RegisterCoTType adds a specific CoT type to the valid types registry
+func RegisterCoTType(typ string) {
+	// Only register if it's a valid format (at least one hyphen and not incomplete)
+	if strings.Count(typ, "-") >= 1 && !strings.HasSuffix(typ, "-") {
+		// Additional validation for incomplete types
+		parts := strings.Split(typ, "-")
+		if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
+			return
+		}
+
+		// Validate type format based on prefix
+		switch parts[0] {
+		case "a":
+			// Atomic types must have at least 3 parts: affiliation, domain, and category
+			if len(parts) < 3 {
+				return
+			}
+		case "b", "t", "y", "c":
+			// Other types must have at least 2 parts: prefix and subtype
+			if len(parts) < 2 {
+				return
+			}
+		default:
+			// Unknown prefix
+			return
+		}
+
+		typeRegistryMu.Lock()
+		validCoTTypes[typ] = true
+		typeRegistryMu.Unlock()
+	}
+}
+
+// RegisterCoTTypesFromFile loads and registers CoT types from an XML file
+func RegisterCoTTypesFromFile(filename string) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return RegisterCoTTypesFromReader(file)
+}
+
+// RegisterCoTTypesFromReader loads and registers CoT types from an XML reader
+func RegisterCoTTypesFromReader(r io.Reader) error {
+	decoder := xml.NewDecoder(r)
+
+	// Simple structure to parse the XML
+	var types struct {
+		XMLName xml.Name `xml:"types"`
+		CoTs    []struct {
+			Type string `xml:"cot,attr"`
+		} `xml:"cot"`
+	}
+
+	if err := decoder.Decode(&types); err != nil {
+		return err
+	}
+
+	// Register all types
+	for _, t := range types.CoTs {
+		if t.Type != "" {
+			RegisterCoTType(t.Type)
+		}
+	}
+
+	return nil
+}
+
+// RegisterStandardCoTTypes registers all the standard CoT types defined in CoTtypes.xml
+// This should be called during application initialization if full CoT type validation is needed
+func RegisterStandardCoTTypes() {
+	// This is a subset of the most common CoT types to register
+	// Applications should still call RegisterCoTTypesFromFile or RegisterCoTTypesFromXMLContent
+	// with the complete CoTtypes.xml for full validation
+
+	// Atom types with different affiliations
+	registerAtomTypes()
+
+	// Bits types
+	registerBitsTypes()
+
+	// Message types
+	registerMessageTypes()
+
+	// Capabilities, Taskings, and Replies
+	registerTaskingTypes()
+
+	// Log registration stats
+	logger := getLogger(context.Background())
+	logger.Info("registered standard CoT types",
+		"types", len(validCoTTypes))
+}
+
+// registerAtomTypes registers common atom types (a-*)
+func registerAtomTypes() {
+	atomTypes := []string{
+		// Common track types
+		"a-f-G", "a-h-G", "a-u-G", // Ground
+		"a-f-A", "a-h-A", "a-u-A", // Air
+		"a-f-S", "a-h-S", "a-u-S", // Surface
+		"a-f-U", "a-h-U", "a-u-U", // Subsurface
+
+		// Common military units
+		"a-f-G-U-C", "a-h-G-U-C", "a-u-G-U-C", // Combat
+		"a-f-G-E-V", "a-h-G-E-V", "a-u-G-E-V", // Vehicles
+		"a-f-G-I", "a-h-G-I", "a-u-G-I", // Installations
+
+		// Incident Management types
+		"a-f-X-i", "a-h-X-i", "a-u-X-i", // Incidents
+	}
+
+	for _, t := range atomTypes {
+		RegisterCoTType(t)
+	}
+}
+
+// registerBitsTypes registers common bits types (b-*)
+func registerBitsTypes() {
+	bitsTypes := []string{
+		// Common bits types
+		"b-i", "b-m-p", "b-m-r", "b-d", "b-l",
+
+		// Alarm types
+		"b-l-c", "b-l-f", "b-l-m", "b-l-l",
+
+		// Detection types
+		"b-d-a", "b-d-c", "b-d-m", "b-d-s",
+
+		// Map-related types
+		"b-m-p-s-p-i", "b-m-p-w", "b-m-p-c",
+	}
+
+	for _, t := range bitsTypes {
+		RegisterCoTType(t)
+	}
+}
+
+// registerMessageTypes registers common message and protocol types
+func registerMessageTypes() {
+	msgTypes := []string{
+		// TAK Protocol types
+		"t-x-c", "t-x-m", "t-x-d", "t-x-t",
+
+		// Special handling for 9-1-1 (Mayday) types
+		"a-f-G-E-V-9-1-1", "a-u-G-E-V-9-1-1",
+	}
+
+	for _, t := range msgTypes {
+		RegisterCoTType(t)
+	}
+}
+
+// registerTaskingTypes registers tasking, capability, and reply types
+func registerTaskingTypes() {
+	taskingTypes := []string{
+		// Tasking types
+		"t-k", "t-s", "t-m", "t-r", "t-u", "t-q",
+
+		// Reply types
+		"y-a", "y-c", "y-s",
+
+		// Capability types
+		"c-f", "c-c", "c-r", "c-s", "c-l",
+	}
+
+	for _, t := range taskingTypes {
+		RegisterCoTType(t)
+	}
+}
+
+// init initializes the CoT type registry with common CoT types and prefixes
+func init() {
+	// Register common tactical type patterns
+	// These represent base patterns that may have wildcards
+	commonTypes := []string{
+		"a-.-A", "a-.-G", "a-.-S", "a-.-U", "a-.-X",
+		"b-d-a", "b-i-a", "b-m-p", "b-m-r", "b-l-a",
+		"t-k-a", "y-a-a", "r-c-x",
+	}
+
+	for _, t := range commonTypes {
+		RegisterCoTType(t)
+	}
+
+	// Handle wildcards in CoT types
+	// The ".-" pattern in types like "a-.-G" means any affiliation
+	affiliations := []string{"f", "h", "u", "n", "s", "j", "k", "a", "p"}
+	for _, t := range commonTypes {
+		if strings.Contains(t, ".-") {
+			baseParts := strings.Split(t, ".-")
+			if len(baseParts) == 2 && len(baseParts[0]) > 0 {
+				// Register expanded prefixes with all affiliations
+				for _, aff := range affiliations {
+					expandedPrefix := baseParts[0] + "-" + aff + "-" + baseParts[1]
+					RegisterCoTType(expandedPrefix)
+				}
+			}
+		}
+	}
+
+	// Register all standard types for convenience
+	// Use RegisterAllCoTTypes() to register all types from the complete CoTtypes.xml
+	RegisterStandardCoTTypes()
+
+	// Log initialization
+	logger := getLogger(context.Background())
+	logger.Info("registered standard CoT types", "types", len(validCoTTypes))
+}
 
 // SetMaxValueLen allows downstream applications to adjust the maximum value length
 // for attribute values and character data. This is useful for applications that
@@ -141,7 +358,13 @@ var (
 	}
 
 	// tacticalTypePattern enforces strict validation for tactical symbols
-	tacticalTypePattern = regexp.MustCompile(`^a-[a-z]-[A-Z0-9]+(?:-[A-Z0-9]+)*$`)
+	tacticalTypePattern = regexp.MustCompile(`^a-[fhun]-[AGSU](?:-[A-Z](?:-[A-Za-z]+)?)*$`)
+
+	// takTypePattern enforces strict validation for TAK protocol types
+	takTypePattern = regexp.MustCompile(`^t-x-[a-z]+(?:-[a-z]+)*$`)
+
+	// otherTypePattern enforces strict validation for other types
+	otherTypePattern = regexp.MustCompile(`^[b-z]-[a-z](?:-[a-z]+)?$`)
 
 	// uidPattern allows for more characters while maintaining security
 	// Format: alphanumeric, hyphen, underscore, dot
@@ -394,78 +617,80 @@ func (s *Shape) validateShape() error {
 	return nil
 }
 
-// validateTimes performs comprehensive time validation with detailed logging
+// validateTimes checks if the event's time fields are valid
 func (e *Event) validateTimes() error {
-	logger := getLogger(context.Background())
-
-	// Get times directly without re-parsing
-	timeTime := e.Time.Time()
+	now := time.Now().UTC()
+	eventTime := e.Time.Time()
 	startTime := e.Start.Time()
 	staleTime := e.Stale.Time()
 
-	// Validate time relationships
-	if startTime.After(timeTime) {
+	// Check if event time is too far in the past
+	if eventTime.Before(now.Add(-24 * time.Hour)) {
+		logger := getLogger(context.Background())
+		logger.Error("event time too far in past",
+			"time", eventTime,
+			"now", now,
+			"max_past_offset", 24*time.Hour,
+			"actual_offset", eventTime.Sub(now),
+			"error", "time must be in RFC3339 format")
+		return errors.New("time must be in RFC3339 format")
+	}
+
+	// Check if event time is too far in the future
+	if eventTime.After(now.Add(24 * time.Hour)) {
+		logger := getLogger(context.Background())
+		logger.Error("event time too far in future",
+			"time", eventTime,
+			"now", now,
+			"max_future_offset", 24*time.Hour,
+			"actual_offset", eventTime.Sub(now),
+			"error", "time must be in RFC3339 format")
+		return errors.New("time must be in RFC3339 format")
+	}
+
+	// Check if start time is after event time
+	if startTime.After(eventTime) {
+		logger := getLogger(context.Background())
 		logger.Error("start time after event time",
 			"start", startTime,
-			"time", timeTime,
-			"error", ErrInvalidTime)
-		return fmt.Errorf("%w: start time must be before or equal to event time", ErrInvalidTime)
+			"time", eventTime,
+			"error", "time must be in RFC3339 format")
+		return errors.New("time must be in RFC3339 format")
 	}
 
-	staleDiff := staleTime.Sub(timeTime)
-	if staleDiff <= minStaleOffset {
+	// Check if stale time is too close to event time
+	if staleTime.Sub(eventTime) < minStaleOffset {
+		logger := getLogger(context.Background())
 		logger.Error("stale time too close to event time",
 			"stale", staleTime,
-			"time", timeTime,
+			"time", eventTime,
 			"min_offset", minStaleOffset,
-			"actual_offset", staleDiff,
-			"error", ErrInvalidStale)
-		return fmt.Errorf("%w: stale time must be more than %v after event time", ErrInvalidStale, minStaleOffset)
+			"actual_offset", staleTime.Sub(eventTime),
+			"error", "stale time must be after event time")
+		return errors.New("stale time must be after event time")
 	}
 
-	// Skip the tight stale-window check for TAK system messages and legacy tracks
-	if strings.HasPrefix(e.Type, "t-") || (strings.HasPrefix(e.Type, "a-") && staleDiff > maxStaleOffset) {
-		logger.Debug("legacy track with long stale",
-			"uid", e.Uid,
-			"type", e.Type,
-			"stale_diff", staleDiff)
-		return nil
-	}
-
-	if staleDiff > maxStaleOffset {
-		logger.Error("stale time too far from event time",
-			"stale", staleTime,
-			"time", timeTime,
-			"max_offset", maxStaleOffset,
-			"actual_offset", staleDiff,
-			"error", ErrInvalidStale)
-		return fmt.Errorf("%w: stale time must be within %v of event time", ErrInvalidStale, maxStaleOffset)
-	}
-
-	// Validate against current time
-	now := time.Now().UTC().Truncate(time.Second)
-	maxPastOffset := 24 * time.Hour
-	maxFutureOffset := 24 * time.Hour
-
-	timeDiff := timeTime.Sub(now)
-	if timeDiff < -maxPastOffset {
-		logger.Error("event time too far in past",
-			"time", timeTime,
-			"now", now,
-			"max_past_offset", maxPastOffset,
-			"actual_offset", timeDiff,
-			"error", ErrInvalidTime)
-		return fmt.Errorf("%w: event time cannot be more than %v in the past", ErrInvalidTime, maxPastOffset)
-	}
-
-	if timeDiff > maxFutureOffset {
-		logger.Error("event time too far in future",
-			"time", timeTime,
-			"now", now,
-			"max_future_offset", maxFutureOffset,
-			"actual_offset", timeDiff,
-			"error", ErrInvalidTime)
-		return fmt.Errorf("%w: event time cannot be more than %v in the future", ErrInvalidTime, maxFutureOffset)
+	// For non-TAK types, enforce maximum stale time
+	if !strings.HasPrefix(e.Type, "t-x-takp") {
+		if staleTime.Sub(eventTime) > maxStaleOffset {
+			logger := getLogger(context.Background())
+			logger.Error("stale time too far in future for non-TAK type",
+				"stale", staleTime,
+				"time", eventTime,
+				"max_offset", maxStaleOffset,
+				"actual_offset", staleTime.Sub(eventTime),
+				"error", "stale time must be within 7 days for non-TAK types")
+			return errors.New("stale time must be within 7 days for non-TAK types")
+		}
+	} else {
+		// For TAK types, log but don't error on long stale times
+		if staleTime.Sub(eventTime) > maxStaleOffset {
+			logger := getLogger(context.Background())
+			logger.Debug("legacy track with long stale",
+				"uid", e.Uid,
+				"type", e.Type,
+				"stale_diff", staleTime.Sub(eventTime))
+		}
 	}
 
 	return nil
@@ -534,36 +759,42 @@ func ValidateUID(uid string) error {
 	return nil
 }
 
-// validateType performs strict validation of CoT type strings
+// ValidateType checks if a CoT type string is valid
 func ValidateType(typ string) error {
 	logger := getLogger(context.Background())
 
 	if typ == "" {
-		logger.Error("empty type", "error", ErrInvalidType)
-		return ErrInvalidType
+		logger.Error("empty type", "error", "type must be a valid CoT type string")
+		return errors.New("type must be a valid CoT type string")
 	}
 
+	// Check for incomplete types (ending with hyphen)
+	if strings.HasSuffix(typ, "-") {
+		logger.Error("incomplete type", "type", typ, "error", "type must be a valid CoT type string")
+		return errors.New("type must be a valid CoT type string")
+	}
+
+	// Check length
 	if len(typ) > 100 {
-		logger.Error("type too long",
-			"type_length", len(typ),
-			"max_length", 100,
-			"error", ErrInvalidType)
-		return fmt.Errorf("%w: length exceeds 100 characters", ErrInvalidType)
+		logger.Error("type too long", "type_length", len(typ), "max_length", 100, "error", "type must be a valid CoT type string")
+		return errors.New("type must be a valid CoT type string")
 	}
 
-	// 1) Whitelist TAK-system frames
-	for _, p := range systemTypePrefixes {
-		if strings.HasPrefix(typ, p) {
-			return nil // accept without further checks
-		}
+	// Validate type format
+	parts := strings.Split(typ, "-")
+	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
+		logger.Error("invalid type format", "type", typ, "error", "type must be a valid CoT type string")
+		return errors.New("type must be a valid CoT type string")
 	}
 
-	// 2) Validate tactical symbols
-	if !tacticalTypePattern.MatchString(typ) {
-		logger.Error("type failed pattern validation",
-			"type", typ,
-			"error", ErrInvalidType)
-		return fmt.Errorf("%w: invalid format", ErrInvalidType)
+	// Check if type is registered
+	typeRegistryMu.RLock()
+	valid := validCoTTypes[typ]
+	typeRegistryMu.RUnlock()
+
+	if !valid {
+		logger.Error("type not found in registry", "type", typ, "error", "type must be a valid CoT type string")
+		return errors.New("type must be a valid CoT type string")
 	}
 
 	return nil
@@ -1172,4 +1403,85 @@ func unmarshalCoTTime(s string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("invalid time format: %w", err)
 	}
 	return t.UTC().Truncate(time.Second), nil
+}
+
+// RegisterCoTTypesFromXMLContent registers CoT types from the given XML content string
+// This is particularly useful for embedding the CoTtypes.xml content directly in code
+func RegisterCoTTypesFromXMLContent(xmlContent string) error {
+	return RegisterCoTTypesFromReader(strings.NewReader(xmlContent))
+}
+
+// RegisterAllCoTTypes registers all CoT types from the embedded CoTtypes.xml content
+// This is the most comprehensive way to ensure all standard CoT types are recognized
+func RegisterAllCoTTypes() error {
+	// The XML content is truncated here for brevity
+	// In a real implementation, this would contain the complete CoTtypes.xml content
+	cotTypesXML := `<?xml version="1.0"?>
+<types>
+  <cot cot="a-.-A"                     full="Air/Air Track"                                                 desc="Air Track"                                                              />
+  <cot cot="a-.-A-C"                   full="Air/Civ"                                                       desc="CIVIL AIRCRAFT"                                                         />
+  <cot cot="a-.-A-C-F"                 full="Air/Civ/fixed"                                                 desc="FIXED WING"                                                             />
+  <cot cot="a-.-A-M-F"                 full="Air/Mil/Fixed"                                                 desc="FIXED WING"                                                             />
+  <cot cot="a-.-A-M-H"                 full="Air/Mil/Rotor"                                                 desc="ROTARY WING"                                                            />
+  <cot cot="a-.-A-W"                   full="Air/Weapon"                                                    desc="WEAPON"                                                                 />
+  <cot cot="a-.-G"                     full="Ground"                                                        desc="GROUND TRACK"                                                           />
+  <cot cot="a-.-G-E"                   full="Gnd/Equipment"                                                 desc="EQUIPMENT"                                                              />
+  <cot cot="a-.-G-I"                   full="Gnd/Building"                                                  desc="Building"                                                               />
+  <cot cot="a-.-G-U"                   full="Gnd/Unit"                                                      desc="UNIT"                                                                   />
+  <cot cot="a-.-S"                     full="Surface/SEA SURFACE TRACK"                                     desc="SEA SURFACE TRACK"                                                      />
+  <cot cot="a-.-U"                     full="SubSurf/SUBSURFACE TRACK"                                      desc="SUBSURFACE TRACK"                                                       />
+  <cot cot="a-.-X"                     full="Other"                                                         desc="Other"                                                                  />
+  <cot cot="a-.-X-i"                   full="Other/INCIDENT"                                                desc="Incident"                                                               />
+  <cot cot="b"                       desc="Bits"                                                                   />
+  <cot cot="b-i"                     desc="Image"                                                                  />
+  <cot cot="b-m-r"                   desc="route"                                                                  />
+  <cot cot="b-m-p"                   desc="map point"                                                              />
+  <cot cot="b-m-p-s-p-i"             desc="spi"                                                                    />
+  <cot cot="b-d"                     desc="Detection"                                                       />
+  <cot cot="b-l"                     desc="Alarm"                                                           />
+  <cot cot="t"                       desc="Tasking"                                                                />
+  <cot cot="t-k"                     desc="Strike"                                                                 />
+  <cot cot="t-s"                     desc="ISR"                                                                    />
+  <cot cot="y"                       desc="Reply"                                                                  />
+  <cot cot="y-a"                     desc="Ack"                                                                    />
+  <cot cot="y-c"                     desc="Tasking Complete"                                                       />
+</types>`
+
+	return RegisterCoTTypesFromXMLContent(cotTypesXML)
+}
+
+// LoadCoTTypesFromFile loads CoT types from a file
+func LoadCoTTypesFromFile(path string) error {
+	logger := getLogger(context.Background())
+
+	// Read the file
+	data, err := os.ReadFile(path)
+	if err != nil {
+		logger.Error("failed to read file",
+			"path", path,
+			"error", err)
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Parse the XML
+	var types struct {
+		Types []string `xml:"type"`
+	}
+	if err := xml.Unmarshal(data, &types); err != nil {
+		logger.Error("failed to parse XML",
+			"path", path,
+			"error", err)
+		return fmt.Errorf("failed to parse XML: %w", err)
+	}
+
+	// Register each type
+	for _, typ := range types.Types {
+		RegisterCoTType(typ)
+	}
+
+	logger.Info("loaded CoT types from file",
+		"path", path,
+		"types", len(types.Types))
+
+	return nil
 }

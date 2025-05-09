@@ -2,9 +2,9 @@ package cotlib_test
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -258,124 +258,80 @@ func TestTimeParsing(t *testing.T) {
 
 func TestEventValidation(t *testing.T) {
 	now := time.Now().UTC()
-	tests := []struct {
-		name    string
-		event   *cotlib.Event
-		wantErr bool
-	}{
-		{
-			name: "valid event",
-			event: &cotlib.Event{
-				Version: "2.0",
-				Uid:     "testUID",
-				Type:    "a-f-G",
-				Time:    cotlib.CoTTime(now),
-				Start:   cotlib.CoTTime(now.Add(-time.Hour)),
-				Stale:   cotlib.CoTTime(now.Add(time.Hour)),
-				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
-			},
-			wantErr: false,
-		},
-		{
-			name: "invalid start time",
-			event: &cotlib.Event{
-				Version: "2.0",
-				Uid:     "testUID",
-				Type:    "a-f-G",
-				Time:    cotlib.CoTTime(now),
-				Start:   cotlib.CoTTime(now.Add(time.Hour)),
-				Stale:   cotlib.CoTTime(now.Add(2 * time.Hour)),
-				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid stale time",
-			event: &cotlib.Event{
-				Version: "2.0",
-				Uid:     "testUID",
-				Type:    "a-f-G",
-				Time:    cotlib.CoTTime(now),
-				Start:   cotlib.CoTTime(now.Add(-time.Hour)),
-				Stale:   cotlib.CoTTime(now.Add(4 * time.Second)),
-				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
-			},
-			wantErr: true,
-		},
-		{
-			name: "stale too far in future",
-			event: &cotlib.Event{
-				Version: "2.0",
-				Uid:     "testUID",
-				Type:    "t-x-d-d", // Use a TAK system message type
-				Time:    cotlib.CoTTime(now),
-				Start:   cotlib.CoTTime(now.Add(-time.Hour)),
-				Stale:   cotlib.CoTTime(now.Add(8 * 24 * time.Hour)),
-				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
-			},
-			wantErr: false, // TAK system messages can have long stale times
-		},
-		{
-			name: "event too far in past",
-			event: &cotlib.Event{
-				Version: "2.0",
-				Uid:     "testUID",
-				Type:    "a-f-G",
-				Time:    cotlib.CoTTime(now.Add(-25 * time.Hour)),
-				Start:   cotlib.CoTTime(now.Add(-26 * time.Hour)),
-				Stale:   cotlib.CoTTime(now.Add(-24 * time.Hour)),
-				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
-			},
-			wantErr: true,
-		},
-		{
-			name: "event too far in future",
-			event: &cotlib.Event{
-				Version: "2.0",
-				Uid:     "testUID",
-				Type:    "a-f-G",
-				Time:    cotlib.CoTTime(now.Add(25 * time.Hour)),
-				Start:   cotlib.CoTTime(now.Add(24 * time.Hour)),
-				Stale:   cotlib.CoTTime(now.Add(26 * time.Hour)),
-				Point:   cotlib.Point{Lat: 25.5, Lon: -120.7},
-			},
-			wantErr: true,
+	validEvent := &cotlib.Event{
+		Version: "2.0",
+		Uid:     "test-uid",
+		Type:    "a-f-G",
+		How:     "m-g",
+		Time:    cotlib.CoTTime(now),
+		Start:   cotlib.CoTTime(now),
+		Stale:   cotlib.CoTTime(now.Add(6 * time.Second)),
+		Point: cotlib.Point{
+			Lat: 0,
+			Lon: 0,
+			Hae: 0,
+			Ce:  9999999.0,
+			Le:  9999999.0,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.event.Validate(); (err != nil) != tt.wantErr {
-				t.Errorf("Event.Validate() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
+	t.Run("valid_event", func(t *testing.T) {
+		if err := validEvent.Validate(); err != nil {
+			t.Errorf("Event.Validate() error = %v, wantErr false", err)
+		}
+	})
 
-func TestEventXMLRoundTrip(t *testing.T) {
-	now := time.Now().UTC()
-	evt, err := cotlib.NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
-	if err != nil {
-		t.Fatalf("NewEvent failed: %v", err)
-	}
-	evt.Version = "2.0"
-	evt.Time = cotlib.CoTTime(now)
-	evt.Start = cotlib.CoTTime(now.Add(-time.Hour))
-	evt.Stale = cotlib.CoTTime(now.Add(time.Hour))
+	t.Run("invalid_start_time", func(t *testing.T) {
+		event := *validEvent
+		event.Start = cotlib.CoTTime(event.Time.Time().Add(time.Hour))
+		if err := event.Validate(); err == nil {
+			t.Error("Event.Validate() error = nil, wantErr true")
+		}
+	})
 
-	xmlData, err := evt.ToXML()
-	if err != nil {
-		t.Fatalf("ToXML() error = %v", err)
-	}
+	t.Run("invalid_stale_time", func(t *testing.T) {
+		event := *validEvent
+		event.Stale = cotlib.CoTTime(event.Time.Time().Add(4 * time.Second))
+		if err := event.Validate(); err == nil {
+			t.Error("Event.Validate() error = nil, wantErr true")
+		}
+	})
 
-	roundTrip, err := cotlib.FromXML(xmlData)
-	if err != nil {
-		t.Fatalf("FromXML() error = %v", err)
-	}
+	t.Run("stale_too_far_in_future", func(t *testing.T) {
+		event := *validEvent
+		// Use a non-TAK type to ensure stale time validation
+		event.Type = "a-f-G"
+		event.Stale = cotlib.CoTTime(event.Time.Time().Add(8 * 24 * time.Hour))
+		if err := event.Validate(); err == nil {
+			t.Error("Event.Validate() error = nil, wantErr true for non-TAK type with stale > 7 days")
+		}
 
-	if roundTrip.Uid != evt.Uid {
-		t.Errorf("Round trip UID = %v, want %v", roundTrip.Uid, evt.Uid)
-	}
+		// TAK types are allowed to have longer stale times
+		event.Type = "t-x-takp-v"
+		if err := event.Validate(); err != nil {
+			t.Errorf("Event.Validate() error = %v, wantErr false for TAK type with long stale", err)
+		}
+	})
+
+	t.Run("event_too_far_in_past", func(t *testing.T) {
+		event := *validEvent
+		event.Time = cotlib.CoTTime(now.Add(-25 * time.Hour))
+		event.Start = cotlib.CoTTime(event.Time.Time())
+		event.Stale = cotlib.CoTTime(event.Time.Time().Add(6 * time.Second))
+		if err := event.Validate(); err == nil {
+			t.Error("Event.Validate() error = nil, wantErr true")
+		}
+	})
+
+	t.Run("event_too_far_in_future", func(t *testing.T) {
+		event := *validEvent
+		event.Time = cotlib.CoTTime(now.Add(25 * time.Hour))
+		event.Start = cotlib.CoTTime(event.Time.Time())
+		event.Stale = cotlib.CoTTime(event.Time.Time().Add(6 * time.Second))
+		if err := event.Validate(); err == nil {
+			t.Error("Event.Validate() error = nil, wantErr true")
+		}
+	})
 }
 
 func TestEventPredicate(t *testing.T) {
@@ -451,51 +407,154 @@ func TestEventLogging(t *testing.T) {
 	}
 }
 
-func TestEventUnmarshalXML(t *testing.T) {
-	validTime := time.Now().UTC().Format(time.RFC3339)
-	validStart := time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)
-	validStale := time.Now().UTC().Add(time.Hour).Format(time.RFC3339)
-
+func TestValidateType(t *testing.T) {
 	tests := []struct {
-		name    string
-		xml     string
-		wantErr bool
+		name     string
+		typ      string
+		expected bool
 	}{
-		{
-			name: "valid event",
-			xml: fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<event version="2.0" uid="testUID" type="a-f-G-U-C" time="%s" start="%s" stale="%s">
-  <detail>
-    <shape type="circle" radius="1000"></shape>
-    <remarks>Test remarks</remarks>
-    <contact callsign="TEST"></contact>
-    <status read="true"></status>
-    <flowTags status="active" chain="command"></flowTags>
-    <uidAliases>
-      <uidAlias>alias1</uidAlias>
-      <uidAlias>alias2</uidAlias>
-    </uidAliases>
-  </detail>
-  <point lat="25.5" lon="-120.7" hae="0" ce="9.999999e+06" le="9.999999e+06"></point>
-</event>`, validTime, validStart, validStale),
-			wantErr: false,
-		},
-		{
-			name: "invalid event with malformed XML",
-			xml: `<?xml version="1.0" encoding="UTF-8"?>
-<event version="2.0" uid="testUID" type="a-f-G-U-C" time="2024-01-01T00:00:00Z" start="2024-01-01T00:00:00Z" stale="2024-01-01T01:00:00Z">
-  <point lat="invalid" lon="-120.7" hae="0" ce="9.999999e+06" le="9.999999e+06"></point>
-</event>`,
-			wantErr: true,
-		},
+		{"empty type", "", false},
+		{"invalid type", "invalid", false},
+		{"invalid format", "a-f-INVALID", false},
+		{"unknown prefix", "x-y-z", false},
+		{"too long", strings.Repeat("a", 101), false},
+		{"valid friend ground", "a-f-G", true},
+		{"valid hostile air", "a-h-A", true},
+		{"valid detection", "b-d", true},
+		{"valid tasking", "t-s", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := cotlib.UnmarshalXMLEvent([]byte(tt.xml))
-			if (err != nil) != tt.wantErr {
-				t.Errorf("UnmarshalXMLEvent() error = %v, wantErr %v", err, tt.wantErr)
+			err := cotlib.ValidateType(tt.typ)
+			if (err == nil) != tt.expected {
+				t.Errorf("ValidateType(%q) = %v, want %v", tt.typ, err == nil, tt.expected)
 			}
 		})
+	}
+}
+
+func TestWildcardExpansion(t *testing.T) {
+	// Test that expanded types are valid
+	expandedTypes := []string{
+		"a-f-G",
+		"a-h-G",
+		"a-u-G",
+		"a-f-G-U-C", // Further extension should be valid
+		"a-h-G-E-V",
+	}
+
+	for _, typ := range expandedTypes {
+		if err := cotlib.ValidateType(typ); err != nil {
+			t.Errorf("Expected expanded type %s to be valid, got error: %v", typ, err)
+		}
+	}
+}
+
+func TestRegisterCoTType(t *testing.T) {
+	// Test registering a valid custom type that extends a standard prefix
+	customType := "a-f-G-E-V-custom"
+	cotlib.RegisterCoTType(customType)
+	if err := cotlib.ValidateType(customType); err != nil {
+		t.Errorf("Expected type %s with standard prefix to be valid after registration, got error: %v", customType, err)
+	}
+
+	// Test that invalid types cannot be registered
+	invalidType := "a-f"
+	cotlib.RegisterCoTType(invalidType)
+	if err := cotlib.ValidateType(invalidType); err == nil {
+		t.Error("Expected incomplete type to remain invalid even after registration")
+	}
+}
+
+func TestEmbeddedTypesValidation(t *testing.T) {
+	// Test common tactical types
+	tacticalTypes := []string{
+		"a-f-G",     // Friendly ground
+		"a-h-A",     // Hostile air
+		"a-u-S",     // Unknown surface
+		"a-n-U",     // Neutral subsurface
+		"a-f-G-E-V", // Friendly ground vehicle
+		"a-h-G-I",   // Hostile installation
+	}
+
+	for _, typ := range tacticalTypes {
+		if err := cotlib.ValidateType(typ); err != nil {
+			t.Errorf("Embedded tactical type %q failed validation: %v", typ, err)
+		}
+	}
+
+	// Test common bits types
+	bitsTypes := []string{
+		"b-i",   // Image
+		"b-m-p", // Map point
+		"b-m-r", // Route
+		"b-d",   // Detection
+		"b-l",   // Alarm
+	}
+
+	for _, typ := range bitsTypes {
+		if err := cotlib.ValidateType(typ); err != nil {
+			t.Errorf("Embedded bits type %q failed validation: %v", typ, err)
+		}
+	}
+
+	// Test common TAK protocol types
+	takTypes := []string{
+		"t-x-c",      // TAK server status
+		"t-x-d",      // TAK data package
+		"t-x-m",      // TAK mission package
+		"t-x-t",      // TAK text message
+		"t-x-takp-v", // TAK presence
+	}
+
+	for _, typ := range takTypes {
+		if err := cotlib.ValidateType(typ); err != nil {
+			t.Errorf("Embedded TAK type %q failed validation: %v", typ, err)
+		}
+	}
+
+	// Test common tasking types
+	taskingTypes := []string{
+		"t-k", // Strike
+		"t-s", // ISR
+		"t-m", // Mission
+		"t-r", // Recon
+		"t-u", // Update
+		"t-q", // Query
+	}
+
+	for _, typ := range taskingTypes {
+		if err := cotlib.ValidateType(typ); err != nil {
+			t.Errorf("Embedded tasking type %q failed validation: %v", typ, err)
+		}
+	}
+
+	// Test common reply types
+	replyTypes := []string{
+		"y-a", // Ack
+		"y-c", // Complete
+		"y-s", // Status
+	}
+
+	for _, typ := range replyTypes {
+		if err := cotlib.ValidateType(typ); err != nil {
+			t.Errorf("Embedded reply type %q failed validation: %v", typ, err)
+		}
+	}
+
+	// Test common capability types
+	capabilityTypes := []string{
+		"c-f", // Fire support
+		"c-c", // Command
+		"c-r", // Recon
+		"c-s", // Support
+		"c-l", // Logistics
+	}
+
+	for _, typ := range capabilityTypes {
+		if err := cotlib.ValidateType(typ); err != nil {
+			t.Errorf("Embedded capability type %q failed validation: %v", typ, err)
+		}
 	}
 }

@@ -37,6 +37,43 @@ A Go implementation of the Cursor on Target (CoT) protocol, focusing on security
 - Strict validation of presence events and system messages
 - Semantic validation of shape parameters (radius, points)
 
+## Installation
+
+```bash
+go get github.com/pdfinn/cotlib
+```
+
+## CoT Types
+
+This library uses the official CoT types specification from [NERVsystems/cot-types](https://github.com/NERVsystems/cot-types) as a git submodule. The types are used in two ways:
+
+1. **Embedded Types**: For fast validation without XML parsing
+2. **XML Specification**: For complete type information including descriptions
+
+### Setting up the Submodule
+
+To use the complete type specification, initialize the submodule:
+
+```bash
+git submodule update --init
+```
+
+### Type Validation
+
+The library provides two ways to validate CoT types:
+
+1. **Fast Validation** (default): Uses embedded types for quick validation
+2. **Complete Validation**: Loads the full XML specification
+
+```go
+// Fast validation (uses embedded types)
+err := cotlib.ValidateType("a-f-G")
+
+// Complete validation (loads XML specification)
+err := cotlib.LoadTypesFromXML()
+err = cotlib.ValidateType("a-f-G")
+```
+
 ## Usage Examples
 
 Basic usage example:

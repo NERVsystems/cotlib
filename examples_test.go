@@ -1,143 +1,127 @@
 package cotlib_test
 
 import (
-	"encoding/xml"
 	"fmt"
-	"log/slog"
-	"time"
 
 	"github.com/pdfinn/cotlib"
 )
 
-func Example() {
-	// Create an event without hae parameter
-	event1, err := cotlib.NewEvent("test-uid-1", "a-f-G-U-C", 37.7749, -122.4194, 0.0)
-	if err != nil {
-		fmt.Printf("Error creating event: %v\n", err)
-		return
-	}
-
-	// Create an event with hae parameter
-	event2, err := cotlib.NewEvent("test-uid-2", "a-f-G-U-C", 37.7749, -122.4194, 100.0)
-	if err != nil {
-		fmt.Printf("Error creating event: %v\n", err)
-		return
-	}
-
-	// Marshal events to XML
-	xml1, err := xml.Marshal(event1)
-	if err != nil {
-		fmt.Printf("Error marshaling event1: %v\n", err)
-		return
-	}
-
-	xml2, err := xml.Marshal(event2)
-	if err != nil {
-		fmt.Printf("Error marshaling event2: %v\n", err)
-		return
-	}
-
-	fmt.Println(string(xml1))
-	fmt.Println(string(xml2))
-}
-
 func ExampleNewEvent() {
-	// Create an event without hae parameter
-	event1, err := cotlib.NewEvent("test-uid-1", "a-f-G-U-C", 37.7749, -122.4194, 0.0)
+	// Create a new event with a friendly ground unit
+	event, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
 	if err != nil {
 		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
 
-	// Create an event with hae parameter
-	event2, err := cotlib.NewEvent("test-uid-2", "a-f-G-U-C", 37.7749, -122.4194, 100.0)
-	if err != nil {
-		fmt.Printf("Error creating event: %v\n", err)
-		return
+	// Add some details
+	event.Detail = &cotlib.Detail{
+		Contact: &cotlib.Contact{
+			Callsign: "TEST-1",
+		},
 	}
 
-	fmt.Printf("Event 1: UID=%s, Type=%s, Location=(%f,%f), HAE=%f\n",
-		event1.Uid, event1.Type, event1.Point.Lat, event1.Point.Lon, event1.Point.Hae)
-	fmt.Printf("Event 2: UID=%s, Type=%s, Location=(%f,%f), HAE=%f\n",
-		event2.Uid, event2.Type, event2.Point.Lat, event2.Point.Lon, event2.Point.Hae)
-}
+	// Print event details
+	fmt.Printf("Event Type: %s\n", event.Type)
+	fmt.Printf("Location: %.2f, %.2f\n", event.Point.Lat, event.Point.Lon)
+	fmt.Printf("Callsign: %s\n", event.Detail.Contact.Callsign)
 
-func Example_robustTimeParsing() {
-	// Create an event with a timezone offset
-	now := time.Now().UTC()
-	event := &cotlib.Event{
-		Version: "2.0",
-		Uid:     "test-uid",
-		Type:    "a-f-G-U-C",
-		Time:    cotlib.CoTTime(now),
-		Start:   cotlib.CoTTime(now),
-		Stale:   cotlib.CoTTime(now.Add(time.Hour)),
-		Point:   cotlib.Point{Lat: 37.7749, Lon: -122.4194, Hae: 0.0},
-	}
-
-	// Validate the event
-	if err := event.Validate(); err != nil {
-		fmt.Printf("Error validating event: %v\n", err)
-		return
-	}
-
-	// Print the normalized times
-	fmt.Printf("Original time: %s\n", event.Time.Format(time.RFC3339))
-	fmt.Printf("Normalized time: %s\n", event.Time.Format(cotlib.CotTimeFormat))
-}
-
-func ExampleEvent_Validate() {
-	// Create a new event
-	evt, err := cotlib.NewEvent("sampleUID", "a-h-G", 25.5, -120.7, 0.0)
-	if err != nil {
-		slog.Error("failed to create event", "error", err)
-		return
-	}
-
-	// Validate the event
-	if err := evt.Validate(); err != nil {
-		slog.Error("event validation failed", "error", err)
-		return
-	}
-
-	fmt.Println("Event is valid")
+	// Output:
+	// Event Type: a-f-G
+	// Location: 30.00, -85.00
+	// Callsign: TEST-1
 }
 
 func ExampleEvent_Is() {
-	// Create a new event
-	evt, err := cotlib.NewEvent("sampleUID", "a-h-G", 25.5, -120.7, 0.0)
-	if err != nil {
-		slog.Error("failed to create event", "error", err)
-		return
-	}
-
-	// Check if it's a hostile ground track
-	if evt.Is("hostile") && evt.Is("ground") {
-		fmt.Println("This is a hostile ground track")
-	}
-}
-
-func ExampleEvent_AddLink() {
-	// Create an event
-	event, err := cotlib.NewEvent("test-uid", "a-f-G-U-C", 37.7749, -122.4194, 0.0)
+	// Create a friendly ground unit event
+	event, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
 	if err != nil {
 		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
 
-	// Add a link to another event
-	link := &cotlib.Link{
-		Uid:      "target-uid",
-		Type:     "a-f-G-U-C",
-		Relation: "p-p",
-	}
-	event.AddLink(link)
+	// Check various predicates
+	fmt.Printf("Is friendly: %v\n", event.Is("friend"))
+	fmt.Printf("Is hostile: %v\n", event.Is("hostile"))
+	fmt.Printf("Is ground: %v\n", event.Is("ground"))
+	fmt.Printf("Is air: %v\n", event.Is("air"))
 
-	// Marshal to XML to see the result
-	xmlData, err := xml.Marshal(event)
+	// Output:
+	// Is friendly: true
+	// Is hostile: false
+	// Is ground: true
+	// Is air: false
+}
+
+func ExampleEvent_AddLink() {
+	// Create a main event
+	event, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
 	if err != nil {
-		fmt.Printf("Error marshaling event: %v\n", err)
+		fmt.Printf("Error creating event: %v\n", err)
 		return
 	}
-	fmt.Println(string(xmlData))
+
+	// Add a link to another unit
+	event.AddLink(&cotlib.Link{
+		Uid:      "TARGET1",
+		Type:     "a-f-G",
+		Relation: "wingman",
+	})
+
+	// Print link details
+	for _, link := range event.Links {
+		fmt.Printf("Linked to: %s\n", link.Uid)
+		fmt.Printf("Link type: %s\n", link.Type)
+		fmt.Printf("Relation: %s\n", link.Relation)
+	}
+
+	// Output:
+	// Linked to: TARGET1
+	// Link type: a-f-G
+	// Relation: wingman
+}
+
+func ExampleEvent_InjectIdentity() {
+	// Create a new event
+	event, err := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
+	if err != nil {
+		fmt.Printf("Error creating event: %v\n", err)
+		return
+	}
+
+	// Inject identity information
+	event.InjectIdentity("self123", "Blue", "HQ")
+
+	// Print identity details
+	if event.Detail != nil && event.Detail.Group != nil {
+		fmt.Printf("Group: %s\n", event.Detail.Group.Name)
+		fmt.Printf("Role: %s\n", event.Detail.Group.Role)
+	}
+
+	// Output:
+	// Group: Blue
+	// Role: HQ
+}
+
+func ExampleValidateType() {
+	// Test various CoT types
+	types := []string{
+		"a-f-G",      // Friendly ground
+		"a-h-A",      // Hostile air
+		"b-d",        // Detection
+		"t-x-takp-v", // TAK presence
+		"invalid",    // Invalid type
+	}
+
+	for _, typ := range types {
+		err := cotlib.ValidateType(typ)
+		fmt.Printf("Type %s: %v\n", typ, err == nil)
+	}
+
+	// Output:
+	// Type a-f-G: true
+	// Type a-h-A: true
+	// Type b-d: true
+	// Type t-x-takp-v: true
+	// Type invalid: false
 }

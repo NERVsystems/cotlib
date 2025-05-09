@@ -1,0 +1,3 @@
+[submodule "cot-types"]
+	path = cot-types
+	url = https://github.com/NERVsystems/cot-types.git

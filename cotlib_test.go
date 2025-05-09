@@ -1,4 +1,4 @@
-package cotlib_test
+package cotlib
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pdfinn/cotlib"
+	"github.com/NERVsystems/cotlib"
 )
 
 // Constants for testing

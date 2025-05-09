@@ -1,9 +1,9 @@
-package cotlib_test
+package cotlib
 
 import (
 	"fmt"
 
-	"github.com/pdfinn/cotlib"
+	"github.com/NERVsystems/cotlib"
 )
 
 func ExampleNewEvent() {

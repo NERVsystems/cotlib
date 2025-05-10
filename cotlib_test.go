@@ -420,6 +420,11 @@ func TestValidateType(t *testing.T) {
 		{"valid hostile air", "a-h-A", true},
 		{"valid detection", "b-d", true},
 		{"valid tasking", "t-s", true},
+		{"unknown but valid format", "a-f-G-Z-Z-Z", false}, // Valid format but not in catalog
+		{"wildcard at end", "a-f-G-*", true},               // Should pass because wildcard at end is valid
+		{"wildcard in middle", "a-*-G", false},             // Should fail because wildcard in middle
+		{"atomic wildcard", "a-.-X", true},                 // Special wildcard format
+		{"catalog type", "a-f-G-E-X-N", true},              // Known from catalog (NBC Equipment)
 	}
 
 	for _, tt := range tests {
@@ -427,7 +432,43 @@ func TestValidateType(t *testing.T) {
 			err := ValidateType(tt.typ)
 			if (err == nil) != tt.expected {
 				t.Errorf("ValidateType(%q) = %v, want %v", tt.typ, err == nil, tt.expected)
+				if err != nil {
+					t.Logf("Error: %v", err)
+				}
 			}
+		})
+	}
+}
+
+// TestValidateTypePerformance tests the performance of the ValidateType function
+func TestValidateTypePerformance(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping performance test in short mode")
+	}
+
+	// Test a mix of valid catalog types, wildcards, and invalid types
+	types := []string{
+		"a-f-G",       // Valid basic type
+		"a-f-G-E-X-N", // Valid catalog type
+		"a-f-G-*",     // Valid wildcard
+		"a-.-X",       // Valid atomic wildcard
+		"invalid",     // Invalid
+		"a-f-INVALID", // Invalid format
+		"a-f-G-Z-Z-Z", // Unknown but valid format
+	}
+
+	// Number of iterations for each type
+	iterations := 1000
+
+	for _, typ := range types {
+		t.Run("perf_"+typ, func(t *testing.T) {
+			start := time.Now()
+			for i := 0; i < iterations; i++ {
+				_ = ValidateType(typ)
+			}
+			elapsed := time.Since(start)
+			nsPerOp := float64(elapsed.Nanoseconds()) / float64(iterations)
+			t.Logf("ValidateType(%q): %v ns/op", typ, nsPerOp)
 		})
 	}
 }

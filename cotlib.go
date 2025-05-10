@@ -440,7 +440,7 @@ func ValidateType(typ string) error {
 		return fmt.Errorf("type too long")
 	}
 
-	// Handle wildcard patterns
+	// Fast path for wildcard patterns that don't need catalog lookup
 	if strings.Contains(typ, "*") {
 		parts := strings.Split(typ, "-")
 		if len(parts) < 2 {
@@ -459,7 +459,7 @@ func ValidateType(typ string) error {
 		return nil
 	}
 
-	// Handle atomic type wildcards (a-.-X)
+	// Fast path for atomic type wildcards (a-.-X)
 	if strings.Contains(typ, ".-") {
 		parts := strings.Split(typ, "-")
 		if len(parts) < 2 {
@@ -474,9 +474,12 @@ func ValidateType(typ string) error {
 		return nil
 	}
 
-	if !isRegisteredType(typ) {
-		return fmt.Errorf("unknown type: %s", typ)
+	// Use the catalog for validation of non-wildcard types
+	_, err := cottypes.GetCatalog().GetType(typ)
+	if err != nil {
+		return fmt.Errorf("invalid type: %w", err)
 	}
+
 	return nil
 }
 

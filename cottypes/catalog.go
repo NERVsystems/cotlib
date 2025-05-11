@@ -168,7 +168,7 @@ func (c *Catalog) Upsert(name string, t Type) error {
 			"old_full_name", existing.FullName,
 			"new_full_name", t.FullName)
 	} else {
-		c.logger.Info("Added new type",
+		c.logger.Debug("Added new type",
 			"name", name,
 			"full_name", t.FullName)
 	}

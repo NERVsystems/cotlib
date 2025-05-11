@@ -10,6 +10,7 @@ import (
 	"github.com/NERVsystems/cotlib/cottypes"
 )
 
+// TestTypeMetadata tests metadata lookup and search functions for CoT types.
 func TestTypeMetadata(t *testing.T) {
 	// Create a test logger
 	logger := slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelDebug}))
@@ -107,6 +108,7 @@ func TestTypeMetadata(t *testing.T) {
 	})
 }
 
+// TestTypeCatalogFunctions tests core catalog lookup and search functions.
 func TestTypeCatalogFunctions(t *testing.T) {
 	cat := cottypes.GetCatalog()
 	if cat == nil {
@@ -213,6 +215,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 	})
 }
 
+// TestCatalogContents tests that the catalog contains valid types and required fields.
 func TestCatalogContents(t *testing.T) {
 	cat := cottypes.GetCatalog()
 	if cat == nil {
@@ -263,6 +266,7 @@ func TestCatalogContents(t *testing.T) {
 	}
 }
 
+// TestCatalogInitialization tests singleton and initialization behavior of the catalog.
 func TestCatalogInitialization(t *testing.T) {
 	// Test that GetCatalog returns the same instance
 	cat1 := cottypes.GetCatalog()
@@ -291,6 +295,7 @@ func TestCatalogInitialization(t *testing.T) {
 	}
 }
 
+// ExampleCatalog_GetFullName demonstrates how to get the full name for a CoT type.
 func ExampleCatalog_GetFullName() {
 	cat := cottypes.GetCatalog()
 	fullName, err := cat.GetFullName("a-f-G-E-X-N")
@@ -302,6 +307,7 @@ func ExampleCatalog_GetFullName() {
 	// Output: Gnd/Equip/Nbc Equipment
 }
 
+// ExampleCatalog_GetDescription demonstrates how to get the description for a CoT type.
 func ExampleCatalog_GetDescription() {
 	cat := cottypes.GetCatalog()
 	desc, err := cat.GetDescription("a-f-G-E-X-N")
@@ -313,6 +319,7 @@ func ExampleCatalog_GetDescription() {
 	// Output: NBC EQUIPMENT
 }
 
+// ExampleCatalog_FindByDescription demonstrates searching types by description.
 func ExampleCatalog_FindByDescription() {
 	// Explicitly print the expected output in the required order
 	// This avoids test failures due to map iteration order or finding additional matches
@@ -327,6 +334,7 @@ func ExampleCatalog_FindByDescription() {
 	// a-u-G-E-X-N: NBC EQUIPMENT
 }
 
+// ExampleCatalog_FindByFullName demonstrates searching types by full name.
 func ExampleCatalog_FindByFullName() {
 	// Explicitly print the expected output in the required order
 	// This avoids test failures due to map iteration order

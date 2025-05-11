@@ -7,21 +7,21 @@ import (
 	"sync"
 )
 
-// Type represents a CoT type with its metadata
+// Type represents a CoT type with its metadata.
 type Type struct {
 	Name        string // The CoT type code (e.g., "a-f-G-E-X-N")
 	FullName    string // The full name (e.g., "Gnd/Equip/Nbc Equipment")
 	Description string // The description (e.g., "NBC EQUIPMENT")
 }
 
-// Catalog maintains a registry of CoT types
+// Catalog maintains a registry of CoT types and provides lookup and search functions.
 type Catalog struct {
 	types  map[string]Type
 	mu     sync.RWMutex
 	logger *slog.Logger
 }
 
-// NewCatalog creates a new catalog instance with the given logger
+// NewCatalog creates a new catalog instance with the given logger.
 func NewCatalog(logger *slog.Logger) *Catalog {
 	return &Catalog{
 		types:  make(map[string]Type),
@@ -29,7 +29,7 @@ func NewCatalog(logger *slog.Logger) *Catalog {
 	}
 }
 
-// GetType returns the Type for the given name if it exists
+// GetType returns the Type for the given name if it exists, or an error if not found.
 func (c *Catalog) GetType(name string) (Type, error) {
 	if name == "" {
 		return Type{}, fmt.Errorf("empty type name")
@@ -47,7 +47,7 @@ func (c *Catalog) GetType(name string) (Type, error) {
 	return t, nil
 }
 
-// GetFullName returns the full name for a CoT type
+// GetFullName returns the full name for a CoT type, or an error if not found.
 func (c *Catalog) GetFullName(name string) (string, error) {
 	if name == "" {
 		return "", fmt.Errorf("empty type name")
@@ -65,7 +65,7 @@ func (c *Catalog) GetFullName(name string) (string, error) {
 	return t.FullName, nil
 }
 
-// GetDescription returns the description for a CoT type
+// GetDescription returns the description for a CoT type, or an error if not found.
 func (c *Catalog) GetDescription(name string) (string, error) {
 	if name == "" {
 		return "", fmt.Errorf("empty type name")
@@ -83,7 +83,7 @@ func (c *Catalog) GetDescription(name string) (string, error) {
 	return t.Description, nil
 }
 
-// GetAllTypes returns all types in the catalog
+// GetAllTypes returns all types in the catalog.
 func (c *Catalog) GetAllTypes() []Type {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -97,9 +97,8 @@ func (c *Catalog) GetAllTypes() []Type {
 	return types
 }
 
-// FindByDescription searches for types matching the given description
-// The search is case-insensitive and matches partial descriptions
-// If desc is empty, returns all types
+// FindByDescription searches for types matching the given description (case-insensitive, partial match).
+// If desc is empty, returns all types.
 func (c *Catalog) FindByDescription(desc string) []Type {
 	if desc == "" {
 		return c.GetAllTypes()
@@ -123,9 +122,8 @@ func (c *Catalog) FindByDescription(desc string) []Type {
 	return matches
 }
 
-// FindByFullName searches for types matching the given full name
-// The search is case-insensitive and matches partial names
-// If name is empty, returns all types
+// FindByFullName searches for types matching the given full name (case-insensitive, partial match).
+// If name is empty, returns all types.
 func (c *Catalog) FindByFullName(name string) []Type {
 	if name == "" {
 		return c.GetAllTypes()
@@ -149,7 +147,7 @@ func (c *Catalog) FindByFullName(name string) []Type {
 	return matches
 }
 
-// Upsert adds or updates a type in the catalog
+// Upsert adds or updates a type in the catalog.
 func (c *Catalog) Upsert(name string, t Type) error {
 	if name == "" {
 		return fmt.Errorf("empty type name")
@@ -178,7 +176,7 @@ func (c *Catalog) Upsert(name string, t Type) error {
 	return nil
 }
 
-// Find returns all types that match the given pattern
+// Find returns all types that match the given pattern (exact or prefix match).
 func (c *Catalog) Find(pattern string) []Type {
 	if pattern == "" {
 		return c.GetAllTypes()

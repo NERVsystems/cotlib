@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+// TestTypeValidation tests the GetType function for various valid and invalid CoT types.
 func TestTypeValidation(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -47,6 +48,7 @@ func TestTypeValidation(t *testing.T) {
 	}
 }
 
+// TestFindTypes tests the Find function for various query patterns.
 func TestFindTypes(t *testing.T) {
 	tests := []struct {
 		name     string

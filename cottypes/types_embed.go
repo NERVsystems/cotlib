@@ -15,12 +15,12 @@ var (
 	logger      = slog.Default()
 )
 
-// SetLogger sets the logger for the catalog package
+// SetLogger sets the logger for the catalog package.
 func SetLogger(l *slog.Logger) {
 	logger = l
 }
 
-// GetCatalog returns the singleton catalog instance
+// GetCatalog returns the singleton catalog instance, initializing it if necessary.
 func GetCatalog() *Catalog {
 	var initErr error
 	catalogOnce.Do(func() {
@@ -78,7 +78,7 @@ func GetCatalog() *Catalog {
 	return catalog
 }
 
-// RegisterXML registers CoT types from XML content
+// RegisterXML registers CoT types from XML content into the catalog.
 func RegisterXML(data []byte) error {
 	var types struct {
 		Types []struct {

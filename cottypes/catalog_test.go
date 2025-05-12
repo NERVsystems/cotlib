@@ -1,6 +1,7 @@
 package cottypes_test
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -347,4 +348,65 @@ func ExampleCatalog_FindByFullName() {
 	// a-h-G-E-X-N: Gnd/Equip/Nbc Equipment
 	// a-n-G-E-X-N: Gnd/Equip/Nbc Equipment
 	// a-u-G-E-X-N: Gnd/Equip/Nbc Equipment
+}
+
+// TestUpsertLoggingLevel ensures that Upsert only logs at DEBUG level, never at INFO
+func TestUpsertLoggingLevel(t *testing.T) {
+	// Create a buffer to capture log output
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
+		Level: slog.LevelDebug, // Set to debug to capture all logs
+	})
+	logger := slog.New(handler)
+
+	// Create a catalog with our logger
+	catalog := cottypes.NewCatalog(logger)
+
+	// Add a type
+	err := catalog.Upsert("test-type", cottypes.Type{
+		Name:        "test-type",
+		FullName:    "Test Type",
+		Description: "A test type",
+	})
+	if err != nil {
+		t.Fatalf("Upsert failed: %v", err)
+	}
+
+	// Get log output
+	logOutput := buf.String()
+
+	// It should contain DEBUG but not INFO for adding new types
+	if !strings.Contains(logOutput, "DEBUG") {
+		t.Error("Expected DEBUG level logs in output, but none found")
+	}
+
+	// It should not contain INFO level logs
+	if strings.Contains(logOutput, "level=INFO") && strings.Contains(logOutput, "Added") {
+		t.Error("Found INFO level logs about adding types, which should be at DEBUG level only")
+	}
+
+	// Now update the type and check again
+	buf.Reset() // Clear the buffer
+
+	err = catalog.Upsert("test-type", cottypes.Type{
+		Name:        "test-type",
+		FullName:    "Updated Test Type",
+		Description: "An updated test type",
+	})
+	if err != nil {
+		t.Fatalf("Upsert update failed: %v", err)
+	}
+
+	// Get updated log output
+	logOutput = buf.String()
+
+	// It should contain DEBUG but not INFO for updating types
+	if !strings.Contains(logOutput, "DEBUG") {
+		t.Error("Expected DEBUG level logs in output for update, but none found")
+	}
+
+	// It should not contain INFO level logs for updates
+	if strings.Contains(logOutput, "level=INFO") && strings.Contains(logOutput, "Updated") {
+		t.Error("Found INFO level logs about updating types, which should be at DEBUG level only")
+	}
 }

@@ -163,7 +163,7 @@ func (c *Catalog) Upsert(name string, t Type) error {
 	c.types[name] = t
 
 	if exists {
-		c.logger.Info("Updated existing type",
+		c.logger.Debug("Updated existing type",
 			"name", name,
 			"old_full_name", existing.FullName,
 			"new_full_name", t.FullName)

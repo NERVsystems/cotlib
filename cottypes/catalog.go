@@ -162,6 +162,8 @@ func (c *Catalog) Upsert(name string, t Type) error {
 	existing, exists := c.types[name]
 	c.types[name] = t
 
+	// Always log at DEBUG level (never INFO) to prevent log spam
+	// when adding thousands of types. The caller should log a summary instead.
 	if exists {
 		c.logger.Debug("Updated existing type",
 			"name", name,

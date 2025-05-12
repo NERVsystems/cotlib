@@ -132,6 +132,7 @@ func SetMaxValueLen(max int64) {
 }
 
 // RegisterCoTType adds a specific CoT type to the valid types registry
+// It does not log individual type registrations to avoid log spam
 func RegisterCoTType(name string) {
 	if !basicSyntaxOK(name) {
 		return
@@ -175,16 +176,53 @@ func basicSyntaxOK(name string) bool {
 
 // RegisterCoTTypesFromFile loads and registers CoT types from an XML file
 func RegisterCoTTypesFromFile(filename string) error {
+	logger := slog.Default()
+
 	file, err := os.Open(filename)
 	if err != nil {
+		logger.Error("failed to open file",
+			"path", filename,
+			"error", err)
 		return err
 	}
 	defer file.Close()
-	return RegisterCoTTypesFromReader(file)
+
+	// Simple structure to parse the XML
+	var types struct {
+		XMLName xml.Name `xml:"types"`
+		CoTs    []struct {
+			Type string `xml:"cot,attr"`
+		} `xml:"cot"`
+	}
+
+	decoder := xml.NewDecoder(file)
+	if err := decoder.Decode(&types); err != nil {
+		logger.Error("failed to decode XML",
+			"path", filename,
+			"error", err)
+		return err
+	}
+
+	// Register all types without individual logging
+	typeCount := 0
+	for _, t := range types.CoTs {
+		if t.Type != "" {
+			RegisterCoTType(t.Type)
+			typeCount++
+		}
+	}
+
+	// Log a summary at DEBUG level only
+	logger.Debug("registered CoT types from file",
+		"path", filename,
+		"type_count", typeCount)
+
+	return nil
 }
 
 // RegisterCoTTypesFromReader loads and registers CoT types from an XML reader
 func RegisterCoTTypesFromReader(r io.Reader) error {
+	logger := slog.Default()
 	decoder := xml.NewDecoder(r)
 
 	// Simple structure to parse the XML
@@ -196,15 +234,23 @@ func RegisterCoTTypesFromReader(r io.Reader) error {
 	}
 
 	if err := decoder.Decode(&types); err != nil {
+		logger.Error("failed to decode XML from reader",
+			"error", err)
 		return err
 	}
 
-	// Register all types
+	// Register all types without individual logging
+	typeCount := 0
 	for _, t := range types.CoTs {
 		if t.Type != "" {
 			RegisterCoTType(t.Type)
+			typeCount++
 		}
 	}
+
+	// Log a summary at DEBUG level only
+	logger.Debug("registered CoT types from reader",
+		"type_count", typeCount)
 
 	return nil
 }
@@ -212,7 +258,42 @@ func RegisterCoTTypesFromReader(r io.Reader) error {
 // RegisterCoTTypesFromXMLContent registers CoT types from the given XML content string
 // This is particularly useful for embedding the CoTtypes.xml content directly in code
 func RegisterCoTTypesFromXMLContent(xmlContent string) error {
-	return RegisterCoTTypesFromReader(strings.NewReader(xmlContent))
+	logger := slog.Default()
+
+	// Use a Reader for the XML content
+	reader := strings.NewReader(xmlContent)
+
+	// Use the standard decoder
+	decoder := xml.NewDecoder(reader)
+
+	// Simple structure to parse the XML
+	var types struct {
+		XMLName xml.Name `xml:"types"`
+		CoTs    []struct {
+			Type string `xml:"cot,attr"`
+		} `xml:"cot"`
+	}
+
+	if err := decoder.Decode(&types); err != nil {
+		logger.Error("failed to decode XML content",
+			"error", err)
+		return err
+	}
+
+	// Register all types without individual logging
+	typeCount := 0
+	for _, t := range types.CoTs {
+		if t.Type != "" {
+			RegisterCoTType(t.Type)
+			typeCount++
+		}
+	}
+
+	// Log a summary at DEBUG level only
+	logger.Debug("registered CoT types from XML content",
+		"type_count", typeCount)
+
+	return nil
 }
 
 // RegisterAllCoTTypes is a no-op since XML is already embedded
@@ -249,7 +330,7 @@ func LoadCoTTypesFromFile(path string) error {
 		RegisterCoTType(typ)
 	}
 
-	logger.Info("loaded CoT types from file",
+	logger.Debug("loaded CoT types from file",
 		"path", path,
 		"types", len(types.Types))
 

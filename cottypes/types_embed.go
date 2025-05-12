@@ -59,7 +59,7 @@ func GetCatalog() *Catalog {
 		}
 
 		// Log summary instead of individual successes
-		logger.Info("Catalog initialized successfully",
+		logger.Debug("Catalog initialized successfully",
 			"total_types", len(expandedTypes),
 			"loaded_types", successCount,
 			"failed_types", len(failedTypes))
@@ -162,7 +162,7 @@ func RegisterXML(data []byte) error {
 	}
 
 	// Log summary of registration
-	logger.Info("XML types registration complete",
+	logger.Debug("XML types registration complete",
 		"total_processed", len(types.Types),
 		"success_count", successCount,
 		"failed_count", failedCount)

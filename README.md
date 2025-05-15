@@ -1,5 +1,7 @@
 # CoT Library
 
+'The sum of all wisdom is a cursor over the target.'  -- Gen. John Jumper
+
 A Go library for working with Cursor-on-Target (CoT) messages.
 
 ## Features

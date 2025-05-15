@@ -1,15 +1,21 @@
 # CoT Library
 
-A Go library for working with Cursor-on-Target (CoT) messages.
+A comprehensive Go library for creating, validating, and working with Cursor-on-Target (CoT) events.
 
 ## Features
 
+- Complete CoT event creation and manipulation
+- XML serialization and deserialization with security protections
 - Full CoT type catalog with metadata
+- Coordinate and spatial data handling
+- Event relationship management
 - Type validation and registration
 - Secure logging with slog
-- Thread-safe catalog system
-- Wildcard pattern support
-- Search by description or full name
+- Thread-safe operations
+- Predicate-based event classification
+- Security-first design
+- Wildcard pattern support for types
+- Type search by description or full name
 
 ## Installation
 
@@ -19,12 +25,13 @@ go get github.com/NERVsystems/cotlib
 
 ## Usage
 
-### Basic Event Creation
+### Creating and Managing CoT Events
 
 ```go
 package main
 
 import (
+    "fmt"
     "log/slog"
     "os"
     "github.com/NERVsystems/cotlib"
@@ -33,20 +40,89 @@ import (
 func main() {
     logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
     
-    // Register a custom CoT type
-    if err := cotlib.RegisterCoTType("a-f-G-U-C-F"); err != nil {
-        logger.Error("Failed to register type", "error", err)
+    // Create a new CoT event
+    event, err := cotlib.NewEvent("UNIT-123", "a-f-G", 37.422, -122.084, 0.0)
+    if err != nil {
+        logger.Error("Failed to create event", "error", err)
         return
     }
     
-    // Validate a CoT type
-    if valid := cotlib.ValidateType("a-f-G-U-C-F"); valid {
-        logger.Info("Type is valid")
+    // Add detail information
+    event.Detail = &cotlib.Detail{
+        Contact: &cotlib.Contact{
+            Callsign: "ALPHA-7",
+        },
+        Group: &cotlib.Group{
+            Name: "Team Blue",
+            Role: "Infantry",
+        },
+    }
+    
+    // Add relationship link
+    event.AddLink(&cotlib.Link{
+        Uid:      "HQ-1",
+        Type:     "a-f-G-U-C",
+        Relation: "p-p",
+    })
+    
+    // Convert to XML
+    xmlData, err := event.ToXML()
+    if err != nil {
+        logger.Error("Failed to convert to XML", "error", err)
+        return
+    }
+    
+    fmt.Println(string(xmlData))
+}
+```
+
+### Parsing CoT XML
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/NERVsystems/cotlib"
+)
+
+func main() {
+    xmlData := `<?xml version="1.0" encoding="UTF-8"?>
+<event version="2.0" uid="UNIT-123" type="a-f-G" time="2023-05-15T18:30:22Z" 
+       start="2023-05-15T18:30:22Z" stale="2023-05-15T18:30:32Z">
+  <point lat="37.422000" lon="-122.084000" hae="0.0" ce="9999999.0" le="9999999.0"/>
+  <detail>
+    <contact callsign="ALPHA-7"/>
+    <group name="Team Blue" role="Infantry"/>
+  </detail>
+</event>`
+
+    // Parse XML into CoT event
+    event, err := cotlib.UnmarshalXMLEvent([]byte(xmlData))
+    if err != nil {
+        fmt.Printf("Error parsing XML: %v\n", err)
+        return
+    }
+    
+    // Access event data
+    fmt.Printf("Event Type: %s\n", event.Type)
+    fmt.Printf("Location: %.6f, %.6f\n", event.Point.Lat, event.Point.Lon)
+    fmt.Printf("Callsign: %s\n", event.Detail.Contact.Callsign)
+    
+    // Check event predicates
+    if event.Is("friend") {
+        fmt.Println("This is a friendly unit")
+    }
+    
+    if event.Is("ground") {
+        fmt.Println("This is a ground-based entity")
     }
 }
 ```
 
-### Type Catalog Operations
+### Type Validation and Catalog
+
+The library provides comprehensive type validation and catalog management:
 
 ```go
 package main
@@ -58,6 +134,16 @@ import (
 )
 
 func main() {
+    // Register a custom CoT type
+    if err := cotlib.RegisterCoTType("a-f-G-U-C-F"); err != nil {
+        log.Fatal(err)
+    }
+    
+    // Validate a CoT type
+    if err := cotlib.ValidateType("a-f-G-U-C-F"); err != nil {
+        log.Fatal(err)
+    }
+    
     // Look up type metadata
     fullName, err := cotlib.GetTypeFullName("a-f-G-E-X-N")
     if err != nil {
@@ -88,10 +174,6 @@ func main() {
 }
 ```
 
-### Thread Safety
-
-All operations in the library are thread-safe. The type catalog uses internal synchronization to ensure safe concurrent access.
-
 ### Type Validation
 
 The library enforces strict validation of CoT types:
@@ -99,6 +181,19 @@ The library enforces strict validation of CoT types:
 - Standard prefix validation
 - Length limits
 - Wildcard pattern validation
+- Type catalog verification
+
+```go
+// Examples of different validation scenarios:
+cotlib.ValidateType("a-f-G")             // Valid - Friendly Ground
+cotlib.ValidateType("a-h-A")             // Valid - Hostile Air
+cotlib.ValidateType("b-d")               // Valid - Basic Detection
+cotlib.ValidateType("t-x-takp-v")        // Valid - TAK presence
+cotlib.ValidateType("a-f-G-*")           // Valid - Wildcard pattern
+cotlib.ValidateType("a-.-G")             // Valid - Atomic wildcard
+cotlib.ValidateType("invalid")           // Invalid - Fails validation
+cotlib.ValidateType("a-f-G-U-*-C")       // Invalid - Wildcard in wrong position
+```
 
 ### Custom Types
 
@@ -112,6 +207,56 @@ cotlib.RegisterCoTType("a-f-G-E-V-custom")
 if err := cotlib.ValidateType("a-f-G-E-V-custom"); err != nil {
     log.Fatal(err)
 }
+
+// Register types from a file
+if err := cotlib.RegisterCoTTypesFromFile("my-types.xml"); err != nil {
+    log.Fatal(err)
+}
+
+// Register types from a string
+xmlContent := `<types>
+    <cot cot="a-f-G-custom"/>
+    <cot cot="a-h-A-custom"/>
+</types>`
+if err := cotlib.RegisterCoTTypesFromXMLContent(xmlContent); err != nil {
+    log.Fatal(err)
+}
+```
+
+### Event Predicates
+
+The library provides convenient type classification with the `Is()` method:
+
+```go
+// Create a friendly ground unit event
+event, _ := cotlib.NewEvent("test123", "a-f-G", 30.0, -85.0, 0.0)
+
+// Check various predicates
+fmt.Printf("Is friendly: %v\n", event.Is("friend"))  // true
+fmt.Printf("Is hostile: %v\n", event.Is("hostile")) // false
+fmt.Printf("Is ground: %v\n", event.Is("ground"))   // true
+fmt.Printf("Is air: %v\n", event.Is("air"))         // false
+```
+
+### Thread Safety
+
+All operations in the library are thread-safe. The type catalog uses internal synchronization to ensure safe concurrent access.
+
+### Security Features
+
+The library implements several security measures:
+
+- XML parsing restrictions to prevent XXE attacks
+- Input validation on all fields
+- Coordinate range enforcement
+- Time field validation to prevent time-based attacks
+- Maximum value length controls
+- Secure logging practices
+
+```go
+// Set maximum allowed length for XML attribute values
+// This protects against memory exhaustion attacks
+cotlib.SetMaxValueLen(500 * 1024) // 500KB limit
 ```
 
 ### Logging

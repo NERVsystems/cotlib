@@ -1,6 +1,6 @@
 # CoT Library
 
-‘The sum of all wisdom is a cursor over the target.’  — Gen. John Jumper
+'The sum of all wisdom is a cursor over the target.'  — Gen. John Jumper
 
 A comprehensive Go library for creating, validating, and working with Cursor-on-Target (CoT) events.
 
@@ -285,4 +285,9 @@ For detailed documentation and examples, see:
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. 
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Project History
+
+Originally created by [@pdfinn](https://github.com/pdfinn).  
+All core functionality and initial versions developed prior to organisational transfer.

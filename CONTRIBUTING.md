@@ -56,6 +56,11 @@ This project adheres to a standard code of conduct. By participating, you are ex
    go test -v ./...
    ```
 
+4. **Running Benchmarks**
+   ```bash
+   go test -bench .
+   ```
+
 ### Logging
 
 - Use `slog` for all logging

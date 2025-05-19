@@ -559,7 +559,8 @@ type Link struct {
 // NewEvent creates a new CoT event with the given parameters
 func NewEvent(uid, typ string, lat, lon, hae float64) (*Event, error) {
 	now := time.Now().UTC().Truncate(time.Second)
-	evt := &Event{
+	evt := getEvent()
+	*evt = Event{
 		Version: "2.0",
 		Uid:     uid,
 		Type:    typ,
@@ -575,7 +576,7 @@ func NewEvent(uid, typ string, lat, lon, hae float64) (*Event, error) {
 			Le:  9999999.0,
 		},
 	}
-	if err := evt.Validate(); err != nil {
+	if err := evt.ValidateAt(now); err != nil {
 		return nil, err
 	}
 	return evt, nil
@@ -640,6 +641,11 @@ func ValidateType(typ string) error {
 
 // Validate checks if the event is valid
 func (e *Event) Validate() error {
+	return e.ValidateAt(time.Now().UTC())
+}
+
+// ValidateAt checks if the event is valid using the provided reference time
+func (e *Event) ValidateAt(now time.Time) error {
 	// Check required fields
 	if e.Version == "" {
 		return fmt.Errorf("missing version")
@@ -657,7 +663,6 @@ func (e *Event) Validate() error {
 	}
 
 	// Validate time fields
-	now := time.Now().UTC()
 	eventTime := e.Time.Time()
 	startTime := e.Start.Time()
 	staleTime := e.Stale.Time()
@@ -836,16 +841,16 @@ func UnmarshalXMLEvent(data []byte) (*Event, error) {
 	defer putDecoder(pd)
 	decoder := pd.dec
 
-	var evt Event
-	if err := decoder.Decode(&evt); err != nil {
+	evt := getEvent()
+	if err := decoder.Decode(evt); err != nil {
 		return nil, fmt.Errorf("failed to decode XML: %w", err)
 	}
 
-	if err := evt.Validate(); err != nil {
+	if err := evt.ValidateAt(time.Now().UTC()); err != nil {
 		return nil, err
 	}
 
-	return &evt, nil
+	return evt, nil
 }
 
 // ValidateLatLon checks if latitude and longitude are within valid ranges
@@ -878,7 +883,8 @@ func ValidateUID(uid string) error {
 // The <point> element is always emitted so that the
 // zero coordinate (0° N 0° E) is representable.
 func (e *Event) ToXML() ([]byte, error) {
-	var buf bytes.Buffer
+	buf := getBuffer()
+	defer putBuffer(buf)
 	buf.Grow(256)
 	buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
 	var tmp [32]byte
@@ -886,25 +892,39 @@ func (e *Event) ToXML() ([]byte, error) {
 	// <event>
 	buf.WriteString("<event")
 	if e.Version != "" {
-		fmt.Fprintf(&buf, ` version="%s"`, escapeAttr(e.Version))
+		buf.WriteString(` version="`)
+		buf.WriteString(escapeAttr(e.Version))
+		buf.WriteByte('"')
 	}
 	if e.Type != "" {
-		fmt.Fprintf(&buf, ` type="%s"`, escapeAttr(e.Type))
+		buf.WriteString(` type="`)
+		buf.WriteString(escapeAttr(e.Type))
+		buf.WriteByte('"')
 	}
 	if e.How != "" {
-		fmt.Fprintf(&buf, ` how="%s"`, escapeAttr(e.How))
+		buf.WriteString(` how="`)
+		buf.WriteString(escapeAttr(e.How))
+		buf.WriteByte('"')
 	}
 	if e.Uid != "" {
-		fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(e.Uid))
+		buf.WriteString(` uid="`)
+		buf.WriteString(escapeAttr(e.Uid))
+		buf.WriteByte('"')
 	}
 	if !e.Time.Time().IsZero() {
-		fmt.Fprintf(&buf, ` time="%s"`, e.Time.Time().UTC().Format(CotTimeFormat))
+		buf.WriteString(` time="`)
+		buf.WriteString(e.Time.Time().UTC().Format(CotTimeFormat))
+		buf.WriteByte('"')
 	}
 	if !e.Start.Time().IsZero() {
-		fmt.Fprintf(&buf, ` start="%s"`, e.Start.Time().UTC().Format(CotTimeFormat))
+		buf.WriteString(` start="`)
+		buf.WriteString(e.Start.Time().UTC().Format(CotTimeFormat))
+		buf.WriteByte('"')
 	}
 	if !e.Stale.Time().IsZero() {
-		fmt.Fprintf(&buf, ` stale="%s"`, e.Stale.Time().UTC().Format(CotTimeFormat))
+		buf.WriteString(` stale="`)
+		buf.WriteString(e.Stale.Time().UTC().Format(CotTimeFormat))
+		buf.WriteByte('"')
 	}
 	buf.WriteString(">\n")
 
@@ -938,17 +958,23 @@ func (e *Event) ToXML() ([]byte, error) {
 		if c := e.Detail.Contact; c != nil {
 			buf.WriteString("    <contact")
 			if c.Callsign != "" {
-				fmt.Fprintf(&buf, ` callsign="%s"`, escapeAttr(c.Callsign))
+				buf.WriteString(` callsign="`)
+				buf.WriteString(escapeAttr(c.Callsign))
+				buf.WriteByte('"')
 			}
 			buf.WriteString("/>\n")
 		}
 		if g := e.Detail.Group; g != nil {
 			buf.WriteString("    <group")
 			if g.Name != "" {
-				fmt.Fprintf(&buf, ` name="%s"`, escapeAttr(g.Name))
+				buf.WriteString(` name="`)
+				buf.WriteString(escapeAttr(g.Name))
+				buf.WriteByte('"')
 			}
 			if g.Role != "" {
-				fmt.Fprintf(&buf, ` role="%s"`, escapeAttr(g.Role))
+				buf.WriteString(` role="`)
+				buf.WriteString(escapeAttr(g.Role))
+				buf.WriteByte('"')
 			}
 			buf.WriteString("/>\n")
 		}
@@ -959,17 +985,25 @@ func (e *Event) ToXML() ([]byte, error) {
 	for _, l := range e.Links {
 		buf.WriteString("  <link")
 		if l.Uid != "" {
-			fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(l.Uid))
+			buf.WriteString(` uid="`)
+			buf.WriteString(escapeAttr(l.Uid))
+			buf.WriteByte('"')
 		}
 		if l.Type != "" {
-			fmt.Fprintf(&buf, ` type="%s"`, escapeAttr(l.Type))
+			buf.WriteString(` type="`)
+			buf.WriteString(escapeAttr(l.Type))
+			buf.WriteByte('"')
 		}
 		if l.Relation != "" {
-			fmt.Fprintf(&buf, ` relation="%s"`, escapeAttr(l.Relation))
+			buf.WriteString(` relation="`)
+			buf.WriteString(escapeAttr(l.Relation))
+			buf.WriteByte('"')
 		}
 		buf.WriteString("/>\n")
 	}
 
 	buf.WriteString("</event>")
-	return buf.Bytes(), nil
+	out := make([]byte, buf.Len())
+	copy(out, buf.Bytes())
+	return out, nil
 }

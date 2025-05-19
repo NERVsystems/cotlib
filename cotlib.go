@@ -79,6 +79,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -458,6 +459,9 @@ var (
 	ErrInvalidUID      = fmt.Errorf("invalid UID")
 )
 
+// doctypePattern matches XML DOCTYPE declarations case-insensitively
+var doctypePattern = regexp.MustCompile(`(?i)<!\s*DOCTYPE`)
+
 // Contact represents contact information
 type Contact struct {
 	Callsign string `xml:"callsign,attr,omitempty"`
@@ -736,8 +740,8 @@ func FindTypesByFullName(name string) []cottypes.Type {
 
 // UnmarshalXMLEvent parses an XML byte slice into an Event
 func UnmarshalXMLEvent(data []byte) (*Event, error) {
-	// Check for DOCTYPE
-	if bytes.Contains(data, []byte("<!DOCTYPE")) {
+	// Check for DOCTYPE in a case-insensitive manner
+	if doctypePattern.Match(data) {
 		return nil, ErrInvalidInput
 	}
 

@@ -85,6 +85,21 @@ func TestValidationBaseline(t *testing.T) {
 		}
 	})
 
+	t.Run("doctype_variations", func(t *testing.T) {
+		// Test DOCTYPE rejection with case and spacing variations
+		cases := []string{
+			`<?xml version="1.0"?><!doctype foo><event></event>`,
+			`<?xml version="1.0"?><!DoCtYpE foo><event></event>`,
+			`<?xml version="1.0"?><!   DOCTYPE foo><event></event>`,
+		}
+		for _, xmlStr := range cases {
+			_, err := cotlib.UnmarshalXMLEvent([]byte(xmlStr))
+			if !errors.Is(err, cotlib.ErrInvalidInput) {
+				t.Errorf("Expected DOCTYPE to be rejected for %q", xmlStr)
+			}
+		}
+	})
+
 	t.Run("logger_context", func(t *testing.T) {
 		// Test logger context propagation
 		ctx := context.Background()

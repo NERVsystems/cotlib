@@ -195,7 +195,7 @@ The library enforces strict validation of CoT types:
 // Examples of different validation scenarios:
 cotlib.ValidateType("a-f-G")             // Valid - Friendly Ground
 cotlib.ValidateType("a-h-A")             // Valid - Hostile Air
-cotlib.ValidateType("b-d")               // Valid - Basic Detection
+cotlib.ValidateType("b-d")               // Valid - Bits, Detection
 cotlib.ValidateType("t-x-takp-v")        // Valid - TAK presence
 cotlib.ValidateType("a-f-G-*")           // Valid - Wildcard pattern
 cotlib.ValidateType("a-.-G")             // Valid - Atomic wildcard

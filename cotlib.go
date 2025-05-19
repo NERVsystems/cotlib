@@ -159,14 +159,11 @@ func checkXMLLimits(data []byte) error {
 		if dec.InputOffset()-off > maxTokenLen {
 			return ErrInvalidInput
 		}
-		count++
-		if count > maxElementCount {
-			return ErrInvalidInput
-		}
 		switch t := tok.(type) {
 		case xml.StartElement:
 			depth++
-			if depth > maxElementDepth {
+			count++
+			if depth > maxElementDepth || count > maxElementCount {
 				return ErrInvalidInput
 			}
 			for _, a := range t.Attr {

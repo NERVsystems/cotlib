@@ -43,14 +43,14 @@ import (
 
 func main() {
     logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-    
+
     // Create a new CoT event
     event, err := cotlib.NewEvent("UNIT-123", "a-f-G", 37.422, -122.084, 0.0)
     if err != nil {
         logger.Error("Failed to create event", "error", err)
         return
     }
-    
+
     // Add detail information
     event.Detail = &cotlib.Detail{
         Contact: &cotlib.Contact{
@@ -61,21 +61,21 @@ func main() {
             Role: "Infantry",
         },
     }
-    
+
     // Add relationship link
     event.AddLink(&cotlib.Link{
         Uid:      "HQ-1",
         Type:     "a-f-G-U-C",
         Relation: "p-p",
     })
-    
+
     // Convert to XML
     xmlData, err := event.ToXML()
     if err != nil {
         logger.Error("Failed to convert to XML", "error", err)
         return
     }
-    
+
     fmt.Println(string(xmlData))
 }
 ```
@@ -92,7 +92,7 @@ import (
 
 func main() {
     xmlData := `<?xml version="1.0" encoding="UTF-8"?>
-<event version="2.0" uid="UNIT-123" type="a-f-G" time="2023-05-15T18:30:22Z" 
+<event version="2.0" uid="UNIT-123" type="a-f-G" time="2023-05-15T18:30:22Z"
        start="2023-05-15T18:30:22Z" stale="2023-05-15T18:30:32Z">
   <point lat="37.422000" lon="-122.084000" hae="0.0" ce="9999999.0" le="9999999.0"/>
   <detail>
@@ -107,17 +107,17 @@ func main() {
         fmt.Printf("Error parsing XML: %v\n", err)
         return
     }
-    
+
     // Access event data
     fmt.Printf("Event Type: %s\n", event.Type)
     fmt.Printf("Location: %.6f, %.6f\n", event.Point.Lat, event.Point.Lon)
     fmt.Printf("Callsign: %s\n", event.Detail.Contact.Callsign)
-    
+
     // Check event predicates
     if event.Is("friend") {
         fmt.Println("This is a friendly unit")
     }
-    
+
     if event.Is("ground") {
         fmt.Println("This is a ground-based entity")
     }
@@ -142,12 +142,12 @@ func main() {
     if err := cotlib.RegisterCoTType("a-f-G-U-C-F"); err != nil {
         log.Fatal(err)
     }
-    
+
     // Validate a CoT type
     if err := cotlib.ValidateType("a-f-G-U-C-F"); err != nil {
         log.Fatal(err)
     }
-    
+
     // Look up type metadata
     fullName, err := cotlib.GetTypeFullName("a-f-G-E-X-N")
     if err != nil {
@@ -317,5 +317,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Project History
 
-Originally created by [@pdfinn](https://github.com/pdfinn).  
+Originally created by [@pdfinn](https://github.com/pdfinn).
 All core functionality and initial versions developed prior to organisational transfer.

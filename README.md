@@ -1,5 +1,7 @@
 # CoT Library
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/NERVsystems/cotlib)](https://goreportcard.com/report/github.com/NERVsystems/cotlib)
+
 'The sum of all wisdom is a cursor over the target.'  — Gen. John Jumper
 
 A comprehensive Go library for creating, validating, and working with Cursor-on-Target (CoT) events.

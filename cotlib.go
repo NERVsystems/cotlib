@@ -132,6 +132,74 @@ func SetMaxValueLen(max int64) {
 	maxValueLen.Store(max)
 }
 
+// checkXMLLimits performs a lightweight scan of the XML data to ensure it does
+// not exceed configured security limits.
+func checkXMLLimits(data []byte) error {
+	if len(data) > maxXMLSize {
+		return ErrInvalidInput
+	}
+
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.CharsetReader = nil
+	dec.Entity = nil
+
+	depth := 0
+	count := 0
+
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return ErrInvalidInput
+		}
+		count++
+		if count > maxElementCount {
+			return ErrInvalidInput
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			depth++
+			if depth > maxElementDepth {
+				return ErrInvalidInput
+			}
+			for _, a := range t.Attr {
+				if len(a.Value) > int(currentMaxValueLen()) {
+					return ErrInvalidInput
+				}
+			}
+		case xml.EndElement:
+			if depth > 0 {
+				depth--
+			}
+		case xml.CharData:
+			if len(t) > int(currentMaxValueLen()) {
+				return ErrInvalidInput
+			}
+		}
+	}
+
+	return nil
+}
+
+// attrEscaper escapes XML special characters in attribute values.
+var attrEscaper = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	"\"", "&quot;",
+	"'", "&apos;",
+)
+
+// escapeAttr returns the escaped version of s for use in XML attributes.
+func escapeAttr(s string) string {
+	if s == "" {
+		return s
+	}
+	return attrEscaper.Replace(s)
+}
+
 // RegisterCoTType adds a specific CoT type to the valid types registry
 // It does not log individual type registrations to avoid log spam
 func RegisterCoTType(name string) {
@@ -753,8 +821,13 @@ func UnmarshalXMLEvent(data []byte) (*Event, error) {
 		}
 	}
 
+	// Enforce parser limits before decoding
+	if err := checkXMLLimits(data); err != nil {
+		return nil, err
+	}
+
 	// Create a secure decoder with limits
-	decoder := xml.NewDecoder(bytes.NewReader(data))
+	decoder := xml.NewDecoder(io.LimitReader(bytes.NewReader(data), int64(len(data))))
 	decoder.CharsetReader = nil // Disable charset conversion
 	decoder.Entity = nil        // Disable entity expansion
 
@@ -804,10 +877,10 @@ func (e *Event) ToXML() ([]byte, error) {
 	// Start event element
 	buf.WriteString("<event")
 	if e.Version != "" {
-		fmt.Fprintf(&buf, ` version="%s"`, e.Version)
+		fmt.Fprintf(&buf, ` version="%s"`, escapeAttr(e.Version))
 	}
 	if e.Type != "" {
-		fmt.Fprintf(&buf, ` type="%s"`, e.Type)
+		fmt.Fprintf(&buf, ` type="%s"`, escapeAttr(e.Type))
 	}
 	if !e.Time.Time().IsZero() {
 		fmt.Fprintf(&buf, ` time="%s"`, e.Time.Time().UTC().Format(CotTimeFormat))
@@ -819,7 +892,7 @@ func (e *Event) ToXML() ([]byte, error) {
 		fmt.Fprintf(&buf, ` stale="%s"`, e.Stale.Time().UTC().Format(CotTimeFormat))
 	}
 	if e.Uid != "" {
-		fmt.Fprintf(&buf, ` uid="%s"`, e.Uid)
+		fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(e.Uid))
 	}
 	buf.WriteString(">\n")
 
@@ -846,17 +919,17 @@ func (e *Event) ToXML() ([]byte, error) {
 		if e.Detail.Contact != nil {
 			buf.WriteString("    <contact")
 			if e.Detail.Contact.Callsign != "" {
-				fmt.Fprintf(&buf, ` callsign="%s"`, e.Detail.Contact.Callsign)
+				fmt.Fprintf(&buf, ` callsign="%s"`, escapeAttr(e.Detail.Contact.Callsign))
 			}
 			buf.WriteString("/>\n")
 		}
 		if e.Detail.Group != nil {
 			buf.WriteString("    <group")
 			if e.Detail.Group.Name != "" {
-				fmt.Fprintf(&buf, ` name="%s"`, e.Detail.Group.Name)
+				fmt.Fprintf(&buf, ` name="%s"`, escapeAttr(e.Detail.Group.Name))
 			}
 			if e.Detail.Group.Role != "" {
-				fmt.Fprintf(&buf, ` role="%s"`, e.Detail.Group.Role)
+				fmt.Fprintf(&buf, ` role="%s"`, escapeAttr(e.Detail.Group.Role))
 			}
 			buf.WriteString("/>\n")
 		}
@@ -867,13 +940,13 @@ func (e *Event) ToXML() ([]byte, error) {
 	for _, link := range e.Links {
 		buf.WriteString("  <link")
 		if link.Uid != "" {
-			fmt.Fprintf(&buf, ` uid="%s"`, link.Uid)
+			fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(link.Uid))
 		}
 		if link.Type != "" {
-			fmt.Fprintf(&buf, ` type="%s"`, link.Type)
+			fmt.Fprintf(&buf, ` type="%s"`, escapeAttr(link.Type))
 		}
 		if link.Relation != "" {
-			fmt.Fprintf(&buf, ` relation="%s"`, link.Relation)
+			fmt.Fprintf(&buf, ` relation="%s"`, escapeAttr(link.Relation))
 		}
 		buf.WriteString("/>\n")
 	}

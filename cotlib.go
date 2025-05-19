@@ -140,9 +140,9 @@ func checkXMLLimits(data []byte) error {
 		return ErrInvalidInput
 	}
 
-	dec := xml.NewDecoder(bytes.NewReader(data))
-	dec.CharsetReader = nil
-	dec.Entity = nil
+	pd := getDecoder(data)
+	defer putDecoder(pd)
+	dec := pd.dec
 
 	depth := 0
 	count := 0
@@ -828,9 +828,9 @@ func UnmarshalXMLEvent(data []byte) (*Event, error) {
 	}
 
 	// Create a secure decoder with limits
-	decoder := xml.NewDecoder(io.LimitReader(bytes.NewReader(data), int64(len(data))))
-	decoder.CharsetReader = nil // Disable charset conversion
-	decoder.Entity = nil        // Disable entity expansion
+	pd := getDecoder(data)
+	defer putDecoder(pd)
+	decoder := pd.dec
 
 	var evt Event
 	if err := decoder.Decode(&evt); err != nil {

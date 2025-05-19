@@ -12,6 +12,9 @@ type Type struct {
 	Name        string // The CoT type code (e.g., "a-f-G-E-X-N")
 	FullName    string // The full name (e.g., "Gnd/Equip/Nbc Equipment")
 	Description string // The description (e.g., "NBC EQUIPMENT")
+
+	fullNameUpper    string
+	descriptionUpper string
 }
 
 // Catalog maintains a registry of CoT types and provides lookup and search functions.
@@ -111,7 +114,7 @@ func (c *Catalog) FindByDescription(desc string) []Type {
 	var matches []Type
 
 	for _, t := range c.types {
-		if strings.Contains(strings.ToUpper(t.Description), desc) {
+		if strings.Contains(t.descriptionUpper, desc) {
 			matches = append(matches, t)
 		}
 	}
@@ -136,7 +139,7 @@ func (c *Catalog) FindByFullName(name string) []Type {
 	var matches []Type
 
 	for _, t := range c.types {
-		if strings.Contains(strings.ToUpper(t.FullName), name) {
+		if strings.Contains(t.fullNameUpper, name) {
 			matches = append(matches, t)
 		}
 	}
@@ -155,6 +158,9 @@ func (c *Catalog) Upsert(name string, t Type) error {
 	if t.Name == "" {
 		return fmt.Errorf("empty type name in Type struct")
 	}
+
+	t.fullNameUpper = strings.ToUpper(t.FullName)
+	t.descriptionUpper = strings.ToUpper(t.Description)
 
 	c.mu.Lock()
 	defer c.mu.Unlock()

@@ -80,6 +80,7 @@ import (
 	"log/slog"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -798,28 +799,41 @@ func ValidateUID(uid string) error {
 // ToXML converts an Event to XML bytes
 func (e *Event) ToXML() ([]byte, error) {
 	var buf bytes.Buffer
+	buf.Grow(256)
 	buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
 	buf.WriteByte('\n')
 
 	// Start event element
 	buf.WriteString("<event")
 	if e.Version != "" {
-		fmt.Fprintf(&buf, ` version="%s"`, e.Version)
+		buf.WriteString(` version="`)
+		buf.WriteString(e.Version)
+		buf.WriteByte('"')
 	}
 	if e.Type != "" {
-		fmt.Fprintf(&buf, ` type="%s"`, e.Type)
+		buf.WriteString(` type="`)
+		buf.WriteString(e.Type)
+		buf.WriteByte('"')
 	}
 	if !e.Time.Time().IsZero() {
-		fmt.Fprintf(&buf, ` time="%s"`, e.Time.Time().UTC().Format(CotTimeFormat))
+		buf.WriteString(` time="`)
+		buf.WriteString(e.Time.Time().UTC().Format(CotTimeFormat))
+		buf.WriteByte('"')
 	}
 	if !e.Start.Time().IsZero() {
-		fmt.Fprintf(&buf, ` start="%s"`, e.Start.Time().UTC().Format(CotTimeFormat))
+		buf.WriteString(` start="`)
+		buf.WriteString(e.Start.Time().UTC().Format(CotTimeFormat))
+		buf.WriteByte('"')
 	}
 	if !e.Stale.Time().IsZero() {
-		fmt.Fprintf(&buf, ` stale="%s"`, e.Stale.Time().UTC().Format(CotTimeFormat))
+		buf.WriteString(` stale="`)
+		buf.WriteString(e.Stale.Time().UTC().Format(CotTimeFormat))
+		buf.WriteByte('"')
 	}
 	if e.Uid != "" {
-		fmt.Fprintf(&buf, ` uid="%s"`, e.Uid)
+		buf.WriteString(` uid="`)
+		buf.WriteString(e.Uid)
+		buf.WriteByte('"')
 	}
 	buf.WriteString(">\n")
 
@@ -828,15 +842,25 @@ func (e *Event) ToXML() ([]byte, error) {
 	// impossible to encode valid locations at 0°N 0°E.  Including the
 	// element unconditionally ensures the coordinates are preserved.
 	buf.WriteString("  <point")
-	fmt.Fprintf(&buf, ` lat="%.6f" lon="%.6f"`, e.Point.Lat, e.Point.Lon)
+	buf.WriteString(` lat="`)
+	buf.WriteString(strconv.FormatFloat(e.Point.Lat, 'f', 6, 64))
+	buf.WriteString(`" lon="`)
+	buf.WriteString(strconv.FormatFloat(e.Point.Lon, 'f', 6, 64))
+	buf.WriteByte('"')
 	if e.Point.Hae != 0 {
-		fmt.Fprintf(&buf, ` hae="%.1f"`, e.Point.Hae)
+		buf.WriteString(` hae="`)
+		buf.WriteString(strconv.FormatFloat(e.Point.Hae, 'f', 1, 64))
+		buf.WriteByte('"')
 	}
 	if e.Point.Ce != 0 {
-		fmt.Fprintf(&buf, ` ce="%.1f"`, e.Point.Ce)
+		buf.WriteString(` ce="`)
+		buf.WriteString(strconv.FormatFloat(e.Point.Ce, 'f', 1, 64))
+		buf.WriteByte('"')
 	}
 	if e.Point.Le != 0 {
-		fmt.Fprintf(&buf, ` le="%.1f"`, e.Point.Le)
+		buf.WriteString(` le="`)
+		buf.WriteString(strconv.FormatFloat(e.Point.Le, 'f', 1, 64))
+		buf.WriteByte('"')
 	}
 	buf.WriteString("/>\n")
 
@@ -846,17 +870,23 @@ func (e *Event) ToXML() ([]byte, error) {
 		if e.Detail.Contact != nil {
 			buf.WriteString("    <contact")
 			if e.Detail.Contact.Callsign != "" {
-				fmt.Fprintf(&buf, ` callsign="%s"`, e.Detail.Contact.Callsign)
+				buf.WriteString(` callsign="`)
+				buf.WriteString(e.Detail.Contact.Callsign)
+				buf.WriteByte('"')
 			}
 			buf.WriteString("/>\n")
 		}
 		if e.Detail.Group != nil {
 			buf.WriteString("    <group")
 			if e.Detail.Group.Name != "" {
-				fmt.Fprintf(&buf, ` name="%s"`, e.Detail.Group.Name)
+				buf.WriteString(` name="`)
+				buf.WriteString(e.Detail.Group.Name)
+				buf.WriteByte('"')
 			}
 			if e.Detail.Group.Role != "" {
-				fmt.Fprintf(&buf, ` role="%s"`, e.Detail.Group.Role)
+				buf.WriteString(` role="`)
+				buf.WriteString(e.Detail.Group.Role)
+				buf.WriteByte('"')
 			}
 			buf.WriteString("/>\n")
 		}
@@ -867,13 +897,19 @@ func (e *Event) ToXML() ([]byte, error) {
 	for _, link := range e.Links {
 		buf.WriteString("  <link")
 		if link.Uid != "" {
-			fmt.Fprintf(&buf, ` uid="%s"`, link.Uid)
+			buf.WriteString(` uid="`)
+			buf.WriteString(link.Uid)
+			buf.WriteByte('"')
 		}
 		if link.Type != "" {
-			fmt.Fprintf(&buf, ` type="%s"`, link.Type)
+			buf.WriteString(` type="`)
+			buf.WriteString(link.Type)
+			buf.WriteByte('"')
 		}
 		if link.Relation != "" {
-			fmt.Fprintf(&buf, ` relation="%s"`, link.Relation)
+			buf.WriteString(` relation="`)
+			buf.WriteString(link.Relation)
+			buf.WriteByte('"')
 		}
 		buf.WriteString("/>\n")
 	}

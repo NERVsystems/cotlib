@@ -816,21 +816,22 @@ func (e *Event) ToXML() ([]byte, error) {
 	}
 	buf.WriteString(">\n")
 
-	// Write point if present
-	if e.Point.Lat != 0 || e.Point.Lon != 0 {
-		buf.WriteString("  <point")
-		fmt.Fprintf(&buf, ` lat="%.6f" lon="%.6f"`, e.Point.Lat, e.Point.Lon)
-		if e.Point.Hae != 0 {
-			fmt.Fprintf(&buf, ` hae="%.1f"`, e.Point.Hae)
-		}
-		if e.Point.Ce != 0 {
-			fmt.Fprintf(&buf, ` ce="%.1f"`, e.Point.Ce)
-		}
-		if e.Point.Le != 0 {
-			fmt.Fprintf(&buf, ` le="%.1f"`, e.Point.Le)
-		}
-		buf.WriteString("/>\n")
+	// Always write the point element. Previously the element was omitted
+	// when both latitude and longitude were zero, which made it
+	// impossible to encode valid locations at 0°N 0°E.  Including the
+	// element unconditionally ensures the coordinates are preserved.
+	buf.WriteString("  <point")
+	fmt.Fprintf(&buf, ` lat="%.6f" lon="%.6f"`, e.Point.Lat, e.Point.Lon)
+	if e.Point.Hae != 0 {
+		fmt.Fprintf(&buf, ` hae="%.1f"`, e.Point.Hae)
 	}
+	if e.Point.Ce != 0 {
+		fmt.Fprintf(&buf, ` ce="%.1f"`, e.Point.Ce)
+	}
+	if e.Point.Le != 0 {
+		fmt.Fprintf(&buf, ` le="%.1f"`, e.Point.Le)
+	}
+	buf.WriteString("/>\n")
 
 	// Write detail if present
 	if e.Detail != nil {

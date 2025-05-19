@@ -178,9 +178,9 @@ func main() {
 }
 ```
 
-`catalog.Upsert` precomputes upper-case versions of each type's `Description` and
-`FullName` for faster searches. `FindByDescription` and `FindByFullName` reuse
-these cached strings, eliminating per-call string allocations.
+`catalog.Upsert` precomputes upper-case versions of each type's `FullName` and
+`Description`. `FindByDescription` and `FindByFullName` reuse these cached
+strings so searches are allocation-free.
 
 ### Type Validation
 

@@ -1,7 +1,6 @@
 package cotlib
 
 import (
-	"bytes"
 	"testing"
 )
 
@@ -34,7 +33,6 @@ func BenchmarkUnmarshalXMLEvent(b *testing.B) {
 	if err != nil {
 		b.Fatalf("ToXML error: %v", err)
 	}
-	xmlData = bytes.Replace(xmlData, []byte("<event"), []byte("<event version=\"2.0\""), 1)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if _, err := UnmarshalXMLEvent(xmlData); err != nil {

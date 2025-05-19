@@ -787,6 +787,9 @@ func TestToXMLIncludesPointWithZeroCoordinates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ToXML returned error: %v", err)
 	}
+	if !strings.Contains(string(xmlData), `version="2.0"`) {
+		t.Error("version attribute missing in XML output")
+	}
 	if !strings.Contains(string(xmlData), "<point") {
 		t.Error("point element missing in XML output")
 	}

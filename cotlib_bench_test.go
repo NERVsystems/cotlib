@@ -1,0 +1,36 @@
+package cotlib
+
+import (
+	"bytes"
+	"testing"
+)
+
+func BenchmarkToXML(b *testing.B) {
+	evt, err := NewEvent("bench", "a-f-G", 30.0, -85.0, 0.0)
+	if err != nil {
+		b.Fatalf("NewEvent returned error: %v", err)
+	}
+	for i := 0; i < b.N; i++ {
+		if _, err := evt.ToXML(); err != nil {
+			b.Fatalf("ToXML error: %v", err)
+		}
+	}
+}
+
+func BenchmarkUnmarshalXMLEvent(b *testing.B) {
+	evt, err := NewEvent("bench", "a-f-G", 30.0, -85.0, 0.0)
+	if err != nil {
+		b.Fatalf("NewEvent returned error: %v", err)
+	}
+	xmlData, err := evt.ToXML()
+	if err != nil {
+		b.Fatalf("ToXML error: %v", err)
+	}
+	xmlData = bytes.Replace(xmlData, []byte("<event"), []byte("<event version=\"2.0\""), 1)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := UnmarshalXMLEvent(xmlData); err != nil {
+			b.Fatalf("UnmarshalXMLEvent error: %v", err)
+		}
+	}
+}

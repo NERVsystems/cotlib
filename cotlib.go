@@ -80,6 +80,7 @@ import (
 	"log/slog"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -876,6 +877,7 @@ func (e *Event) ToXML() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.Grow(256)
 	buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
+	var tmp [64]byte
 
 	// <event>
 	buf.WriteString("<event")
@@ -904,15 +906,25 @@ func (e *Event) ToXML() ([]byte, error) {
 
 	// <point>
 	buf.WriteString("  <point")
-	fmt.Fprintf(&buf, ` lat="%f" lon="%f"`, e.Point.Lat, e.Point.Lon)
+	buf.WriteString(` lat="`)
+	buf.Write(strconv.AppendFloat(tmp[:0], e.Point.Lat, 'f', 6, 64))
+	buf.WriteString(`" lon="`)
+	buf.Write(strconv.AppendFloat(tmp[:0], e.Point.Lon, 'f', 6, 64))
+	buf.WriteByte('"')
 	if e.Point.Hae != 0 {
-		fmt.Fprintf(&buf, ` hae="%.1f"`, e.Point.Hae)
+		buf.WriteString(` hae="`)
+		buf.Write(strconv.AppendFloat(tmp[:0], e.Point.Hae, 'f', 1, 64))
+		buf.WriteByte('"')
 	}
 	if e.Point.Ce != 0 {
-		fmt.Fprintf(&buf, ` ce="%.1f"`, e.Point.Ce)
+		buf.WriteString(` ce="`)
+		buf.Write(strconv.AppendFloat(tmp[:0], e.Point.Ce, 'f', 1, 64))
+		buf.WriteByte('"')
 	}
 	if e.Point.Le != 0 {
-		fmt.Fprintf(&buf, ` le="%.1f"`, e.Point.Le)
+		buf.WriteString(` le="`)
+		buf.Write(strconv.AppendFloat(tmp[:0], e.Point.Le, 'f', 1, 64))
+		buf.WriteByte('"')
 	}
 	buf.WriteString("/>\n")
 

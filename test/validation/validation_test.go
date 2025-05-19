@@ -177,8 +177,23 @@ func TestValidationBaseline(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(string(xmlData), input) {
-			t.Error("Sanitizer should preserve CDATA")
+		escaped := "&lt;![CDATA[test]]&gt;"
+		if !strings.Contains(string(xmlData), escaped) {
+			t.Errorf("expected escaped CDATA, got %s", xmlData)
+		}
+	})
+
+	t.Run("attribute_escaping", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("bad&\"id", "a-f-G", 10, 20, 0)
+		if err != nil {
+			t.Fatalf("NewEvent error: %v", err)
+		}
+		xmlData, err := evt.ToXML()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(xmlData), `uid="bad&amp;&quot;id"`) {
+			t.Errorf("uid not escaped: %s", xmlData)
 		}
 	})
 

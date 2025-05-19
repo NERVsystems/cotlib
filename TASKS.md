@@ -1,0 +1,7 @@
+- [ ] Enforce XML decoding limits in UnmarshalXMLEvent
+- [ ] Escape attribute values when generating XML
+- [ ] Tighten wildcard validation to reject embedded '*'
+- [ ] Improve UID validation (length and whitespace)
+- [ ] Fix cotgen path inconsistency in docs and tool
+- [ ] Add tests for new validation rules
+- [ ] Use context-based logging throughout

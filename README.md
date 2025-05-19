@@ -227,6 +227,21 @@ if err := cotlib.RegisterCoTTypesFromXMLContent(xmlContent); err != nil {
 }
 ```
 
+### Generating Type Metadata (`cotgen`)
+
+The `cmd/cotgen` utility expands the CoT XML definitions and writes the
+`cottypes/generated_types.go` file used by the library. Ensure the
+`cot-types` directory (or your own XML definitions) is present, then run:
+
+```bash
+go run ./cmd/cotgen
+# or simply
+go generate ./cottypes
+```
+
+Add your custom type entries to `cot-types/CoTtypes.xml` before running the
+generator to embed them into the resulting Go code.
+
 ### Event Predicates
 
 The library provides convenient type classification with the `Is()` method:
@@ -278,6 +293,17 @@ logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 
 ctx := cotlib.WithLogger(context.Background(), logger)
 ```
+
+## Benchmarks
+
+Run benchmarks with the standard Go tooling:
+
+```bash
+go test -bench=. ./...
+```
+
+This executes any `Benchmark...` functions across the module, allowing you to
+profile serialization, validation, or other operations.
 
 ## Documentation
 

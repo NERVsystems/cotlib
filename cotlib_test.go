@@ -394,7 +394,9 @@ func TestEventLogging(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
-	ctx = WithLogger(ctx, logger)
+	// Store logger in context, but we're not using ctx directly in this test
+	// This demonstrates how to set up a logger in context
+	_ = WithLogger(ctx, logger)
 
 	evt, err := NewEvent("testUID", "a-f-G", 25.5, -120.7, 0.0)
 	if err != nil {

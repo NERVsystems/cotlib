@@ -80,6 +80,7 @@ import (
 	"log/slog"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -868,19 +869,28 @@ func ValidateUID(uid string) error {
 	return nil
 }
 
-// ToXML converts an Event to XML bytes
+// ToXML serialises an Event to CoT-compliant XML.
+// Attribute values are escaped to prevent XML-injection.
+// The <point> element is always emitted so that the
+// zero coordinate (0° N 0° E) is representable.
 func (e *Event) ToXML() ([]byte, error) {
 	var buf bytes.Buffer
-	buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-	buf.WriteByte('\n')
+	buf.Grow(256)
+	buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
 
-	// Start event element
+	// <event>
 	buf.WriteString("<event")
 	if e.Version != "" {
 		fmt.Fprintf(&buf, ` version="%s"`, escapeAttr(e.Version))
 	}
 	if e.Type != "" {
 		fmt.Fprintf(&buf, ` type="%s"`, escapeAttr(e.Type))
+	}
+	if e.How != "" {
+		fmt.Fprintf(&buf, ` how="%s"`, escapeAttr(e.How))
+	}
+	if e.Uid != "" {
+		fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(e.Uid))
 	}
 	if !e.Time.Time().IsZero() {
 		fmt.Fprintf(&buf, ` time="%s"`, e.Time.Time().UTC().Format(CotTimeFormat))
@@ -891,17 +901,11 @@ func (e *Event) ToXML() ([]byte, error) {
 	if !e.Stale.Time().IsZero() {
 		fmt.Fprintf(&buf, ` stale="%s"`, e.Stale.Time().UTC().Format(CotTimeFormat))
 	}
-	if e.Uid != "" {
-		fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(e.Uid))
-	}
 	buf.WriteString(">\n")
 
-	// Always write the point element. Previously the element was omitted
-	// when both latitude and longitude were zero, which made it
-	// impossible to encode valid locations at 0°N 0°E.  Including the
-	// element unconditionally ensures the coordinates are preserved.
+	// <point>
 	buf.WriteString("  <point")
-	fmt.Fprintf(&buf, ` lat="%.6f" lon="%.6f"`, e.Point.Lat, e.Point.Lon)
+	fmt.Fprintf(&buf, ` lat="%f" lon="%f"`, e.Point.Lat, e.Point.Lon)
 	if e.Point.Hae != 0 {
 		fmt.Fprintf(&buf, ` hae="%.1f"`, e.Point.Hae)
 	}
@@ -913,40 +917,40 @@ func (e *Event) ToXML() ([]byte, error) {
 	}
 	buf.WriteString("/>\n")
 
-	// Write detail if present
+	// <detail> (optional)
 	if e.Detail != nil {
 		buf.WriteString("  <detail>\n")
-		if e.Detail.Contact != nil {
+		if c := e.Detail.Contact; c != nil {
 			buf.WriteString("    <contact")
-			if e.Detail.Contact.Callsign != "" {
-				fmt.Fprintf(&buf, ` callsign="%s"`, escapeAttr(e.Detail.Contact.Callsign))
+			if c.Callsign != "" {
+				fmt.Fprintf(&buf, ` callsign="%s"`, escapeAttr(c.Callsign))
 			}
 			buf.WriteString("/>\n")
 		}
-		if e.Detail.Group != nil {
+		if g := e.Detail.Group; g != nil {
 			buf.WriteString("    <group")
-			if e.Detail.Group.Name != "" {
-				fmt.Fprintf(&buf, ` name="%s"`, escapeAttr(e.Detail.Group.Name))
+			if g.Name != "" {
+				fmt.Fprintf(&buf, ` name="%s"`, escapeAttr(g.Name))
 			}
-			if e.Detail.Group.Role != "" {
-				fmt.Fprintf(&buf, ` role="%s"`, escapeAttr(e.Detail.Group.Role))
+			if g.Role != "" {
+				fmt.Fprintf(&buf, ` role="%s"`, escapeAttr(g.Role))
 			}
 			buf.WriteString("/>\n")
 		}
 		buf.WriteString("  </detail>\n")
 	}
 
-	// Write links if present
-	for _, link := range e.Links {
+	// <link> (0..n)
+	for _, l := range e.Links {
 		buf.WriteString("  <link")
-		if link.Uid != "" {
-			fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(link.Uid))
+		if l.Uid != "" {
+			fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(l.Uid))
 		}
-		if link.Type != "" {
-			fmt.Fprintf(&buf, ` type="%s"`, escapeAttr(link.Type))
+		if l.Type != "" {
+			fmt.Fprintf(&buf, ` type="%s"`, escapeAttr(l.Type))
 		}
-		if link.Relation != "" {
-			fmt.Fprintf(&buf, ` relation="%s"`, escapeAttr(link.Relation))
+		if l.Relation != "" {
+			fmt.Fprintf(&buf, ` relation="%s"`, escapeAttr(l.Relation))
 		}
 		buf.WriteString("/>\n")
 	}

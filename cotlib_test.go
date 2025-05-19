@@ -767,3 +767,27 @@ func TestTypeCatalogFunctions(t *testing.T) {
 		}
 	})
 }
+func TestToXMLIncludesPointWithZeroCoordinates(t *testing.T) {
+	now := time.Now().UTC()
+	evt := &Event{
+		Version: "2.0",
+		Uid:     "zero",
+		Type:    "a-f-G",
+		Time:    CoTTime(now),
+		Start:   CoTTime(now),
+		Stale:   CoTTime(now.Add(10 * time.Second)),
+		Point: Point{
+			Lat: 0,
+			Lon: 0,
+			Ce:  9999999.0,
+			Le:  9999999.0,
+		},
+	}
+	xmlData, err := evt.ToXML()
+	if err != nil {
+		t.Fatalf("ToXML returned error: %v", err)
+	}
+	if !strings.Contains(string(xmlData), "<point") {
+		t.Error("point element missing in XML output")
+	}
+}

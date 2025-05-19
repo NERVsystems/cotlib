@@ -877,7 +877,7 @@ func (e *Event) ToXML() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.Grow(256)
 	buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
-	var tmp [64]byte
+	var tmp [32]byte
 
 	// <event>
 	buf.WriteString("<event")

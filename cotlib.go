@@ -133,6 +133,74 @@ func SetMaxValueLen(max int64) {
 	maxValueLen.Store(max)
 }
 
+// checkXMLLimits performs a lightweight scan of the XML data to ensure it does
+// not exceed configured security limits.
+func checkXMLLimits(data []byte) error {
+	if len(data) > maxXMLSize {
+		return ErrInvalidInput
+	}
+
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.CharsetReader = nil
+	dec.Entity = nil
+
+	depth := 0
+	count := 0
+
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return ErrInvalidInput
+		}
+		count++
+		if count > maxElementCount {
+			return ErrInvalidInput
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			depth++
+			if depth > maxElementDepth {
+				return ErrInvalidInput
+			}
+			for _, a := range t.Attr {
+				if len(a.Value) > int(currentMaxValueLen()) {
+					return ErrInvalidInput
+				}
+			}
+		case xml.EndElement:
+			if depth > 0 {
+				depth--
+			}
+		case xml.CharData:
+			if len(t) > int(currentMaxValueLen()) {
+				return ErrInvalidInput
+			}
+		}
+	}
+
+	return nil
+}
+
+// attrEscaper escapes XML special characters in attribute values.
+var attrEscaper = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	"\"", "&quot;",
+	"'", "&apos;",
+)
+
+// escapeAttr returns the escaped version of s for use in XML attributes.
+func escapeAttr(s string) string {
+	if s == "" {
+		return s
+	}
+	return attrEscaper.Replace(s)
+}
+
 // RegisterCoTType adds a specific CoT type to the valid types registry
 // It does not log individual type registrations to avoid log spam
 func RegisterCoTType(name string) {
@@ -754,8 +822,13 @@ func UnmarshalXMLEvent(data []byte) (*Event, error) {
 		}
 	}
 
+	// Enforce parser limits before decoding
+	if err := checkXMLLimits(data); err != nil {
+		return nil, err
+	}
+
 	// Create a secure decoder with limits
-	decoder := xml.NewDecoder(bytes.NewReader(data))
+	decoder := xml.NewDecoder(io.LimitReader(bytes.NewReader(data), int64(len(data))))
 	decoder.CharsetReader = nil // Disable charset conversion
 	decoder.Entity = nil        // Disable entity expansion
 
@@ -796,120 +869,88 @@ func ValidateUID(uid string) error {
 	return nil
 }
 
-// ToXML converts an Event to XML bytes
+// ToXML serialises an Event to CoT-compliant XML.
+// Attribute values are escaped to prevent XML-injection.
+// The <point> element is always emitted so that the
+// zero coordinate (0° N 0° E) is representable.
 func (e *Event) ToXML() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.Grow(256)
-	buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-	buf.WriteByte('\n')
+	buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
 
-	// Start event element
+	// <event>
 	buf.WriteString("<event")
 	if e.Version != "" {
-		buf.WriteString(` version="`)
-		buf.WriteString(e.Version)
-		buf.WriteByte('"')
+		fmt.Fprintf(&buf, ` version="%s"`, escapeAttr(e.Version))
 	}
 	if e.Type != "" {
-		buf.WriteString(` type="`)
-		buf.WriteString(e.Type)
-		buf.WriteByte('"')
+		fmt.Fprintf(&buf, ` type="%s"`, escapeAttr(e.Type))
 	}
-	if !e.Time.Time().IsZero() {
-		buf.WriteString(` time="`)
-		buf.WriteString(e.Time.Time().UTC().Format(CotTimeFormat))
-		buf.WriteByte('"')
-	}
-	if !e.Start.Time().IsZero() {
-		buf.WriteString(` start="`)
-		buf.WriteString(e.Start.Time().UTC().Format(CotTimeFormat))
-		buf.WriteByte('"')
-	}
-	if !e.Stale.Time().IsZero() {
-		buf.WriteString(` stale="`)
-		buf.WriteString(e.Stale.Time().UTC().Format(CotTimeFormat))
-		buf.WriteByte('"')
+	if e.How != "" {
+		fmt.Fprintf(&buf, ` how="%s"`, escapeAttr(e.How))
 	}
 	if e.Uid != "" {
-		buf.WriteString(` uid="`)
-		buf.WriteString(e.Uid)
-		buf.WriteByte('"')
+		fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(e.Uid))
+	}
+	if !e.Time.Time().IsZero() {
+		fmt.Fprintf(&buf, ` time="%s"`, e.Time.Time().UTC().Format(CotTimeFormat))
+	}
+	if !e.Start.Time().IsZero() {
+		fmt.Fprintf(&buf, ` start="%s"`, e.Start.Time().UTC().Format(CotTimeFormat))
+	}
+	if !e.Stale.Time().IsZero() {
+		fmt.Fprintf(&buf, ` stale="%s"`, e.Stale.Time().UTC().Format(CotTimeFormat))
 	}
 	buf.WriteString(">\n")
 
-	// Always write the point element. Previously the element was omitted
-	// when both latitude and longitude were zero, which made it
-	// impossible to encode valid locations at 0°N 0°E.  Including the
-	// element unconditionally ensures the coordinates are preserved.
+	// <point>
 	buf.WriteString("  <point")
-	buf.WriteString(` lat="`)
-	buf.WriteString(strconv.FormatFloat(e.Point.Lat, 'f', 6, 64))
-	buf.WriteString(`" lon="`)
-	buf.WriteString(strconv.FormatFloat(e.Point.Lon, 'f', 6, 64))
-	buf.WriteByte('"')
+	fmt.Fprintf(&buf, ` lat="%f" lon="%f"`, e.Point.Lat, e.Point.Lon)
 	if e.Point.Hae != 0 {
-		buf.WriteString(` hae="`)
-		buf.WriteString(strconv.FormatFloat(e.Point.Hae, 'f', 1, 64))
-		buf.WriteByte('"')
+		fmt.Fprintf(&buf, ` hae="%.1f"`, e.Point.Hae)
 	}
 	if e.Point.Ce != 0 {
-		buf.WriteString(` ce="`)
-		buf.WriteString(strconv.FormatFloat(e.Point.Ce, 'f', 1, 64))
-		buf.WriteByte('"')
+		fmt.Fprintf(&buf, ` ce="%.1f"`, e.Point.Ce)
 	}
 	if e.Point.Le != 0 {
-		buf.WriteString(` le="`)
-		buf.WriteString(strconv.FormatFloat(e.Point.Le, 'f', 1, 64))
-		buf.WriteByte('"')
+		fmt.Fprintf(&buf, ` le="%.1f"`, e.Point.Le)
 	}
 	buf.WriteString("/>\n")
 
-	// Write detail if present
+	// <detail> (optional)
 	if e.Detail != nil {
 		buf.WriteString("  <detail>\n")
-		if e.Detail.Contact != nil {
+		if c := e.Detail.Contact; c != nil {
 			buf.WriteString("    <contact")
-			if e.Detail.Contact.Callsign != "" {
-				buf.WriteString(` callsign="`)
-				buf.WriteString(e.Detail.Contact.Callsign)
-				buf.WriteByte('"')
+			if c.Callsign != "" {
+				fmt.Fprintf(&buf, ` callsign="%s"`, escapeAttr(c.Callsign))
 			}
 			buf.WriteString("/>\n")
 		}
-		if e.Detail.Group != nil {
+		if g := e.Detail.Group; g != nil {
 			buf.WriteString("    <group")
-			if e.Detail.Group.Name != "" {
-				buf.WriteString(` name="`)
-				buf.WriteString(e.Detail.Group.Name)
-				buf.WriteByte('"')
+			if g.Name != "" {
+				fmt.Fprintf(&buf, ` name="%s"`, escapeAttr(g.Name))
 			}
-			if e.Detail.Group.Role != "" {
-				buf.WriteString(` role="`)
-				buf.WriteString(e.Detail.Group.Role)
-				buf.WriteByte('"')
+			if g.Role != "" {
+				fmt.Fprintf(&buf, ` role="%s"`, escapeAttr(g.Role))
 			}
 			buf.WriteString("/>\n")
 		}
 		buf.WriteString("  </detail>\n")
 	}
 
-	// Write links if present
-	for _, link := range e.Links {
+	// <link> (0..n)
+	for _, l := range e.Links {
 		buf.WriteString("  <link")
-		if link.Uid != "" {
-			buf.WriteString(` uid="`)
-			buf.WriteString(link.Uid)
-			buf.WriteByte('"')
+		if l.Uid != "" {
+			fmt.Fprintf(&buf, ` uid="%s"`, escapeAttr(l.Uid))
 		}
-		if link.Type != "" {
-			buf.WriteString(` type="`)
-			buf.WriteString(link.Type)
-			buf.WriteByte('"')
+		if l.Type != "" {
+			fmt.Fprintf(&buf, ` type="%s"`, escapeAttr(l.Type))
 		}
-		if link.Relation != "" {
-			buf.WriteString(` relation="`)
-			buf.WriteString(link.Relation)
-			buf.WriteByte('"')
+		if l.Relation != "" {
+			fmt.Fprintf(&buf, ` relation="%s"`, escapeAttr(l.Relation))
 		}
 		buf.WriteString("/>\n")
 	}

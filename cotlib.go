@@ -148,11 +148,15 @@ func checkXMLLimits(data []byte) error {
 	count := 0
 
 	for {
-		tok, err := dec.Token()
+		off := dec.InputOffset()
+		tok, err := dec.RawToken()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
+			return ErrInvalidInput
+		}
+		if dec.InputOffset()-off > maxTokenLen {
 			return ErrInvalidInput
 		}
 		count++
@@ -809,6 +813,9 @@ func FindTypesByFullName(name string) []cottypes.Type {
 
 // UnmarshalXMLEvent parses an XML byte slice into an Event
 func UnmarshalXMLEvent(data []byte) (*Event, error) {
+	if len(data) > maxXMLSize {
+		return nil, ErrInvalidInput
+	}
 	// Check for DOCTYPE in a case-insensitive manner
 	if doctypePattern.Match(data) {
 		return nil, ErrInvalidInput

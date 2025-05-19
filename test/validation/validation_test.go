@@ -207,6 +207,37 @@ func TestValidationBaseline(t *testing.T) {
 			t.Error("Expected namespace length error")
 		}
 	})
+
+	t.Run("max_xml_size", func(t *testing.T) {
+		big := strings.Repeat("a", (2<<20)+1)
+		xmlData := []byte("<event>" + big + "</event>")
+		_, err := cotlib.UnmarshalXMLEvent(xmlData)
+		if !errors.Is(err, cotlib.ErrInvalidInput) {
+			t.Error("Expected size limit error")
+		}
+	})
+
+	t.Run("token_length_limit", func(t *testing.T) {
+		name := strings.Repeat("x", 1025)
+		xmlData := []byte("<event><" + name + "/></event>")
+		_, err := cotlib.UnmarshalXMLEvent(xmlData)
+		if !errors.Is(err, cotlib.ErrInvalidInput) {
+			t.Error("Expected token length error")
+		}
+	})
+
+	t.Run("element_count_limit", func(t *testing.T) {
+		var b strings.Builder
+		b.WriteString("<event>")
+		for i := 0; i < 10001; i++ {
+			b.WriteString("<a></a>")
+		}
+		b.WriteString("</event>")
+		_, err := cotlib.UnmarshalXMLEvent([]byte(b.String()))
+		if !errors.Is(err, cotlib.ErrInvalidInput) {
+			t.Error("Expected element count error")
+		}
+	})
 }
 
 func TestWildcardPatterns(t *testing.T) {

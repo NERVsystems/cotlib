@@ -803,6 +803,9 @@ func (e *Event) ToXML() ([]byte, error) {
 
 	// Start event element
 	buf.WriteString("<event")
+	if e.Version != "" {
+		fmt.Fprintf(&buf, ` version="%s"`, e.Version)
+	}
 	if e.Type != "" {
 		fmt.Fprintf(&buf, ` type="%s"`, e.Type)
 	}

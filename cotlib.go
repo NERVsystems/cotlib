@@ -181,58 +181,6 @@ func SetMaxTokenLen(max int64) {
 	maxTokenLen.Store(max)
 }
 
-// checkXMLLimits performs a lightweight scan of the XML data to ensure it does
-// not exceed configured security limits.
-func checkXMLLimits(data []byte) error {
-	if len(data) > int(currentMaxXMLSize()) {
-		return ErrInvalidInput
-	}
-
-	pd := getDecoder(data)
-	defer putDecoder(pd)
-	dec := pd.dec
-
-	depth := 0
-	count := 0
-
-	for {
-		off := dec.InputOffset()
-		tok, err := dec.RawToken()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return ErrInvalidInput
-		}
-		if dec.InputOffset()-off > currentMaxTokenLen() {
-			return ErrInvalidInput
-		}
-		switch t := tok.(type) {
-		case xml.StartElement:
-			depth++
-			count++
-			if depth > int(currentMaxElementDepth()) || count > int(currentMaxElementCount()) {
-				return ErrInvalidInput
-			}
-			for _, a := range t.Attr {
-				if len(a.Value) > int(currentMaxValueLen()) {
-					return ErrInvalidInput
-				}
-			}
-		case xml.EndElement:
-			if depth > 0 {
-				depth--
-			}
-		case xml.CharData:
-			if len(t) > int(currentMaxValueLen()) {
-				return ErrInvalidInput
-			}
-		}
-	}
-
-	return nil
-}
-
 // attrEscaper escapes XML special characters in attribute values.
 var attrEscaper = strings.NewReplacer(
 	"&", "&amp;",
@@ -882,18 +830,12 @@ func UnmarshalXMLEvent(data []byte) (*Event, error) {
 		}
 	}
 
-	// Enforce parser limits before decoding
-	if err := checkXMLLimits(data); err != nil {
-		return nil, err
-	}
-
-	// Create a secure decoder with limits
+	// Create a decoder and enforce limits during decoding
 	pd := getDecoder(data)
 	defer putDecoder(pd)
-	decoder := pd.dec
 
 	evt := getEvent()
-	if err := decoder.Decode(evt); err != nil {
+	if err := decodeWithLimits(pd.dec, evt); err != nil {
 		return nil, fmt.Errorf("failed to decode XML: %w", err)
 	}
 

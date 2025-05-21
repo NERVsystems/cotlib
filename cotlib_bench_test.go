@@ -76,14 +76,11 @@ func unmarshalXMLEventNoPool(data []byte) (*Event, error) {
 			return nil, ErrInvalidInput
 		}
 	}
-	if err := checkXMLLimits(data); err != nil {
-		return nil, err
-	}
 	dec := xml.NewDecoder(io.LimitReader(bytes.NewReader(data), int64(len(data))))
 	dec.CharsetReader = nil
 	dec.Entity = nil
 	var evt Event
-	if err := dec.Decode(&evt); err != nil {
+	if err := decodeWithLimits(dec, &evt); err != nil {
 		return nil, fmt.Errorf("failed to decode XML: %w", err)
 	}
 	if err := evt.Validate(); err != nil {

@@ -274,12 +274,17 @@ The library implements several security measures:
 - Coordinate range enforcement
 - Time field validation to prevent time-based attacks
 - Maximum value length controls
+- Configurable parser limits
 - Secure logging practices
 
 ```go
 // Set maximum allowed length for XML attribute values
 // This protects against memory exhaustion attacks
 cotlib.SetMaxValueLen(500 * 1024) // 500KB limit
+cotlib.SetMaxXMLSize(2 << 20)    // 2MB overall XML size
+cotlib.SetMaxElementDepth(32)    // nesting depth limit
+cotlib.SetMaxElementCount(10000) // total element limit
+cotlib.SetMaxTokenLen(1024)      // single token size
 ```
 
 ### Logging
@@ -296,6 +301,16 @@ logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 }))
 
 ctx := cotlib.WithLogger(context.Background(), logger)
+```
+
+### Event Pooling
+
+`UnmarshalXMLEvent` reuses `Event` objects from an internal pool to reduce
+allocations. When you are done with an event, return it to the pool:
+
+```go
+evt, _ := cotlib.UnmarshalXMLEvent(data)
+defer cotlib.ReleaseEvent(evt)
 ```
 
 ## Benchmarks

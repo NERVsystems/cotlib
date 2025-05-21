@@ -98,26 +98,22 @@ const (
 	// Events cannot be valid for more than 7 days to prevent stale data
 	maxStaleOffset = 7 * 24 * time.Hour
 
-	// maxXMLSize is the maximum allowed size for XML input (2 MiB)
-	maxXMLSize = 2 << 20
-
-	// maxElementDepth is the maximum allowed depth of XML elements
-	maxElementDepth = 32
-
-	// maxElementCount is the maximum allowed number of XML elements
-	maxElementCount = 10000
-
-	// maxTokenLen is the maximum length for any single XML token
-	maxTokenLen = 1024
-
 	// CotTimeFormat is the standard time format for CoT messages (Zulu time, no offset)
 	// Format: "2006-01-02T15:04:05Z" (UTC without timezone offset)
 	CotTimeFormat = "2006-01-02T15:04:05Z"
 )
 
-// maxValueLen is the maximum length for attribute values and character data
-// Set to 512 KiB to accommodate large KML polygons
-var maxValueLen atomic.Int64
+// Default security limits. These can be adjusted with the setter functions
+var (
+	maxXMLSize      atomic.Int64
+	maxElementDepth atomic.Int64
+	maxElementCount atomic.Int64
+	maxTokenLen     atomic.Int64
+
+	// maxValueLen is the maximum length for attribute values and character data
+	// Set to 512 KiB to accommodate large KML polygons
+	maxValueLen atomic.Int64
+)
 
 // currentMaxValueLen returns the current maximum value length
 func currentMaxValueLen() int64 {
@@ -133,10 +129,62 @@ func SetMaxValueLen(max int64) {
 	maxValueLen.Store(max)
 }
 
+// currentMaxXMLSize returns the configured maximum XML size
+func currentMaxXMLSize() int64 {
+	return maxXMLSize.Load()
+}
+
+// SetMaxXMLSize sets the maximum allowed size for XML input
+func SetMaxXMLSize(max int64) {
+	if max < 0 {
+		max = 0
+	}
+	maxXMLSize.Store(max)
+}
+
+// currentMaxElementDepth returns the maximum XML element depth
+func currentMaxElementDepth() int64 {
+	return maxElementDepth.Load()
+}
+
+// SetMaxElementDepth sets the maximum depth of XML elements
+func SetMaxElementDepth(max int64) {
+	if max < 0 {
+		max = 0
+	}
+	maxElementDepth.Store(max)
+}
+
+// currentMaxElementCount returns the maximum allowed number of XML elements
+func currentMaxElementCount() int64 {
+	return maxElementCount.Load()
+}
+
+// SetMaxElementCount sets the maximum allowed number of XML elements
+func SetMaxElementCount(max int64) {
+	if max < 0 {
+		max = 0
+	}
+	maxElementCount.Store(max)
+}
+
+// currentMaxTokenLen returns the maximum allowed token length
+func currentMaxTokenLen() int64 {
+	return maxTokenLen.Load()
+}
+
+// SetMaxTokenLen sets the maximum length for any single XML token
+func SetMaxTokenLen(max int64) {
+	if max < 0 {
+		max = 0
+	}
+	maxTokenLen.Store(max)
+}
+
 // checkXMLLimits performs a lightweight scan of the XML data to ensure it does
 // not exceed configured security limits.
 func checkXMLLimits(data []byte) error {
-	if len(data) > maxXMLSize {
+	if len(data) > int(currentMaxXMLSize()) {
 		return ErrInvalidInput
 	}
 
@@ -156,14 +204,14 @@ func checkXMLLimits(data []byte) error {
 			}
 			return ErrInvalidInput
 		}
-		if dec.InputOffset()-off > maxTokenLen {
+		if dec.InputOffset()-off > currentMaxTokenLen() {
 			return ErrInvalidInput
 		}
 		switch t := tok.(type) {
 		case xml.StartElement:
 			depth++
 			count++
-			if depth > maxElementDepth || count > maxElementCount {
+			if depth > int(currentMaxElementDepth()) || count > int(currentMaxElementCount()) {
 				return ErrInvalidInput
 			}
 			for _, a := range t.Attr {
@@ -813,9 +861,12 @@ func FindTypesByFullName(name string) []cottypes.Type {
 	return cottypes.GetCatalog().FindByFullName(name)
 }
 
-// UnmarshalXMLEvent parses an XML byte slice into an Event
+// UnmarshalXMLEvent parses an XML byte slice into an Event. The returned Event
+// is obtained from an internal pool; callers should release it with
+// ReleaseEvent when finished.
+// The function uses the standard library's encoding/xml Decoder under the hood.
 func UnmarshalXMLEvent(data []byte) (*Event, error) {
-	if len(data) > maxXMLSize {
+	if len(data) > int(currentMaxXMLSize()) {
 		return nil, ErrInvalidInput
 	}
 	// Check for DOCTYPE in a case-insensitive manner

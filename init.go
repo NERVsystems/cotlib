@@ -14,6 +14,13 @@ func init() {
 	if l := logger.Load(); l == nil {
 		logger.Store(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	}
+
+	// Set default XML parsing limits
+	SetMaxXMLSize(2 << 20)
+	SetMaxElementDepth(32)
+	SetMaxElementCount(10000)
+	SetMaxTokenLen(1024)
+	SetMaxValueLen(512 * 1024)
 }
 
 // SetLogger sets the package-level logger

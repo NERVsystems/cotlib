@@ -20,3 +20,13 @@ func BenchmarkCatalogFindByFullName(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkCatalogFindByDescription(b *testing.B) {
+	cat := GetCatalog()
+	for i := 0; i < b.N; i++ {
+		res := cat.FindByDescription("NBC EQUIPMENT")
+		if len(res) == 0 {
+			b.Fatal("no results")
+		}
+	}
+}

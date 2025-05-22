@@ -1,6 +1,6 @@
 ![Cursor On Target](cotlogo.png)
 
-'The sum of all wisdom is a cursor over the target.'  — Gen. John Jumper
+'…we want the target dead or saved…we gotta get away from platform centric thinking…and we gotta focus on this thing where the sum of the wisdom is a cursor over the target…and we’re indifferent [to the source]'  — Gen. John Jumper
 
 # CoT Library
 

@@ -2,7 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/NERVsystems/cotlib)](https://goreportcard.com/report/github.com/NERVsystems/cotlib)
 
-'The sum of all wisdom is a cursor over the target.'  — Gen. John Jumper
+'…we want the target dead or saved…we gotta get away from platform centric thinking…and we gotta focus on this thing where the sum of the wisdom is a cursor over the target…and we’re indifferent [to the source]'  — Gen. John Jumper
 
 A comprehensive Go library for creating, validating, and working with Cursor-on-Target (CoT) events.
 

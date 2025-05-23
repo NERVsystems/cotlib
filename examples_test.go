@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/NERVsystems/cotlib"
+	"github.com/NERVsystems/cotlib/cotexplainer"
 )
 
 func ExampleNewEvent() {
@@ -217,4 +218,22 @@ func ExampleFindTypesByFullName() {
 	// Found type: a-h-G-E-X-N (Gnd/Equip/Nbc Equipment)
 	// Found type: a-n-G-E-X-N (Gnd/Equip/Nbc Equipment)
 	// Found type: a-u-G-E-X-N (Gnd/Equip/Nbc Equipment)
+}
+
+func ExampleExplainType() {
+	parts, err := cotexplainer.ExplainType("a-f-G-E-X-N")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	for _, p := range parts {
+		fmt.Println(p)
+	}
+	// Output:
+	// Atom
+	// Friendly
+	// Ground
+	// EQUIPMENT
+	// SPECIAL EQUIPMENT
+	// NBC EQUIPMENT
 }

@@ -585,6 +585,28 @@ func TestPointValidation(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "sentinel HAE allowed",
+			point: &Point{
+				Lat: 37.7749,
+				Lon: -122.4194,
+				Hae: 9999999.0,
+				Ce:  9999999.0,
+				Le:  9999999.0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "HAE above limit",
+			point: &Point{
+				Lat: 37.7749,
+				Lon: -122.4194,
+				Hae: 40000001.0,
+				Ce:  9999999.0,
+				Le:  9999999.0,
+			},
+			wantErr: true,
+		},
+		{
 			name: "invalid latitude",
 			point: &Point{
 				Lat: 91.0,

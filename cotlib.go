@@ -483,8 +483,10 @@ func (p *Point) Validate() error {
 	}
 
 	// Validate height above ellipsoid (HAE)
-	// HAE must be between -10000 (Dead Sea) and 100000 (edge of space)
-	if p.Hae < -10000 || p.Hae > 100000 {
+	// Lower bound: Mariana Trench depth (-12000m) with safety margin
+	// Upper bound: Geostationary orbit (40000km) for space assets
+	// Special case: 9999999.0 is allowed as traditional TAK "unknown altitude"
+	if p.Hae < -12000 || (p.Hae > 40000000 && p.Hae != 9999999.0) {
 		return fmt.Errorf("invalid HAE: %f", p.Hae)
 	}
 

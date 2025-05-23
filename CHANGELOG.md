@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 
 
 ### Changed
--
+- Allowed `HAE` sentinel value `9999999.0` and expanded valid range to -12000..40000000
 
 ### Deprecated
 -

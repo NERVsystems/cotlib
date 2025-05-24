@@ -556,6 +556,15 @@ type Detail struct {
 	Mission           *Mission           `xml:"mission,omitempty"`
 	Status            *Status            `xml:"status,omitempty"`
 	Shape             *Shape             `xml:"shape,omitempty"`
+	StrokeColor       *StrokeColor       `xml:"strokecolor,omitempty"`
+	StrokeWeight      *StrokeWeight      `xml:"strokeweight,omitempty"`
+	FillColor         *FillColor         `xml:"fillcolor,omitempty"`
+	LabelsOn          *LabelsOn          `xml:"labelson,omitempty"`
+	ColorExtension    *ColorExtension    `xml:"color,omitempty"`
+	UserIcon          *UserIcon          `xml:"usericon,omitempty"`
+	Bullseye          *Bullseye          `xml:"bullseye,omitempty"`
+	RouteInfo         *RouteInfo         `xml:"routeInfo,omitempty"`
+	Remarks           *Remarks           `xml:"remarks,omitempty"`
 	Unknown           []RawMessage       `xml:"-"`
 }
 
@@ -694,6 +703,60 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 					return err
 				}
 				d.Shape = &sh
+			case "strokecolor":
+				var sc StrokeColor
+				if err := dec.DecodeElement(&sc, &t); err != nil {
+					return err
+				}
+				d.StrokeColor = &sc
+			case "strokeweight":
+				var sw StrokeWeight
+				if err := dec.DecodeElement(&sw, &t); err != nil {
+					return err
+				}
+				d.StrokeWeight = &sw
+			case "fillcolor":
+				var fc FillColor
+				if err := dec.DecodeElement(&fc, &t); err != nil {
+					return err
+				}
+				d.FillColor = &fc
+			case "labelson":
+				var lo LabelsOn
+				if err := dec.DecodeElement(&lo, &t); err != nil {
+					return err
+				}
+				d.LabelsOn = &lo
+			case "color":
+				var co ColorExtension
+				if err := dec.DecodeElement(&co, &t); err != nil {
+					return err
+				}
+				d.ColorExtension = &co
+			case "usericon":
+				var ui UserIcon
+				if err := dec.DecodeElement(&ui, &t); err != nil {
+					return err
+				}
+				d.UserIcon = &ui
+			case "bullseye":
+				var b Bullseye
+				if err := dec.DecodeElement(&b, &t); err != nil {
+					return err
+				}
+				d.Bullseye = &b
+			case "routeInfo":
+				var ri RouteInfo
+				if err := dec.DecodeElement(&ri, &t); err != nil {
+					return err
+				}
+				d.RouteInfo = &ri
+			case "remarks":
+				var r Remarks
+				if err := dec.DecodeElement(&r, &t); err != nil {
+					return err
+				}
+				d.Remarks = &r
 			default:
 				raw, err := captureRaw(dec, t)
 				if err != nil {
@@ -802,6 +865,51 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	}
 	if d.Shape != nil {
 		if err := encodeRaw(enc, d.Shape.Raw); err != nil {
+			return err
+		}
+	}
+	if d.StrokeColor != nil {
+		if err := encodeRaw(enc, d.StrokeColor.Raw); err != nil {
+			return err
+		}
+	}
+	if d.StrokeWeight != nil {
+		if err := encodeRaw(enc, d.StrokeWeight.Raw); err != nil {
+			return err
+		}
+	}
+	if d.FillColor != nil {
+		if err := encodeRaw(enc, d.FillColor.Raw); err != nil {
+			return err
+		}
+	}
+	if d.LabelsOn != nil {
+		if err := encodeRaw(enc, d.LabelsOn.Raw); err != nil {
+			return err
+		}
+	}
+	if d.ColorExtension != nil {
+		if err := encodeRaw(enc, d.ColorExtension.Raw); err != nil {
+			return err
+		}
+	}
+	if d.UserIcon != nil {
+		if err := encodeRaw(enc, d.UserIcon.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Bullseye != nil {
+		if err := encodeRaw(enc, d.Bullseye.Raw); err != nil {
+			return err
+		}
+	}
+	if d.RouteInfo != nil {
+		if err := encodeRaw(enc, d.RouteInfo.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Remarks != nil {
+		if err := encodeRaw(enc, d.Remarks.Raw); err != nil {
 			return err
 		}
 	}

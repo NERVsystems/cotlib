@@ -89,6 +89,51 @@ type Shape struct {
 	Raw RawMessage
 }
 
+// StrokeColor represents the TAK strokecolor extension.
+type StrokeColor struct {
+	Raw RawMessage
+}
+
+// StrokeWeight represents the TAK strokeweight extension.
+type StrokeWeight struct {
+	Raw RawMessage
+}
+
+// FillColor represents the TAK fillcolor extension.
+type FillColor struct {
+	Raw RawMessage
+}
+
+// LabelsOn represents the TAK labelson extension.
+type LabelsOn struct {
+	Raw RawMessage
+}
+
+// ColorExtension represents the TAK color extension.
+type ColorExtension struct {
+	Raw RawMessage
+}
+
+// UserIcon represents the TAK usericon extension.
+type UserIcon struct {
+	Raw RawMessage
+}
+
+// Bullseye represents the TAK bullseye extension.
+type Bullseye struct {
+	Raw RawMessage
+}
+
+// RouteInfo represents the TAK routeInfo extension.
+type RouteInfo struct {
+	Raw RawMessage
+}
+
+// Remarks represents the TAK remarks extension.
+type Remarks struct {
+	Raw RawMessage
+}
+
 // captureRaw reads an element starting from start and returns its raw XML
 // representation.
 func captureRaw(dec *xml.Decoder, start xml.StartElement) (RawMessage, error) {
@@ -325,6 +370,123 @@ func (s *Shape) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 
 func (s Shape) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	return encodeRaw(enc, s.Raw)
+}
+
+func (sc *StrokeColor) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	sc.Raw = raw
+	return nil
+}
+
+func (sc StrokeColor) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, sc.Raw)
+}
+
+func (sw *StrokeWeight) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	sw.Raw = raw
+	return nil
+}
+
+func (sw StrokeWeight) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, sw.Raw)
+}
+
+func (fc *FillColor) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	fc.Raw = raw
+	return nil
+}
+
+func (fc FillColor) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, fc.Raw)
+}
+
+func (lo *LabelsOn) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	lo.Raw = raw
+	return nil
+}
+
+func (lo LabelsOn) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, lo.Raw)
+}
+
+func (c *ColorExtension) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	c.Raw = raw
+	return nil
+}
+
+func (c ColorExtension) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, c.Raw)
+}
+
+func (ui *UserIcon) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	ui.Raw = raw
+	return nil
+}
+
+func (ui UserIcon) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, ui.Raw)
+}
+
+func (b *Bullseye) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	b.Raw = raw
+	return nil
+}
+
+func (b Bullseye) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, b.Raw)
+}
+
+func (ri *RouteInfo) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	ri.Raw = raw
+	return nil
+}
+
+func (ri RouteInfo) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, ri.Raw)
+}
+
+func (r *Remarks) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	r.Raw = raw
+	return nil
+}
+
+func (r Remarks) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, r.Raw)
 }
 
 // encodeRaw writes pre-encoded XML directly to the encoder.

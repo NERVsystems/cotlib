@@ -2,12 +2,14 @@ package cottypes_test
 
 import (
 	"bytes"
+	"context"
 	"log/slog"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/NERVsystems/cotlib/cottypes"
+	"github.com/NERVsystems/cotlib/ctxlog"
 )
 
 // TestRegisterXML tests that RegisterXML correctly logs a summary and not individual types
@@ -28,8 +30,9 @@ func TestRegisterXML(t *testing.T) {
 		t.Fatalf("Failed to read XML file: %v", err)
 	}
 
-	// Register the XML types
-	err = cottypes.RegisterXML(data)
+	// Register the XML types using a context with logger
+	ctx := ctxlog.WithLogger(context.Background(), logger)
+	err = cottypes.RegisterXML(ctx, data)
 	if err != nil {
 		t.Fatalf("Failed to register XML types: %v", err)
 	}
@@ -77,8 +80,9 @@ func TestRealWorldTypeRegistration(t *testing.T) {
 		t.Fatalf("Failed to read XML file: %v", err)
 	}
 
-	// Register the XML types
-	err = cottypes.RegisterXML(data)
+	// Register the XML types using a context with logger
+	ctx := ctxlog.WithLogger(context.Background(), logger)
+	err = cottypes.RegisterXML(ctx, data)
 	if err != nil {
 		t.Fatalf("Failed to register XML types: %v", err)
 	}

@@ -2,8 +2,10 @@ package cottypes
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"fmt"
+	"github.com/NERVsystems/cotlib/ctxlog"
 	"log/slog"
 	"strings"
 	"sync"
@@ -95,7 +97,9 @@ func GetCatalog() *Catalog {
 }
 
 // RegisterXML registers CoT types from XML content into the catalog.
-func RegisterXML(data []byte) error {
+func RegisterXML(ctx context.Context, data []byte) error {
+	logger := ctxlog.LoggerFromContext(ctx)
+
 	var types struct {
 		Types []struct {
 			Cot  string `xml:"cot,attr"`

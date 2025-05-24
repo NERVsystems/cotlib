@@ -310,8 +310,10 @@ if err := cotlib.ValidateType("a-f-G-E-V-custom"); err != nil {
     log.Fatal(err)
 }
 
+ctx := cotlib.WithLogger(context.Background(), logger)
+
 // Register types from a file
-if err := cotlib.RegisterCoTTypesFromFile("my-types.xml"); err != nil {
+if err := cotlib.RegisterCoTTypesFromFile(ctx, "my-types.xml"); err != nil {
     log.Fatal(err)
 }
 
@@ -320,7 +322,7 @@ xmlContent := `<types>
     <cot cot="a-f-G-custom"/>
     <cot cot="a-h-A-custom"/>
 </types>`
-if err := cotlib.RegisterCoTTypesFromXMLContent(xmlContent); err != nil {
+if err := cotlib.RegisterCoTTypesFromXMLContent(ctx, xmlContent); err != nil {
     log.Fatal(err)
 }
 ```
@@ -467,6 +469,8 @@ logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 }))
 
 ctx := cotlib.WithLogger(context.Background(), logger)
+log := cotlib.LoggerFromContext(ctx)
+log.Info("logger ready")
 ```
 
 ### Event Pooling

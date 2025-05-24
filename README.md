@@ -135,7 +135,7 @@ func main() {
 #### Handling Detail Extensions
 
 CoT events often include TAK-specific extensions inside the `<detail>` element.
-Unknown elements are preserved in `Detail.Extensions` and serialized back
+Unknown elements are preserved in `Detail.Unknown` and serialized back
 verbatim:
 
 ```go
@@ -148,7 +148,7 @@ xmlData := `<?xml version="1.0"?>
 </event>`
 
 evt, _ := cotlib.UnmarshalXMLEvent([]byte(xmlData))
-fmt.Printf("Extensions: %d\n", len(evt.Detail.Extensions))
+fmt.Printf("Extensions: %d\n", len(evt.Detail.Unknown))
 
 out, _ := evt.ToXML()
 fmt.Println(string(out))

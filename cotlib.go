@@ -1244,11 +1244,25 @@ func FindTypesByFullName(name string) []cottypes.Type {
 // ReleaseEvent when finished.
 // The function uses the standard library's encoding/xml Decoder under the hood.
 func UnmarshalXMLEvent(data []byte) (*Event, error) {
+	return UnmarshalXMLEventCtx(context.Background(), data)
+}
+
+// UnmarshalXMLEventCtx parses an XML byte slice into an Event using the
+// provided context for logging. The returned Event is obtained from an
+// internal pool and must be released with ReleaseEvent when finished.
+func UnmarshalXMLEventCtx(ctx context.Context, data []byte) (*Event, error) {
+	logger := LoggerFromContext(ctx)
+
 	if len(data) > int(currentMaxXMLSize()) {
+		logger.Error("xml size exceeds limit",
+			"size", len(data),
+			"limit", currentMaxXMLSize())
 		return nil, ErrInvalidInput
 	}
+
 	// Check for DOCTYPE in a case-insensitive manner
 	if doctypePattern.Match(data) {
+		logger.Error("invalid doctype detected")
 		return nil, ErrInvalidInput
 	}
 
@@ -1256,22 +1270,24 @@ func UnmarshalXMLEvent(data []byte) (*Event, error) {
 	if idx := bytes.Index(data, []byte(`xmlns="`)); idx >= 0 {
 		end := bytes.Index(data[idx+7:], []byte(`"`))
 		if end > 1024 {
+			logger.Error("namespace value too long")
 			return nil, ErrInvalidInput
 		}
 	}
 
-	// Create a decoder and enforce limits during decoding
 	pd := getDecoder(data)
 	defer putDecoder(pd)
 
 	evt := getEvent()
 	if err := decodeWithLimits(pd.dec, evt); err != nil {
 		ReleaseEvent(evt)
+		logger.Error("failed to decode XML", "error", err)
 		return nil, fmt.Errorf("failed to decode XML: %w", err)
 	}
 
 	if err := evt.ValidateAt(time.Now().UTC()); err != nil {
 		ReleaseEvent(evt)
+		logger.Error("event validation failed", "error", err)
 		return nil, err
 	}
 

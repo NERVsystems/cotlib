@@ -275,3 +275,37 @@ func TestHowRelationDescriptors(t *testing.T) {
 		}
 	})
 }
+
+func TestDetailExtensionsRoundTrip(t *testing.T) {
+	evt, err := cotlib.NewEvent("X1", "a-f-G", 1, 2, 3)
+	if err != nil {
+		t.Fatalf("new event: %v", err)
+	}
+	evt.Detail = &cotlib.Detail{
+		Chat:              &cotlib.Chat{Raw: []byte(`<__chat id="c1"/>`)},
+		ChatReceipt:       &cotlib.ChatReceipt{Raw: []byte(`<__chatReceipt ack="y"/>`)},
+		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence radius="5"/>`)},
+		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination host="srv"/>`)},
+		Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
+		GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g"/>`)},
+		Unknown:           []cotlib.RawMessage{[]byte(`<extra foo="bar"/>`)},
+	}
+
+	xmlData, err := evt.ToXML()
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	cotlib.ReleaseEvent(evt)
+
+	out, err := cotlib.UnmarshalXMLEvent(xmlData)
+	if err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if out.Detail == nil || out.Detail.Chat == nil || len(out.Detail.Chat.Raw) == 0 {
+		t.Errorf("chat extension lost")
+	}
+	if len(out.Detail.Unknown) != 1 {
+		t.Errorf("expected 1 unknown element, got %d", len(out.Detail.Unknown))
+	}
+	cotlib.ReleaseEvent(out)
+}

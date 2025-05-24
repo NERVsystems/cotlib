@@ -888,10 +888,12 @@ func UnmarshalXMLEvent(data []byte) (*Event, error) {
 
 	evt := getEvent()
 	if err := decodeWithLimits(pd.dec, evt); err != nil {
+		ReleaseEvent(evt)
 		return nil, fmt.Errorf("failed to decode XML: %w", err)
 	}
 
 	if err := evt.ValidateAt(time.Now().UTC()); err != nil {
+		ReleaseEvent(evt)
 		return nil, err
 	}
 

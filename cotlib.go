@@ -519,6 +519,10 @@ type Event struct {
 	Point   Point    `xml:"point"`
 	Detail  *Detail  `xml:"detail,omitempty"`
 	Links   []Link   `xml:"link,omitempty"`
+	// StrokeColor is an ARGB hex color used for drawing events.
+	StrokeColor string `xml:"strokeColor,attr,omitempty"`
+	// UserIcon specifies a custom icon URL or resource for the event.
+	UserIcon string `xml:"usericon,attr,omitempty"`
 }
 
 // Error sentinels for validation
@@ -1241,6 +1245,16 @@ func (e *Event) ToXML() ([]byte, error) {
 	if !e.Stale.Time().IsZero() {
 		buf.WriteString(` stale="`)
 		buf.WriteString(e.Stale.Time().UTC().Format(CotTimeFormat))
+		buf.WriteByte('"')
+	}
+	if e.StrokeColor != "" {
+		buf.WriteString(` strokeColor="`)
+		buf.WriteString(escapeAttr(e.StrokeColor))
+		buf.WriteByte('"')
+	}
+	if e.UserIcon != "" {
+		buf.WriteString(` usericon="`)
+		buf.WriteString(escapeAttr(e.UserIcon))
 		buf.WriteByte('"')
 	}
 	buf.WriteString(">\n")

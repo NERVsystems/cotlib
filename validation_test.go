@@ -309,3 +309,37 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 	}
 	cotlib.ReleaseEvent(out)
 }
+
+func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
+	evt, err := cotlib.NewEvent("X2", "a-f-G", 1, 2, 3)
+	if err != nil {
+		t.Fatalf("new event: %v", err)
+	}
+	evt.Detail = &cotlib.Detail{
+		Archive:           &cotlib.Archive{Raw: []byte(`<archive id="a"/>`)},
+		AttachmentList:    &cotlib.AttachmentList{Raw: []byte(`<attachmentList/>`)},
+		Environment:       &cotlib.Environment{Raw: []byte(`<environment/>`)},
+		FileShare:         &cotlib.FileShare{Raw: []byte(`<fileshare/>`)},
+		PrecisionLocation: &cotlib.PrecisionLocation{Raw: []byte(`<precisionlocation/>`)},
+		Takv:              &cotlib.Takv{Raw: []byte(`<takv/>`)},
+		Track:             &cotlib.Track{Raw: []byte(`<track/>`)},
+		Mission:           &cotlib.Mission{Raw: []byte(`<mission/>`)},
+		Status:            &cotlib.Status{Raw: []byte(`<status/>`)},
+		Shape:             &cotlib.Shape{Raw: []byte(`<shape/>`)},
+	}
+
+	xmlData, err := evt.ToXML()
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	cotlib.ReleaseEvent(evt)
+
+	out, err := cotlib.UnmarshalXMLEvent(xmlData)
+	if err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if out.Detail == nil || out.Detail.Archive == nil || len(out.Detail.Archive.Raw) == 0 {
+		t.Errorf("archive extension lost")
+	}
+	cotlib.ReleaseEvent(out)
+}

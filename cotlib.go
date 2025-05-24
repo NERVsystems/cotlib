@@ -546,6 +546,16 @@ type Detail struct {
 	ServerDestination *ServerDestination `xml:"__serverdestination,omitempty"`
 	Video             *Video             `xml:"__video,omitempty"`
 	GroupExtension    *GroupExtension    `xml:"__group,omitempty"`
+	Archive           *Archive           `xml:"archive,omitempty"`
+	AttachmentList    *AttachmentList    `xml:"attachmentList,omitempty"`
+	Environment       *Environment       `xml:"environment,omitempty"`
+	FileShare         *FileShare         `xml:"fileshare,omitempty"`
+	PrecisionLocation *PrecisionLocation `xml:"precisionlocation,omitempty"`
+	Takv              *Takv              `xml:"takv,omitempty"`
+	Track             *Track             `xml:"track,omitempty"`
+	Mission           *Mission           `xml:"mission,omitempty"`
+	Status            *Status            `xml:"status,omitempty"`
+	Shape             *Shape             `xml:"shape,omitempty"`
 	Unknown           []RawMessage       `xml:"-"`
 }
 
@@ -624,6 +634,66 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 					return err
 				}
 				d.GroupExtension = &gext
+			case "archive":
+				var a Archive
+				if err := dec.DecodeElement(&a, &t); err != nil {
+					return err
+				}
+				d.Archive = &a
+			case "attachmentList":
+				var al AttachmentList
+				if err := dec.DecodeElement(&al, &t); err != nil {
+					return err
+				}
+				d.AttachmentList = &al
+			case "environment":
+				var env Environment
+				if err := dec.DecodeElement(&env, &t); err != nil {
+					return err
+				}
+				d.Environment = &env
+			case "fileshare":
+				var fs FileShare
+				if err := dec.DecodeElement(&fs, &t); err != nil {
+					return err
+				}
+				d.FileShare = &fs
+			case "precisionlocation":
+				var pl PrecisionLocation
+				if err := dec.DecodeElement(&pl, &t); err != nil {
+					return err
+				}
+				d.PrecisionLocation = &pl
+			case "takv":
+				var tv Takv
+				if err := dec.DecodeElement(&tv, &t); err != nil {
+					return err
+				}
+				d.Takv = &tv
+			case "track":
+				var tr Track
+				if err := dec.DecodeElement(&tr, &t); err != nil {
+					return err
+				}
+				d.Track = &tr
+			case "mission":
+				var m Mission
+				if err := dec.DecodeElement(&m, &t); err != nil {
+					return err
+				}
+				d.Mission = &m
+			case "status":
+				var s Status
+				if err := dec.DecodeElement(&s, &t); err != nil {
+					return err
+				}
+				d.Status = &s
+			case "shape":
+				var sh Shape
+				if err := dec.DecodeElement(&sh, &t); err != nil {
+					return err
+				}
+				d.Shape = &sh
 			default:
 				raw, err := captureRaw(dec, t)
 				if err != nil {
@@ -682,6 +752,56 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	}
 	if d.GroupExtension != nil {
 		if err := encodeRaw(enc, d.GroupExtension.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Archive != nil {
+		if err := encodeRaw(enc, d.Archive.Raw); err != nil {
+			return err
+		}
+	}
+	if d.AttachmentList != nil {
+		if err := encodeRaw(enc, d.AttachmentList.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Environment != nil {
+		if err := encodeRaw(enc, d.Environment.Raw); err != nil {
+			return err
+		}
+	}
+	if d.FileShare != nil {
+		if err := encodeRaw(enc, d.FileShare.Raw); err != nil {
+			return err
+		}
+	}
+	if d.PrecisionLocation != nil {
+		if err := encodeRaw(enc, d.PrecisionLocation.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Takv != nil {
+		if err := encodeRaw(enc, d.Takv.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Track != nil {
+		if err := encodeRaw(enc, d.Track.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Mission != nil {
+		if err := encodeRaw(enc, d.Mission.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Status != nil {
+		if err := encodeRaw(enc, d.Status.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Shape != nil {
+		if err := encodeRaw(enc, d.Shape.Raw); err != nil {
 			return err
 		}
 	}
@@ -1203,6 +1323,56 @@ func (e *Event) ToXML() ([]byte, error) {
 		if e.Detail.GroupExtension != nil {
 			buf.WriteString("    ")
 			buf.Write(e.Detail.GroupExtension.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Archive != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.Archive.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.AttachmentList != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.AttachmentList.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Environment != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.Environment.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.FileShare != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.FileShare.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.PrecisionLocation != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.PrecisionLocation.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Takv != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.Takv.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Track != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.Track.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Mission != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.Mission.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Status != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.Status.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Shape != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.Shape.Raw)
 			buf.WriteByte('\n')
 		}
 		for _, raw := range e.Detail.Unknown {

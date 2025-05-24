@@ -135,23 +135,32 @@ func main() {
 #### Handling Detail Extensions
 
 CoT events often include TAK-specific extensions inside the `<detail>` element.
-Unknown elements are preserved in `Detail.Unknown` and serialized back
-verbatim:
+`cotlib` now preserves several common extensions and round-trips them
+unchanged:
+
+- `__chat`
+- `__chatReceipt`
+- `__geofence`
+- `__serverdestination`
+- `__video`
+- `__group`
+
+Any unknown elements are stored in `Detail.Unknown` and serialized back
+verbatim.
 
 ```go
 xmlData := `<?xml version="1.0"?>
-<event version="2.0" uid="CHAT-1" type="t-x-c" time="2023-05-15T18:30:22Z" start="2023-05-15T18:30:22Z" stale="2023-05-15T18:30:32Z">
+<event version="2.0" uid="EXT-1" type="t-x-c" time="2023-05-15T18:30:22Z" start="2023-05-15T18:30:22Z" stale="2023-05-15T18:30:32Z">
   <point lat="0" lon="0" ce="9999999.0" le="9999999.0"/>
   <detail>
     <__chat message="Hello world!" sender="Alpha"/>
+    <__video url="http://example/video"/>
   </detail>
 </event>`
 
 evt, _ := cotlib.UnmarshalXMLEvent([]byte(xmlData))
-fmt.Printf("Extensions: %d\n", len(evt.Detail.Unknown))
-
 out, _ := evt.ToXML()
-fmt.Println(string(out))
+fmt.Println(string(out)) // prints the same XML
 ```
 
 ### Type Validation and Catalog

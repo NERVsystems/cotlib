@@ -971,12 +971,16 @@ func ValidateType(typ string) error {
 		if len(parts) < 2 {
 			return fmt.Errorf("invalid type format")
 		}
-		// Only allow wildcards at the end of the type string
-		for i := 0; i < len(parts)-1; i++ {
-			if parts[i] == "*" {
-				return fmt.Errorf("wildcard only allowed at end of type")
+
+		// Only allow a trailing segment consisting solely of '*'
+		for i, p := range parts {
+			if strings.Contains(p, "*") {
+				if p != "*" || i != len(parts)-1 {
+					return fmt.Errorf("wildcard only allowed at end of type")
+				}
 			}
 		}
+
 		// Validate the prefix
 		if parts[0] != "a" && parts[0] != "b" && parts[0] != "t" {
 			return fmt.Errorf("invalid type prefix")

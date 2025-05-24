@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<!-- TAK-specific Cursor-on-Target type extensions 
+     These types extend the base CoT specification with
+     ATAK/WinTAK/iTAK specific collaboration features.
+     All entries use the TAK/ namespace prefix to distinguish
+     from MITRE/MIL-STD-2525 canonical types.
+     This list compiled by NERV, 2025-05-24
+-->
+<types>
+  <!-- CHAT & MESSAGES -->
+  <cot cot="b-t-f"        full="TAK/Chat/FreeText"          desc="GeoChat text message"/>
+  <cot cot="t-x-c"        full="TAK/Chat/Client"            desc="Client chat message"/>
+  <cot cot="t-x-c-t"      full="TAK/Chat/Text"              desc="Plain-text chat"/>
+  <cot cot="t-x-m"        full="TAK/Message/General"        desc="General system message"/>
+  <cot cot="y-c-r"        full="TAK/Reply/Chat"             desc="Chat reply"/>
+  <cot cot="y-m-r"        full="TAK/Reply/Message"          desc="Message reply"/>
+
+  <!-- TASKING -->
+  <cot cot="t-x-t"        full="TAK/Task/General"           desc="Task"/>
+  <cot cot="t-x-t-a"      full="TAK/Task/Assignment"        desc="Task assignment"/>
+  <cot cot="t-x-t-s"      full="TAK/Task/Status"            desc="Task status"/>
+  <cot cot="y-t-r"        full="TAK/Reply/Task"             desc="Task reply"/>
+
+  <!-- PRESENCE HANDSHAKE -->
+  <cot cot="t-x-takp-v"   full="TAK/Presence/Version"       desc="Presence version broadcast"/>
+  <cot cot="t-x-takp-q"   full="TAK/Presence/Query"         desc="Presence query"/>
+  <cot cot="t-x-takp-r"   full="TAK/Presence/Response"      desc="Presence response"/>
+
+  <!-- DRAWINGS & USER GRAPHICS -->
+  <cot cot="t-x-d"        full="TAK/Drawing/General"        desc="Drawing root"/>
+  <cot cot="u-d-f"        full="TAK/Drawing/FreeForm"       desc="Free-form drawing"/>
+  <cot cot="u-d-f-m"      full="TAK/Drawing/Polyline"       desc="Multi-segment polyline"/>
+  <cot cot="u-d-r"        full="TAK/Drawing/Rectangle"      desc="Rectangle"/>
+  <cot cot="u-d-k"        full="TAK/Drawing/Keyhole"        desc="Keyhole / ellipse"/>
+  <cot cot="u-d-c"        full="TAK/Drawing/Circle"         desc="Circle"/>
+  <cot cot="u-d-c-c"      full="TAK/Drawing/CircleCenter"   desc="Circle centre-defined"/>
+  <cot cot="u-d-p"        full="TAK/Drawing/Polygon"        desc="Polygon"/>
+  <cot cot="u-d-l"        full="TAK/Drawing/Line"           desc="Straight line"/>
+  <cot cot="u-d-v"        full="TAK/Drawing/VehicleIcon"    desc="Vehicle icon"/>
+
+  <!-- RANGE & BEARING TOOLS -->
+  <cot cot="u-rb"              full="TAK/RangeBearing/Generic"   desc="Range &amp; bearing tool"/>
+  <cot cot="u-rb-a"            full="TAK/RangeBearing/Azimuth"   desc="Azimuth line"/>
+  <cot cot="u-r-b-bullseye"    full="TAK/RangeBearing/Bullseye"  desc="Bullseye reference"/>
+  <cot cot="u-r-b-c-c"         full="TAK/RangeBearing/Circle"    desc="Bearing circle"/>
+
+  <!-- FILE & DATA TRANSFER -->
+  <cot cot="b-t-b"        full="TAK/Bits/BinaryFile"        desc="Mission-package binary"/>
+  <cot cot="b-t-i"        full="TAK/Bits/ImageFile"         desc="Image file transfer"/>
+  <cot cot="b-t-v"        full="TAK/Bits/VideoFile"         desc="Video file transfer"/>
+  <cot cot="b-t-a"        full="TAK/Bits/AudioFile"         desc="Audio file transfer"/>
+  <cot cot="b-t-d"        full="TAK/Bits/DocumentFile"      desc="Document file transfer"/>
+
+  <!-- EMERGENCY / 911 -->
+  <cot cot="b-e-r"        full="TAK/Emergency/Request"      desc="Emergency request"/>
+  <cot cot="b-e-a"        full="TAK/Emergency/Alert"        desc="Emergency alert"/>
+  <cot cot="b-e-s"        full="TAK/Emergency/SOS"          desc="SOS distress"/>
+
+  <!-- MEDICAL -->
+  <cot cot="b-r-f-h-c"    full="TAK/Medical/CASEVAC"        desc="CASEVAC request"/>
+  <cot cot="t-x-v-m"      full="TAK/Medical/MEDEVAC"        desc="MEDEVAC mission"/>
+  <cot cot="t-x-v-c"      full="TAK/Medical/CASEVACStatus"  desc="CASEVAC status"/>
+
+  <!-- ROUTE & NAVIGATION -->
+  <cot cot="b-m-r"        full="TAK/Route/Route"            desc="Collaborative route"/>
+  <cot cot="b-m-p-w"      full="TAK/Route/Waypoint"         desc="Waypoint"/>
+  <cot cot="b-m-p-j"      full="TAK/Route/JumpPoint"        desc="Jump-master point"/>
+  <cot cot="b-r-f-h-w"    full="TAK/Route/RouteWaypoint"    desc="Route waypoint"/>
+  <cot cot="b-r-f-h-r"    full="TAK/Route/RouteRoot"        desc="Route definition"/>
+
+  <!-- MAP & GEO FEATURES -->
+  <cot cot="b-m-p-c"      full="TAK/Map/Checkpoint"         desc="Checkpoint"/>
+  <cot cot="b-m-p-c-z"    full="TAK/Map/BoundingBox"        desc="Bounding box / resource envelope"/>
+  <cot cot="b-m-p-s"      full="TAK/SpotMap/Spot"           desc="Spot-map point"/>
+  <cot cot="b-m-p-s-m"    full="TAK/SpotMap/SpotMark"       desc="Spot mark"/>
+  <cot cot="b-m-s"        full="TAK/Map/Shape"              desc="Map shape"/>
+  <cot cot="b-e-r-z"      full="TAK/Map/RestrictedZone"     desc="Restricted / no-go zone"/>
+
+  <!-- SENSOR REPORTING -->
+  <cot cot="b-s-r"        full="TAK/Sensor/Reading"         desc="Sensor reading"/>
+  <cot cot="b-s-r-t"      full="TAK/Sensor/Temperature"     desc="Temperature reading"/>
+  <cot cot="b-s-r-h"      full="TAK/Sensor/Humidity"        desc="Humidity reading"/>
+  <cot cot="b-s-c"        full="TAK/Sensor/Config"          desc="Sensor configuration"/>
+
+  <!-- COLLABORATION -->
+  <cot cot="b-c-s"        full="TAK/Collaboration/Share"    desc="Collaboration share"/>
+  <cot cot="b-c-s-m"      full="TAK/Collaboration/ShareMission" desc="Share mission"/>
+  <cot cot="b-c-r"        full="TAK/Collaboration/Request"  desc="Collaboration request"/>
+
+  <!-- GROUP CHAT -->
+  <cot cot="b-g-c"        full="TAK/GroupChat/Message"      desc="Group chat message"/>
+  <cot cot="b-g-m"        full="TAK/GroupChat/Membership"   desc="Group membership"/>
+
+  <!-- VIDEO STREAMING -->
+  <cot cot="b-f-t-r"      full="TAK/Video/Stream"           desc="Video stream"/>
+  <cot cot="b-f-t-a"      full="TAK/Video/Alias"            desc="Video stream alias"/>
+
+  <!-- DATA SYNCHRONISATION -->
+  <cot cot="t-x-s-d"      full="TAK/Sync/Data"              desc="Data synchronisation"/>
+  <cot cot="t-x-s-m"      full="TAK/Sync/Mission"           desc="Mission synchronisation"/>
+
+  <!-- CONFIGURATION -->
+  <cot cot="t-x-c-k"      full="TAK/Config/Keyboard"        desc="Keyboard configuration"/>
+  <cot cot="t-x-c-s"      full="TAK/Config/Settings"        desc="Settings configuration"/>
+
+  <!-- STYLING -->
+  <cot cot="b-x-KmlStyle" full="TAK/Style/KML"              desc="KML style object"/>
+
+  <!-- HOW MAP (TAK-specific) -->
+  <how what="entered"      value="h-e"/>
+  <how what="manual"       value="h-e"/>
+  <how what="gps"          value="h-g-i-g-o"/>
+
+  <how cot="h-e"           nick="manual"/>
+  <how cot="h-g-i-g-o"     nick="gps"/>
+
+  <!-- RELATION MAP (TAK-specific) -->
+  <relation cot="c"        desc="connected"/>
+  <relation cot="p-p"      desc="parent-point"/>
+  <relation cot="p-c"      desc="parent-child"/>
+</types>

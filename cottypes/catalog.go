@@ -212,3 +212,120 @@ func (c *Catalog) Find(pattern string) []Type {
 		"matches", len(matches))
 	return matches
 }
+
+// IsTAK returns true if the given type belongs to the TAK namespace.
+// TAK types are identified by having a FullName that starts with "TAK/".
+func IsTAK(t Type) bool {
+	return strings.HasPrefix(t.FullName, "TAK/")
+}
+
+// GetHowValue returns the how value for a given "what" descriptor (e.g., "gps" -> "h-g-i-g-o").
+// If multiple entries exist for the same descriptor, returns the last one (TAK overrides MITRE).
+func GetHowValue(what string) (string, error) {
+	if what == "" {
+		return "", fmt.Errorf("empty what descriptor")
+	}
+
+	var lastValue string
+	var found bool
+
+	for _, h := range hows {
+		if h.What == what {
+			lastValue = h.Value
+			found = true
+		}
+	}
+
+	if !found {
+		return "", fmt.Errorf("unknown how descriptor: %s", what)
+	}
+
+	return lastValue, nil
+}
+
+// GetHowNick returns the nickname for a given how code (e.g., "h-e" -> "manual").
+func GetHowNick(cot string) (string, error) {
+	if cot == "" {
+		return "", fmt.Errorf("empty how code")
+	}
+
+	for _, h := range hows {
+		if h.Cot == cot && h.Nick != "" {
+			return h.Nick, nil
+		}
+	}
+
+	return "", fmt.Errorf("unknown how code: %s", cot)
+}
+
+// FindHowsByDescriptor searches for how values by descriptor (case-insensitive).
+func FindHowsByDescriptor(descriptor string) []HowInfo {
+	if descriptor == "" {
+		return hows
+	}
+
+	descriptor = strings.ToLower(descriptor)
+	var matches []HowInfo
+
+	for _, h := range hows {
+		if strings.Contains(strings.ToLower(h.What), descriptor) ||
+			strings.Contains(strings.ToLower(h.Nick), descriptor) {
+			matches = append(matches, h)
+		}
+	}
+
+	return matches
+}
+
+// GetRelationDescription returns the description for a given relation code (e.g., "c" -> "connected").
+// If multiple entries exist for the same code, returns the last one (TAK overrides MITRE).
+func GetRelationDescription(cot string) (string, error) {
+	if cot == "" {
+		return "", fmt.Errorf("empty relation code")
+	}
+
+	var lastDesc string
+	var found bool
+
+	for _, r := range relations {
+		if r.Cot == cot {
+			lastDesc = r.Description
+			found = true
+		}
+	}
+
+	if !found {
+		return "", fmt.Errorf("unknown relation code: %s", cot)
+	}
+
+	return lastDesc, nil
+}
+
+// FindRelationsByDescription searches for relation values by description (case-insensitive).
+func FindRelationsByDescription(description string) []RelationInfo {
+	if description == "" {
+		return relations
+	}
+
+	description = strings.ToLower(description)
+	var matches []RelationInfo
+
+	for _, r := range relations {
+		if strings.Contains(strings.ToLower(r.Description), description) ||
+			strings.Contains(strings.ToLower(r.Nick), description) {
+			matches = append(matches, r)
+		}
+	}
+
+	return matches
+}
+
+// GetAllHows returns all how value mappings.
+func GetAllHows() []HowInfo {
+	return hows
+}
+
+// GetAllRelations returns all relation value mappings.
+func GetAllRelations() []RelationInfo {
+	return relations
+}

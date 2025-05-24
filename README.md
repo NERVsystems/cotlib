@@ -1,6 +1,6 @@
 ![Cursor On Target](cotlogo.png)
 
-'…we want the target dead or saved…we gotta get away from platform centric thinking…and we gotta focus on this thing where the sum of the wisdom is a cursor over the target…and we’re indifferent [to the source]'  — Gen. John Jumper
+'…we want the target dead or saved…we gotta get away from platform centric thinking…and we gotta focus on this thing where the sum of the wisdom is a cursor over the target…and we're indifferent [to the source]'  — Gen. John Jumper
 
 # CoT Library
 
@@ -198,13 +198,103 @@ The library enforces strict validation of CoT types:
 ```go
 // Examples of different validation scenarios:
 cotlib.ValidateType("a-f-G")             // Valid - Friendly Ground
-cotlib.ValidateType("a-h-A")             // Valid - Hostile Air
-cotlib.ValidateType("b-d")               // Valid - Bits, Detection
-cotlib.ValidateType("t-x-takp-v")        // Valid - TAK presence
-cotlib.ValidateType("a-f-G-*")           // Valid - Wildcard pattern
-cotlib.ValidateType("a-.-G")             // Valid - Atomic wildcard
-cotlib.ValidateType("invalid")           // Invalid - Fails validation
-cotlib.ValidateType("a-f-G-U-*-C")       // Invalid - Wildcard in wrong position
+cotlib.ValidateType("b-m-r")             // Valid - Route
+cotlib.ValidateType("invalid")           // Error - Unknown type
+```
+
+### How and Relation Values
+
+The library provides full support for CoT how values (indicating position source) and relation values (for event relationships):
+
+#### How Values
+
+How values indicate the source or method of position determination:
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/NERVsystems/cotlib"
+)
+
+func main() {
+    // Create an event
+    event, _ := cotlib.NewEvent("UNIT-123", "a-f-G", 37.422, -122.084, 0.0)
+    
+    // Set how value using descriptor (recommended)
+    err := cotlib.SetEventHowFromDescriptor(event, "gps")
+    if err != nil {
+        log.Fatal(err)
+    }
+    // This sets event.How to "h-g-i-g-o"
+    
+    // Or set directly if you know the code
+    event.How = "h-e" // manually entered
+    
+    // Validate how value
+    if err := cotlib.ValidateHow(event.How); err != nil {
+        log.Fatal(err)
+    }
+    
+    // Get human-readable description
+    desc, _ := cotlib.GetHowDescriptor("h-g-i-g-o")
+    fmt.Printf("How: %s\n", desc) // Output: How: gps
+}
+```
+
+#### Relation Values
+
+Relation values specify the relationship type in link elements:
+
+```go
+// Add a validated link with parent-point relation
+err := event.AddValidatedLink("HQ-1", "a-f-G-U-C", "p-p")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Or add manually (validation happens during event.Validate())
+event.AddLink(&cotlib.Link{
+    Uid:      "CHILD-1",
+    Type:     "a-f-G",
+    Relation: "p-c", // parent-child
+})
+
+// Get relation description
+desc, _ := cotlib.GetRelationDescription("p-p")
+fmt.Printf("Relation: %s\n", desc) // Output: Relation: parent-point
+```
+
+#### Available Values
+
+**How values include:**
+- `h-e` (manual entry)
+- `h-g-i-g-o` (GPS)
+- `m-g` (GPS - MITRE)
+- And many others from both MITRE and TAK specifications
+
+**Relation values include:**
+- `c` (connected)
+- `p-p` (parent-point)
+- `p-c` (parent-child)  
+- `p` (parent - MITRE)
+- And many others from both MITRE and TAK specifications
+
+#### Validation
+
+Event validation automatically checks how and relation values:
+
+```go
+event.How = "invalid-how"
+err := event.Validate() // Will fail
+
+event.AddLink(&cotlib.Link{
+    Uid:      "test",
+    Type:     "a-f-G", 
+    Relation: "invalid-relation",
+})
+err = event.Validate() // Will fail
 ```
 
 ### Custom Types
@@ -249,6 +339,77 @@ go generate ./cottypes
 
 Add your custom type entries to `cot-types/CoTtypes.xml` before running the
 generator to embed them into the resulting Go code.
+
+## TAK Types and Extensions
+
+The library supports both canonical MITRE CoT types and TAK-specific extensions. TAK types are maintained separately to ensure clear namespace separation and avoid conflicts with official MITRE specifications.
+
+### Adding New CoT Types
+
+**For MITRE/canonical types:** Add entries to `cot-types/CoTtypes.xml`
+**For TAK-specific types:** Add entries to `cot-types/TAKtypes.xml`
+
+The generator automatically discovers and processes all `*.xml` files in the `cot-types/` directory.
+
+### TAK Namespace
+
+All TAK-specific types use the `TAK/` namespace prefix in their `full` attribute to distinguish them from MITRE types:
+
+```xml
+<!-- TAK-specific types in cot-types/TAKtypes.xml -->
+<cot cot="b-t-f" full="TAK/Bits/File" desc="File Transfer" />
+<cot cot="u-d-f" full="TAK/Drawing/FreeForm" desc="Free Form Drawing" />
+<cot cot="t-x-c" full="TAK/Chat/Message" desc="Chat Message" />
+```
+
+### Working with TAK Types
+
+```go
+// Check if a type is TAK-specific
+typ, err := cottypes.GetCatalog().GetType("b-t-f")
+if err != nil {
+    log.Fatal(err)
+}
+
+if cottypes.IsTAK(typ) {
+    fmt.Printf("%s is a TAK type: %s\n", typ.Name, typ.FullName)
+    // Output: b-t-f is a TAK type: TAK/Bits/File
+}
+
+// Search for TAK types specifically
+takTypes := cottypes.GetCatalog().FindByFullName("TAK/")
+fmt.Printf("Found %d TAK types\n", len(takTypes))
+
+// Validate TAK types
+if err := cotlib.ValidateType("b-t-f"); err != nil {
+    log.Fatal(err) // TAK types are fully validated
+}
+```
+
+### Generator Workflow
+
+1. The generator scans `cot-types/*.xml` for type definitions
+2. Parses each XML file into the standard `<types><cot>` structure  
+3. Validates TAK namespace integrity (no `a-` prefixes with `TAK/` full names)
+4. Expands MITRE wildcards (`a-.-`) but leaves TAK types unchanged
+5. Generates `cottypes/generated_types.go` with all types
+
+### Adding New Types
+
+To add new CoT types to the catalog:
+
+1. **For MITRE types:** Edit `cot-types/CoTtypes.xml`
+2. **For TAK extensions:** Edit `cot-types/TAKtypes.xml` 
+3. **For new categories:** Create a new XML file in `cot-types/`
+4. Run `go generate ./cottypes` to regenerate the catalog
+5. Verify with tests: `go test ./cottypes -v -run TestTAK`
+
+Example TAK type entry:
+```xml
+<cot cot="b-m-p-c-z" full="TAK/Map/Zone" desc="Map Zone" />
+```
+
+**Important:** TAK types should never use the `a-` prefix (reserved for MITRE affiliation-based types) and must always use the `TAK/` namespace prefix.
 
 ### Event Predicates
 

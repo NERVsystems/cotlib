@@ -440,6 +440,7 @@ The library implements several security measures:
 - Time field validation to prevent time-based attacks
 - Maximum value length controls
 - Configurable parser limits
+- UID values are limited to 64 characters and may not contain whitespace
 - Secure logging practices
 
 ```go

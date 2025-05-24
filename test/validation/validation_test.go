@@ -149,11 +149,13 @@ func TestValidationBaseline(t *testing.T) {
 			uid     string
 			wantErr bool
 		}{
-			{"7", false},   // Single char
-			{"A_", false},  // Trailing underscore
-			{"-a", true},   // Leading hyphen
-			{"a..b", true}, // Double dot
-			{"abc", false}, // Normal case
+			{"7", false},                    // Single char
+			{"A_", false},                   // Trailing underscore
+			{"-a", true},                    // Leading hyphen
+			{"a..b", true},                  // Double dot
+			{"abc", false},                  // Normal case
+			{strings.Repeat("x", 65), true}, // Too long
+			{"has space", true},             // Contains whitespace
 		}
 		for _, tc := range cases {
 			err := cotlib.ValidateUID(tc.uid)

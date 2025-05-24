@@ -23,6 +23,7 @@ A comprehensive Go library for creating, validating, and working with Cursor-on-
 - Type validation and registration
 - Secure logging with slog
 - Thread-safe operations
+- Detail extensions with round-trip preservation
 - Predicate-based event classification
 - Security-first design
 - Wildcard pattern support for types
@@ -129,6 +130,28 @@ func main() {
         fmt.Println("This is a ground-based entity")
     }
 }
+```
+
+#### Handling Detail Extensions
+
+CoT events often include TAK-specific extensions inside the `<detail>` element.
+Unknown elements are preserved in `Detail.Extensions` and serialized back
+verbatim:
+
+```go
+xmlData := `<?xml version="1.0"?>
+<event version="2.0" uid="CHAT-1" type="t-x-c" time="2023-05-15T18:30:22Z" start="2023-05-15T18:30:22Z" stale="2023-05-15T18:30:32Z">
+  <point lat="0" lon="0" ce="9999999.0" le="9999999.0"/>
+  <detail>
+    <__chat message="Hello world!" sender="Alpha"/>
+  </detail>
+</event>`
+
+evt, _ := cotlib.UnmarshalXMLEvent([]byte(xmlData))
+fmt.Printf("Extensions: %d\n", len(evt.Detail.Extensions))
+
+out, _ := evt.ToXML()
+fmt.Println(string(out))
 ```
 
 ### Type Validation and Catalog

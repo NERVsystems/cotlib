@@ -11,6 +11,9 @@ var eventPool = sync.Pool{
 
 func getEvent() *Event { return eventPool.Get().(*Event) }
 
+// ReleaseEvent returns an Event to the internal pool after resetting all fields.
+//
+// The provided pointer should no longer be used after calling this function.
 func ReleaseEvent(e *Event) {
 	if e == nil {
 		return

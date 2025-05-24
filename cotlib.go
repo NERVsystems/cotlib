@@ -538,23 +538,15 @@ type Contact struct {
 
 // Detail contains additional information about an event
 type Detail struct {
-	Group   *Group   `xml:"group,omitempty"`
-	Contact *Contact `xml:"contact,omitempty"`
-	// Extensions holds any additional detail elements that are not
-	// explicitly modeled by the library. Each element preserves its name,
-	// attributes, and inner XML so that extensions can be round-tripped
-	// losslessly. This is primarily used for TAK-specific blocks such as
-	// `<__chat>`.
-	Extensions []Extension `xml:",any"`
-}
-
-// Extension represents an arbitrary detail sub-element.
-// XML attributes are captured verbatim, and InnerXML contains the raw
-// child XML data.
-type Extension struct {
-	XMLName  xml.Name
-	Attrs    []xml.Attr `xml:",any,attr"`
-	InnerXML string     `xml:",innerxml"`
+	Group             *Group             `xml:"group,omitempty"`
+	Contact           *Contact           `xml:"contact,omitempty"`
+	Chat              *Chat              `xml:"__chat,omitempty"`
+	ChatReceipt       *ChatReceipt       `xml:"__chatReceipt,omitempty"`
+	Geofence          *Geofence          `xml:"__geofence,omitempty"`
+	ServerDestination *ServerDestination `xml:"__serverdestination,omitempty"`
+	Video             *Video             `xml:"__video,omitempty"`
+	GroupExtension    *GroupExtension    `xml:"__group,omitempty"`
+	Unknown           []RawMessage       `xml:"-"`
 }
 
 // Group represents a group affiliation
@@ -568,6 +560,137 @@ type Link struct {
 	Uid      string `xml:"uid,attr"`
 	Type     string `xml:"type,attr"`
 	Relation string `xml:"relation,attr"`
+}
+
+// UnmarshalXML implements xml.Unmarshaler for Detail.
+func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	*d = Detail{}
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			switch t.Name.Local {
+			case "group":
+				var g Group
+				if err := dec.DecodeElement(&g, &t); err != nil {
+					return err
+				}
+				d.Group = &g
+			case "contact":
+				var c Contact
+				if err := dec.DecodeElement(&c, &t); err != nil {
+					return err
+				}
+				d.Contact = &c
+			case "__chat":
+				var c Chat
+				if err := dec.DecodeElement(&c, &t); err != nil {
+					return err
+				}
+				d.Chat = &c
+			case "__chatReceipt":
+				var c ChatReceipt
+				if err := dec.DecodeElement(&c, &t); err != nil {
+					return err
+				}
+				d.ChatReceipt = &c
+			case "__geofence":
+				var gf Geofence
+				if err := dec.DecodeElement(&gf, &t); err != nil {
+					return err
+				}
+				d.Geofence = &gf
+			case "__serverdestination":
+				var sd ServerDestination
+				if err := dec.DecodeElement(&sd, &t); err != nil {
+					return err
+				}
+				d.ServerDestination = &sd
+			case "__video":
+				var v Video
+				if err := dec.DecodeElement(&v, &t); err != nil {
+					return err
+				}
+				d.Video = &v
+			case "__group":
+				var gext GroupExtension
+				if err := dec.DecodeElement(&gext, &t); err != nil {
+					return err
+				}
+				d.GroupExtension = &gext
+			default:
+				raw, err := captureRaw(dec, t)
+				if err != nil {
+					return err
+				}
+				d.Unknown = append(d.Unknown, raw)
+			}
+		case xml.EndElement:
+			if t.Name == start.Name {
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+// MarshalXML implements xml.Marshaler for Detail.
+func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	if err := enc.EncodeToken(start); err != nil {
+		return err
+	}
+	if d.Contact != nil {
+		if err := enc.Encode(d.Contact); err != nil {
+			return err
+		}
+	}
+	if d.Group != nil {
+		if err := enc.Encode(d.Group); err != nil {
+			return err
+		}
+	}
+	if d.Chat != nil {
+		if err := encodeRaw(enc, d.Chat.Raw); err != nil {
+			return err
+		}
+	}
+	if d.ChatReceipt != nil {
+		if err := encodeRaw(enc, d.ChatReceipt.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Geofence != nil {
+		if err := encodeRaw(enc, d.Geofence.Raw); err != nil {
+			return err
+		}
+	}
+	if d.ServerDestination != nil {
+		if err := encodeRaw(enc, d.ServerDestination.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Video != nil {
+		if err := encodeRaw(enc, d.Video.Raw); err != nil {
+			return err
+		}
+	}
+	if d.GroupExtension != nil {
+		if err := encodeRaw(enc, d.GroupExtension.Raw); err != nil {
+			return err
+		}
+	}
+	for _, raw := range d.Unknown {
+		if err := encodeRaw(enc, raw); err != nil {
+			return err
+		}
+	}
+	return enc.EncodeToken(start.End())
 }
 
 // NewEvent creates a new CoT event with the given parameters
@@ -1052,13 +1175,39 @@ func (e *Event) ToXML() ([]byte, error) {
 			}
 			buf.WriteString("/>\n")
 		}
-		for _, ext := range e.Detail.Extensions {
-			data, err := xml.Marshal(ext)
-			if err != nil {
-				continue
-			}
+		if e.Detail.Chat != nil {
 			buf.WriteString("    ")
-			buf.Write(data)
+			buf.Write(e.Detail.Chat.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.ChatReceipt != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.ChatReceipt.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Geofence != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.Geofence.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.ServerDestination != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.ServerDestination.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Video != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.Video.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.GroupExtension != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.GroupExtension.Raw)
+			buf.WriteByte('\n')
+		}
+		for _, raw := range e.Detail.Unknown {
+			buf.WriteString("    ")
+			buf.Write(raw)
 			buf.WriteByte('\n')
 		}
 		buf.WriteString("  </detail>\n")

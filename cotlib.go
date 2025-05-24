@@ -909,7 +909,9 @@ func ValidateLatLon(lat, lon float64) error {
 	return nil
 }
 
-// ValidateUID checks if a UID is valid
+// ValidateUID checks if a UID is valid.
+// It rejects empty values, leading hyphens, double dots,
+// whitespace, and UIDs longer than 64 characters.
 func ValidateUID(uid string) error {
 	if uid == "" {
 		return ErrInvalidUID
@@ -918,6 +920,12 @@ func ValidateUID(uid string) error {
 		return ErrInvalidUID
 	}
 	if strings.Contains(uid, "..") {
+		return ErrInvalidUID
+	}
+	if len(uid) > 64 {
+		return ErrInvalidUID
+	}
+	if strings.ContainsAny(uid, " \t\n\r") {
 		return ErrInvalidUID
 	}
 	return nil

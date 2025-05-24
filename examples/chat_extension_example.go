@@ -19,6 +19,7 @@ func main() {
   <point lat="0" lon="0" ce="9999999.0" le="9999999.0"/>
   <detail>
     <__chat message="Hello world!" sender="Alpha"/>
+    <__video url="http://example/video"/>
   </detail>
 </event>`
 
@@ -28,8 +29,11 @@ func main() {
 		return
 	}
 
-	for _, ext := range evt.Detail.Unknown {
-		fmt.Printf("Extension: %s\n", string(ext))
+	if evt.Detail.Chat != nil {
+		fmt.Printf("Chat extension: %s\n", string(evt.Detail.Chat.Raw))
+	}
+	if evt.Detail.Video != nil {
+		fmt.Printf("Video extension: %s\n", string(evt.Detail.Video.Raw))
 	}
 
 	xmlOut, err := evt.ToXML()

@@ -28,7 +28,7 @@ func main() {
 		return
 	}
 
-	for _, ext := range evt.Detail.Extensions {
+	for _, ext := range evt.Detail.Unknown {
 		fmt.Printf("Extension: %s\n", string(ext))
 	}
 

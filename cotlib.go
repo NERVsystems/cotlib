@@ -637,6 +637,40 @@ func ValidateType(typ string) error {
 	return nil
 }
 
+// ValidateHow checks if a how value is valid according to the CoT catalog.
+// How values indicate the source or method of position determination.
+func ValidateHow(how string) error {
+	if how == "" {
+		return nil // How is optional
+	}
+
+	// Check if it's a valid how code in the catalog
+	allHows := cottypes.GetAllHows()
+	for _, h := range allHows {
+		if h.Value == how || h.Cot == how {
+			return nil // Found it
+		}
+	}
+
+	return fmt.Errorf("invalid how value: %s", how)
+}
+
+// ValidateRelation checks if a relation value is valid according to the CoT catalog.
+// Relation values indicate the relationship type in link elements.
+func ValidateRelation(relation string) error {
+	if relation == "" {
+		return fmt.Errorf("empty relation")
+	}
+
+	// Check if relation exists in catalog
+	_, err := cottypes.GetRelationDescription(relation)
+	if err != nil {
+		return fmt.Errorf("invalid relation value: %s", relation)
+	}
+
+	return nil
+}
+
 // Validate checks if the event is valid
 func (e *Event) Validate() error {
 	return e.ValidateAt(time.Now().UTC())
@@ -658,6 +692,22 @@ func (e *Event) ValidateAt(now time.Time) error {
 	// Validate type
 	if err := ValidateType(e.Type); err != nil {
 		return err
+	}
+
+	// Validate how field if present
+	if err := ValidateHow(e.How); err != nil {
+		return fmt.Errorf("invalid how: %w", err)
+	}
+
+	// Validate link relations
+	for i, link := range e.Links {
+		if err := ValidateRelation(link.Relation); err != nil {
+			return fmt.Errorf("invalid relation in link %d: %w", i, err)
+		}
+		// Also validate link type
+		if err := ValidateType(link.Type); err != nil {
+			return fmt.Errorf("invalid link type in link %d: %w", i, err)
+		}
 	}
 
 	// Validate time fields
@@ -1001,4 +1051,44 @@ func (e *Event) ToXML() ([]byte, error) {
 	out := make([]byte, buf.Len())
 	copy(out, buf.Bytes())
 	return out, nil
+}
+
+// SetEventHowFromDescriptor sets the how field on an event using a descriptor.
+// For example: SetEventHowFromDescriptor(event, "gps") sets how to "h-g-i-g-o".
+func SetEventHowFromDescriptor(event *Event, descriptor string) error {
+	howValue, err := cottypes.GetHowValue(descriptor)
+	if err != nil {
+		return fmt.Errorf("failed to get how value for descriptor %s: %w", descriptor, err)
+	}
+	event.How = howValue
+	return nil
+}
+
+// AddValidatedLink adds a link to the event after validating the relation and type.
+func (e *Event) AddValidatedLink(uid, linkType, relation string) error {
+	if err := ValidateType(linkType); err != nil {
+		return fmt.Errorf("invalid link type: %w", err)
+	}
+	if err := ValidateRelation(relation); err != nil {
+		return fmt.Errorf("invalid relation: %w", err)
+	}
+
+	e.AddLink(&Link{
+		Uid:      uid,
+		Type:     linkType,
+		Relation: relation,
+	})
+	return nil
+}
+
+// GetHowDescriptor returns a human-readable description of the how value.
+// For example: "h-g-i-g-o" returns "gps".
+func GetHowDescriptor(how string) (string, error) {
+	return cottypes.GetHowNick(how)
+}
+
+// GetRelationDescription returns a human-readable description of the relation value.
+// For example: "p-p" returns "parent-point".
+func GetRelationDescription(relation string) (string, error) {
+	return cottypes.GetRelationDescription(relation)
 }

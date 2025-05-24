@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,33 +17,102 @@ type Type struct {
 	Desc string `xml:"desc,attr,omitempty"`
 }
 
+// How represents a how value mapping from the XML
+type How struct {
+	What  string `xml:"what,attr,omitempty"`  // what="gps" -> value="h-g-i-g-o"
+	Value string `xml:"value,attr,omitempty"` // for what->value mappings
+	Cot   string `xml:"cot,attr,omitempty"`   // cot="h-e" -> nick="manual"
+	Nick  string `xml:"nick,attr,omitempty"`  // for cot->nick mappings
+}
+
+// Relation represents a relation value from the XML
+type Relation struct {
+	Cot  string `xml:"cot,attr"`
+	Desc string `xml:"desc,attr,omitempty"`
+	Nick string `xml:"nick,attr,omitempty"`
+}
+
 // Types represents the root element of the XML
 type Types struct {
-	Types []Type `xml:"cot"`
+	Types     []Type     `xml:"cot"`
+	Hows      []How      `xml:"how"`
+	Relations []Relation `xml:"relation"`
 }
 
 func main() {
-	// Read the input XML file
-	data, err := os.ReadFile(filepath.Join("cot-types", "CoTtypes.xml"))
+	// Initialize structured logger
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+
+	// Determine the correct path to cot-types directory
+	// When run via "go generate ./cottypes", working directory is cottypes/
+	// When run directly from root, working directory is root
+	cotTypesDir := "cot-types"
+	if _, err := os.Stat(cotTypesDir); os.IsNotExist(err) {
+		// Try parent directory
+		cotTypesDir = filepath.Join("..", "cot-types")
+		if _, err := os.Stat(cotTypesDir); os.IsNotExist(err) {
+			logger.Error("cot-types directory not found in current or parent directory")
+			os.Exit(1)
+		}
+	}
+
+	logger.Debug("Using cot-types directory", "path", cotTypesDir)
+
+	// Discover all XML files in cot-types directory
+	xmlFiles, err := filepath.Glob(filepath.Join(cotTypesDir, "*.xml"))
 	if err != nil {
-		log.Fatalf("Failed to read CoTtypes.xml: %v", err)
+		logger.Error("Failed to find XML files", "error", err)
+		os.Exit(1)
 	}
 
-	// Parse the XML
-	var types Types
-	if err := xml.NewDecoder(bytes.NewReader(data)).Decode(&types); err != nil {
-		log.Fatalf("Failed to parse XML: %v", err)
+	if len(xmlFiles) == 0 {
+		logger.Error("No XML files found in cot-types directory", "dir", cotTypesDir)
+		os.Exit(1)
 	}
 
-	// Add TAK types
-	takTypes := []Type{
-		{Cot: "t-x-c", Full: "TAK/Chat", Desc: "Chat Message"},
-		{Cot: "t-x-d", Full: "TAK/Drawing", Desc: "Drawing"},
-		{Cot: "t-x-m", Full: "TAK/Message", Desc: "Message"},
-		{Cot: "t-x-t", Full: "TAK/Task", Desc: "Task"},
-		{Cot: "t-x-takp-v", Full: "TAK/Presence", Desc: "TAK Presence"},
+	logger.Info("Discovered XML files", "count", len(xmlFiles), "files", xmlFiles)
+
+	var allTypes []Type
+	var allHows []How
+	var allRelations []Relation
+
+	// Parse each XML file
+	for _, xmlFile := range xmlFiles {
+		logger.Debug("Processing XML file", "file", xmlFile)
+
+		data, err := os.ReadFile(xmlFile)
+		if err != nil {
+			logger.Error("Failed to read XML file", "file", xmlFile, "error", err)
+			continue
+		}
+
+		var types Types
+		if err := xml.NewDecoder(bytes.NewReader(data)).Decode(&types); err != nil {
+			logger.Error("Failed to parse XML file", "file", xmlFile, "error", err)
+			continue
+		}
+
+		// Validate namespace for TAK types
+		for _, t := range types.Types {
+			if strings.HasPrefix(t.Full, "TAK/") && strings.HasPrefix(t.Cot, "a-") {
+				logger.Error("Invalid TAK type: TAK/ namespace cannot start with 'a-' prefix",
+					"type", t.Cot, "full", t.Full, "file", xmlFile)
+				os.Exit(1)
+			}
+		}
+
+		allTypes = append(allTypes, types.Types...)
+		allHows = append(allHows, types.Hows...)
+		allRelations = append(allRelations, types.Relations...)
+		logger.Info("Loaded from file", "file", xmlFile,
+			"types", len(types.Types),
+			"hows", len(types.Hows),
+			"relations", len(types.Relations))
 	}
-	types.Types = append(types.Types, takTypes...)
+
+	logger.Info("Total loaded", "types", len(allTypes), "hows", len(allHows), "relations", len(allRelations))
 
 	// Expand wildcards and collect all types with metadata
 	type TypeInfo struct {
@@ -54,9 +123,9 @@ func main() {
 	var expandedTypes []TypeInfo
 	affiliations := []string{"f", "h", "n", "u"} // f=friendly, h=hostile, n=neutral, u=unknown
 
-	for _, t := range types.Types {
+	for _, t := range allTypes {
 		if strings.Contains(t.Cot, "a-.-") {
-			// Handle wildcard expansion for affiliation
+			// Handle wildcard expansion for affiliation (only for MITRE types)
 			parts := strings.Split(t.Cot, "a-.-")
 			if len(parts) == 2 {
 				for _, aff := range affiliations {
@@ -69,7 +138,7 @@ func main() {
 				}
 			}
 		} else {
-			// Add non-wildcard types as-is
+			// Add non-wildcard types as-is (includes all TAK types)
 			expandedTypes = append(expandedTypes, TypeInfo{
 				Name:        t.Cot,
 				FullName:    t.Full,
@@ -77,6 +146,8 @@ func main() {
 			})
 		}
 	}
+
+	logger.Info("Types after wildcard expansion", "count", len(expandedTypes))
 
 	// Generate the Go code
 	var buf bytes.Buffer
@@ -88,17 +159,59 @@ func main() {
 	buf.WriteString("\tFullName    string\n")
 	buf.WriteString("\tDescription string\n")
 	buf.WriteString("}\n\n")
+
+	buf.WriteString("// HowInfo contains metadata for a CoT how value\n")
+	buf.WriteString("type HowInfo struct {\n")
+	buf.WriteString("\tWhat  string // what attribute (e.g., \"gps\")\n")
+	buf.WriteString("\tValue string // value attribute (e.g., \"h-g-i-g-o\")\n")
+	buf.WriteString("\tCot   string // cot attribute (e.g., \"h-e\")\n")
+	buf.WriteString("\tNick  string // nick attribute (e.g., \"manual\")\n")
+	buf.WriteString("}\n\n")
+
+	buf.WriteString("// RelationInfo contains metadata for a CoT relation value\n")
+	buf.WriteString("type RelationInfo struct {\n")
+	buf.WriteString("\tCot         string // cot attribute (e.g., \"c\")\n")
+	buf.WriteString("\tDescription string // desc attribute (e.g., \"connected\")\n")
+	buf.WriteString("\tNick        string // nick attribute (e.g., \"connected\")\n")
+	buf.WriteString("}\n\n")
+
 	buf.WriteString("// expandedTypes contains all CoT types with wildcards expanded and their metadata\n")
 	buf.WriteString("var expandedTypes = []TypeInfo{\n")
 	for _, t := range expandedTypes {
 		fmt.Fprintf(&buf, "\t{Name: %q, FullName: %q, Description: %q},\n",
 			t.Name, t.FullName, t.Description)
 	}
+	buf.WriteString("}\n\n")
+
+	buf.WriteString("// hows contains all how value mappings\n")
+	buf.WriteString("var hows = []HowInfo{\n")
+	for _, h := range allHows {
+		fmt.Fprintf(&buf, "\t{What: %q, Value: %q, Cot: %q, Nick: %q},\n",
+			h.What, h.Value, h.Cot, h.Nick)
+	}
+	buf.WriteString("}\n\n")
+
+	buf.WriteString("// relations contains all relation value mappings\n")
+	buf.WriteString("var relations = []RelationInfo{\n")
+	for _, r := range allRelations {
+		fmt.Fprintf(&buf, "\t{Cot: %q, Description: %q, Nick: %q},\n",
+			r.Cot, r.Desc, r.Nick)
+	}
 	buf.WriteString("}\n")
 
 	// Write the generated code
 	outputPath := filepath.Join("cottypes", "generated_types.go")
-	if err := os.WriteFile(outputPath, buf.Bytes(), 0644); err != nil {
-		log.Fatalf("Failed to write generated code: %v", err)
+
+	// If we're already in cottypes directory (via go generate), adjust the path
+	if _, err := os.Stat("cottypes.go"); err == nil {
+		// We're in the cottypes directory
+		outputPath = "generated_types.go"
 	}
+
+	if err := os.WriteFile(outputPath, buf.Bytes(), 0644); err != nil {
+		logger.Error("Failed to write generated code", "output", outputPath, "error", err)
+		os.Exit(1)
+	}
+
+	logger.Info("Code generation completed", "output", outputPath, "total_types", len(expandedTypes))
 }

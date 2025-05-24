@@ -1,6 +1,7 @@
 package cotlib_test
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/NERVsystems/cotlib"
@@ -315,17 +316,29 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new event: %v", err)
 	}
+
+	archiveXML := []byte(`<archive id="a"><item></item></archive>`)
+	attachmentXML := []byte(`<attachmentList><file id="f1"></file></attachmentList>`)
+	envXML := []byte(`<environment state="on"></environment>`)
+	fileShareXML := []byte(`<fileshare url="http://example"></fileshare>`)
+	precisionXML := []byte(`<precisionlocation acc="5"></precisionlocation>`)
+	takvXML := []byte(`<takv version="4.0" platform="android"></takv>`)
+	trackXML := []byte(`<track course="90"></track>`)
+	missionXML := []byte(`<mission name="op"><task></task></mission>`)
+	statusXML := []byte(`<status battery="80"></status>`)
+	shapeXML := []byte(`<shape><point lat="1" lon="2"></point></shape>`)
+
 	evt.Detail = &cotlib.Detail{
-		Archive:           &cotlib.Archive{Raw: []byte(`<archive id="a"/>`)},
-		AttachmentList:    &cotlib.AttachmentList{Raw: []byte(`<attachmentList/>`)},
-		Environment:       &cotlib.Environment{Raw: []byte(`<environment/>`)},
-		FileShare:         &cotlib.FileShare{Raw: []byte(`<fileshare/>`)},
-		PrecisionLocation: &cotlib.PrecisionLocation{Raw: []byte(`<precisionlocation/>`)},
-		Takv:              &cotlib.Takv{Raw: []byte(`<takv/>`)},
-		Track:             &cotlib.Track{Raw: []byte(`<track/>`)},
-		Mission:           &cotlib.Mission{Raw: []byte(`<mission/>`)},
-		Status:            &cotlib.Status{Raw: []byte(`<status/>`)},
-		Shape:             &cotlib.Shape{Raw: []byte(`<shape/>`)},
+		Archive:           &cotlib.Archive{Raw: archiveXML},
+		AttachmentList:    &cotlib.AttachmentList{Raw: attachmentXML},
+		Environment:       &cotlib.Environment{Raw: envXML},
+		FileShare:         &cotlib.FileShare{Raw: fileShareXML},
+		PrecisionLocation: &cotlib.PrecisionLocation{Raw: precisionXML},
+		Takv:              &cotlib.Takv{Raw: takvXML},
+		Track:             &cotlib.Track{Raw: trackXML},
+		Mission:           &cotlib.Mission{Raw: missionXML},
+		Status:            &cotlib.Status{Raw: statusXML},
+		Shape:             &cotlib.Shape{Raw: shapeXML},
 	}
 
 	xmlData, err := evt.ToXML()
@@ -338,8 +351,31 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if out.Detail == nil || out.Detail.Archive == nil || len(out.Detail.Archive.Raw) == 0 {
-		t.Errorf("archive extension lost")
+	if out.Detail == nil {
+		t.Fatalf("detail missing after round trip")
+	}
+
+	checks := []struct {
+		name string
+		got  []byte
+		want []byte
+	}{
+		{"archive", out.Detail.Archive.Raw, archiveXML},
+		{"attachmentList", out.Detail.AttachmentList.Raw, attachmentXML},
+		{"environment", out.Detail.Environment.Raw, envXML},
+		{"fileshare", out.Detail.FileShare.Raw, fileShareXML},
+		{"precisionlocation", out.Detail.PrecisionLocation.Raw, precisionXML},
+		{"takv", out.Detail.Takv.Raw, takvXML},
+		{"track", out.Detail.Track.Raw, trackXML},
+		{"mission", out.Detail.Mission.Raw, missionXML},
+		{"status", out.Detail.Status.Raw, statusXML},
+		{"shape", out.Detail.Shape.Raw, shapeXML},
+	}
+
+	for _, c := range checks {
+		if !bytes.Equal(c.got, c.want) {
+			t.Errorf("%s round trip mismatch: got %s want %s", c.name, string(c.got), string(c.want))
+		}
 	}
 	cotlib.ReleaseEvent(out)
 }

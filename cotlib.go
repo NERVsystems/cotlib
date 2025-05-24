@@ -540,6 +540,21 @@ type Contact struct {
 type Detail struct {
 	Group   *Group   `xml:"group,omitempty"`
 	Contact *Contact `xml:"contact,omitempty"`
+	// Extensions holds any additional detail elements that are not
+	// explicitly modeled by the library. Each element preserves its name,
+	// attributes, and inner XML so that extensions can be round-tripped
+	// losslessly. This is primarily used for TAK-specific blocks such as
+	// `<__chat>`.
+	Extensions []Extension `xml:",any"`
+}
+
+// Extension represents an arbitrary detail sub-element.
+// XML attributes are captured verbatim, and InnerXML contains the raw
+// child XML data.
+type Extension struct {
+	XMLName  xml.Name
+	Attrs    []xml.Attr `xml:",any,attr"`
+	InnerXML string     `xml:",innerxml"`
 }
 
 // Group represents a group affiliation
@@ -1036,6 +1051,15 @@ func (e *Event) ToXML() ([]byte, error) {
 				buf.WriteByte('"')
 			}
 			buf.WriteString("/>\n")
+		}
+		for _, ext := range e.Detail.Extensions {
+			data, err := xml.Marshal(ext)
+			if err != nil {
+				continue
+			}
+			buf.WriteString("    ")
+			buf.Write(data)
+			buf.WriteByte('\n')
 		}
 		buf.WriteString("  </detail>\n")
 	}

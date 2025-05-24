@@ -1,7 +1,11 @@
 package cotlib
 
 import (
+	"bytes"
+	"context"
+	"log/slog"
 	"runtime/debug"
+	"strings"
 	"testing"
 )
 
@@ -26,4 +30,20 @@ func TestEventPoolReuseOnInvalidXML(t *testing.T) {
 		t.Error("event was not returned to pool after failure")
 	}
 	ReleaseEvent(e)
+}
+
+func TestUnmarshalXMLEventCtxLogsError(t *testing.T) {
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})
+	logger := slog.New(handler)
+	ctx := WithLogger(context.Background(), logger)
+
+	if _, err := UnmarshalXMLEventCtx(ctx, []byte("<event><bad></event>")); err == nil {
+		t.Fatal("expected error from invalid XML")
+	}
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "level=ERROR") {
+		t.Errorf("expected error log, got: %s", logOutput)
+	}
 }

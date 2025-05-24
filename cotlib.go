@@ -527,9 +527,10 @@ type Event struct {
 
 // Error sentinels for validation
 var (
-	ErrInvalidInput    = fmt.Errorf("invalid input")
-	ErrInvalidLatitude = fmt.Errorf("invalid latitude")
-	ErrInvalidUID      = fmt.Errorf("invalid UID")
+	ErrInvalidInput     = fmt.Errorf("invalid input")
+	ErrInvalidLatitude  = fmt.Errorf("invalid latitude")
+	ErrInvalidLongitude = fmt.Errorf("invalid longitude")
+	ErrInvalidUID       = fmt.Errorf("invalid UID")
 )
 
 // doctypePattern matches XML DOCTYPE declarations case-insensitively
@@ -1284,7 +1285,7 @@ func ValidateLatLon(lat, lon float64) error {
 		return ErrInvalidLatitude
 	}
 	if lon < -180 || lon > 180 {
-		return fmt.Errorf("invalid longitude")
+		return ErrInvalidLongitude
 	}
 	return nil
 }

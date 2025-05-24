@@ -141,6 +141,11 @@ func TestValidationBaseline(t *testing.T) {
 		if !errors.Is(err, cotlib.ErrInvalidLatitude) {
 			t.Error("Expected ErrInvalidLatitude")
 		}
+
+		err = cotlib.ValidateLatLon(0, 181)
+		if !errors.Is(err, cotlib.ErrInvalidLongitude) {
+			t.Error("Expected ErrInvalidLongitude")
+		}
 	})
 
 	t.Run("uid_validation", func(t *testing.T) {

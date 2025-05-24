@@ -76,6 +76,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"github.com/NERVsystems/cotlib/ctxlog"
 	"io"
 	"log/slog"
 	"os"
@@ -242,8 +243,8 @@ func basicSyntaxOK(name string) bool {
 }
 
 // RegisterCoTTypesFromFile loads and registers CoT types from an XML file
-func RegisterCoTTypesFromFile(filename string) error {
-	logger := slog.Default()
+func RegisterCoTTypesFromFile(ctx context.Context, filename string) error {
+	logger := LoggerFromContext(ctx)
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -288,8 +289,8 @@ func RegisterCoTTypesFromFile(filename string) error {
 }
 
 // RegisterCoTTypesFromReader loads and registers CoT types from an XML reader
-func RegisterCoTTypesFromReader(r io.Reader) error {
-	logger := slog.Default()
+func RegisterCoTTypesFromReader(ctx context.Context, r io.Reader) error {
+	logger := LoggerFromContext(ctx)
 	decoder := xml.NewDecoder(r)
 
 	// Simple structure to parse the XML
@@ -324,8 +325,8 @@ func RegisterCoTTypesFromReader(r io.Reader) error {
 
 // RegisterCoTTypesFromXMLContent registers CoT types from the given XML content string
 // This is particularly useful for embedding the CoTtypes.xml content directly in code
-func RegisterCoTTypesFromXMLContent(xmlContent string) error {
-	logger := slog.Default()
+func RegisterCoTTypesFromXMLContent(ctx context.Context, xmlContent string) error {
+	logger := LoggerFromContext(ctx)
 
 	// Use a Reader for the XML content
 	reader := strings.NewReader(xmlContent)
@@ -369,8 +370,8 @@ func RegisterAllCoTTypes() error {
 }
 
 // LoadCoTTypesFromFile loads CoT types from a file
-func LoadCoTTypesFromFile(path string) error {
-	logger := slog.Default()
+func LoadCoTTypesFromFile(ctx context.Context, path string) error {
+	logger := LoggerFromContext(ctx)
 
 	// Read the file
 	data, err := os.ReadFile(path)
@@ -806,10 +807,13 @@ func (e *Event) Is(pred string) bool {
 
 // WithLogger adds a logger to the context
 func WithLogger(ctx context.Context, l *slog.Logger) context.Context {
-	return context.WithValue(ctx, loggerKey{}, l)
+	return ctxlog.WithLogger(ctx, l)
 }
 
-type loggerKey struct{}
+// LoggerFromContext retrieves the logger from context or returns slog.Default.
+func LoggerFromContext(ctx context.Context) *slog.Logger {
+	return ctxlog.LoggerFromContext(ctx)
+}
 
 // GetTypeFullName returns the full hierarchical name for a CoT type.
 // For example, "a-f-G-E-X-N" returns "Gnd/Equip/Nbc Equipment".

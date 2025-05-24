@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -23,6 +24,8 @@ func main() {
 	cotlib.SetLogger(logger)
 	cottypes.SetLogger(logger)
 
+	ctx := cotlib.WithLogger(context.Background(), logger)
+
 	fmt.Println("Step 1: Using cottypes.RegisterXML directly")
 	// Test loading with cottypes.RegisterXML
 	data, err := os.ReadFile("cottypes/CoTtypes.xml")
@@ -31,7 +34,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = cottypes.RegisterXML(data)
+	err = cottypes.RegisterXML(ctx, data)
 	if err != nil {
 		fmt.Printf("Error registering XML: %v\n", err)
 		os.Exit(1)
@@ -45,7 +48,7 @@ func main() {
 
 	fmt.Println("\nStep 2: Using cotlib.RegisterCoTTypesFromFile")
 	// Test loading with cotlib.RegisterCoTTypesFromFile
-	err = cotlib.RegisterCoTTypesFromFile("cottypes/CoTtypes.xml")
+	err = cotlib.RegisterCoTTypesFromFile(ctx, "cottypes/CoTtypes.xml")
 	if err != nil {
 		fmt.Printf("Error registering types from file: %v\n", err)
 		os.Exit(1)
@@ -59,7 +62,7 @@ func main() {
 
 	fmt.Println("\nStep 3: Using cotlib.LoadCoTTypesFromFile")
 	// Test loading with cotlib.LoadCoTTypesFromFile
-	err = cotlib.LoadCoTTypesFromFile("cottypes/CoTtypes.xml")
+	err = cotlib.LoadCoTTypesFromFile(ctx, "cottypes/CoTtypes.xml")
 	if err != nil {
 		fmt.Printf("Error loading types from file: %v\n", err)
 		os.Exit(1)

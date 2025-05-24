@@ -1,6 +1,7 @@
 package cotlib_test
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 
@@ -217,4 +218,24 @@ func ExampleFindTypesByFullName() {
 	// Found type: a-h-G-E-X-N (Gnd/Equip/Nbc Equipment)
 	// Found type: a-n-G-E-X-N (Gnd/Equip/Nbc Equipment)
 	// Found type: a-u-G-E-X-N (Gnd/Equip/Nbc Equipment)
+}
+
+func Example_roundTripStrokeColorUsericon() {
+	evt, _ := cotlib.NewEvent("EX-UI", "a-f-G", 0, 0, 0)
+	evt.StrokeColor = "ff0000ff"
+	evt.UserIcon = "icon.png"
+
+	xmlData, _ := evt.ToXML()
+	cotlib.ReleaseEvent(evt)
+
+	out, _ := cotlib.UnmarshalXMLEvent(xmlData)
+	fmt.Printf("strokeColor: %s\n", out.StrokeColor)
+	fmt.Printf("usericon: %s\n", out.UserIcon)
+	outXML, _ := out.ToXML()
+	fmt.Printf("round-trip equal: %v\n", bytes.Equal(xmlData, outXML))
+	cotlib.ReleaseEvent(out)
+	// Output:
+	// strokeColor: ff0000ff
+	// usericon: icon.png
+	// round-trip equal: true
 }

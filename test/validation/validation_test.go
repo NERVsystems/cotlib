@@ -263,6 +263,16 @@ func TestWildcardPatterns(t *testing.T) {
 			pattern: "a-f-G-U-*-C",
 			wantErr: true,
 		},
+		{
+			name:    "embedded wildcard segment",
+			pattern: "a-f*G",
+			wantErr: true,
+		},
+		{
+			name:    "embedded wildcard final segment",
+			pattern: "a-f-G*X",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

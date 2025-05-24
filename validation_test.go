@@ -15,6 +15,8 @@ func TestWildcardPatterns(t *testing.T) {
 		{"valid wildcard", "a-f-G-U-C-*", true},
 		{"invalid wildcard", "a-f-G-U-C-", false},
 		{"invalid wildcard position", "a-f-G-U-*-C", false},
+		{"embedded wildcard segment", "a-f*G", false},
+		{"embedded wildcard final segment", "a-f-G*X", false},
 	}
 
 	for _, tt := range tests {

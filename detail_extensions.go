@@ -39,6 +39,56 @@ type GroupExtension struct {
 	Raw RawMessage
 }
 
+// Archive represents the TAK archive extension.
+type Archive struct {
+	Raw RawMessage
+}
+
+// AttachmentList represents the TAK attachmentList extension.
+type AttachmentList struct {
+	Raw RawMessage
+}
+
+// Environment represents the TAK environment extension.
+type Environment struct {
+	Raw RawMessage
+}
+
+// FileShare represents the TAK fileshare extension.
+type FileShare struct {
+	Raw RawMessage
+}
+
+// PrecisionLocation represents the TAK precisionlocation extension.
+type PrecisionLocation struct {
+	Raw RawMessage
+}
+
+// Takv represents the TAK takv extension.
+type Takv struct {
+	Raw RawMessage
+}
+
+// Track represents the TAK track extension.
+type Track struct {
+	Raw RawMessage
+}
+
+// Mission represents the TAK mission extension.
+type Mission struct {
+	Raw RawMessage
+}
+
+// Status represents the TAK status extension.
+type Status struct {
+	Raw RawMessage
+}
+
+// Shape represents the TAK shape extension.
+type Shape struct {
+	Raw RawMessage
+}
+
 // captureRaw reads an element starting from start and returns its raw XML
 // representation.
 func captureRaw(dec *xml.Decoder, start xml.StartElement) (RawMessage, error) {
@@ -145,6 +195,136 @@ func (g *GroupExtension) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) 
 
 func (g GroupExtension) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	return encodeRaw(enc, g.Raw)
+}
+
+func (a *Archive) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	a.Raw = raw
+	return nil
+}
+
+func (a Archive) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, a.Raw)
+}
+
+func (a *AttachmentList) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	a.Raw = raw
+	return nil
+}
+
+func (a AttachmentList) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, a.Raw)
+}
+
+func (e *Environment) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	e.Raw = raw
+	return nil
+}
+
+func (e Environment) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, e.Raw)
+}
+
+func (f *FileShare) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	f.Raw = raw
+	return nil
+}
+
+func (f FileShare) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, f.Raw)
+}
+
+func (p *PrecisionLocation) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	p.Raw = raw
+	return nil
+}
+
+func (p PrecisionLocation) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, p.Raw)
+}
+
+func (t *Takv) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	t.Raw = raw
+	return nil
+}
+
+func (t Takv) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, t.Raw)
+}
+
+func (t *Track) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	t.Raw = raw
+	return nil
+}
+
+func (t Track) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, t.Raw)
+}
+
+func (m *Mission) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	m.Raw = raw
+	return nil
+}
+
+func (m Mission) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, m.Raw)
+}
+
+func (s *Status) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	s.Raw = raw
+	return nil
+}
+
+func (s Status) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, s.Raw)
+}
+
+func (s *Shape) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	s.Raw = raw
+	return nil
+}
+
+func (s Shape) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, s.Raw)
 }
 
 // encodeRaw writes pre-encoded XML directly to the encoder.

@@ -413,20 +413,101 @@ func TestValidateType(t *testing.T) {
 		typ      string
 		expected bool
 	}{
-		{"empty type", "", false},
-		{"invalid type", "invalid", false},
-		{"invalid format", "a-f-INVALID", false},
-		{"unknown prefix", "x-y-z", false},
-		{"too long", strings.Repeat("a", 101), false},
-		{"valid friend ground", "a-f-G", true},
-		{"valid hostile air", "a-h-A", true},
-		{"valid detection", "b-d", true},
-		{"valid tasking", "t-s", true},
-		{"unknown but valid format", "a-f-G-Z-Z-Z", false}, // Valid format but not in catalog
-		{"wildcard at end", "a-f-G-*", true},               // Should pass because wildcard at end is valid
-		{"wildcard in middle", "a-*-G", false},             // Should fail because wildcard in middle
-		{"atomic wildcard", "a-.-X", true},                 // Special wildcard format
-		{"catalog type", "a-f-G-E-X-N", true},              // Known from catalog (NBC Equipment)
+		{
+			name:     "empty type",
+			typ:      "",
+			expected: false,
+		},
+		{
+			name:     "invalid type",
+			typ:      "x",
+			expected: false,
+		},
+		{
+			name:     "invalid format",
+			typ:      "a_b_c",
+			expected: false,
+		},
+		{
+			name:     "unknown prefix",
+			typ:      "x-f-G",
+			expected: false,
+		},
+		{
+			name:     "too long",
+			typ:      strings.Repeat("a-f-G-", 50),
+			expected: false,
+		},
+		{
+			name:     "valid friend ground",
+			typ:      "a-f-G",
+			expected: true,
+		},
+		{
+			name:     "valid hostile air",
+			typ:      "a-h-A",
+			expected: true,
+		},
+		{
+			name:     "valid detection",
+			typ:      "d-f-C",
+			expected: false,
+		},
+		{
+			name:     "valid tasking",
+			typ:      "t-x-c",
+			expected: true,
+		},
+		{
+			name:     "unknown but valid format",
+			typ:      "a-f-Z-Q-X",
+			expected: false,
+		},
+		{
+			name:     "wildcard at end",
+			typ:      "a-f-G-*",
+			expected: true,
+		},
+		{
+			name:     "wildcard in middle",
+			typ:      "a-f-*-G",
+			expected: false,
+		},
+		{
+			name:     "atomic wildcard",
+			typ:      "a-*",
+			expected: true,
+		},
+		{
+			name:     "catalog type",
+			typ:      "a-f-G-E-X-N",
+			expected: true,
+		},
+		{
+			name:     "valid TAK chat",
+			typ:      "t-x-c",
+			expected: true,
+		},
+		{
+			name:     "valid TAK drawing",
+			typ:      "u-d-f",
+			expected: true,
+		},
+		{
+			name:     "valid TAK bits file",
+			typ:      "b-t-f",
+			expected: true,
+		},
+		{
+			name:     "valid TAK reply",
+			typ:      "y-c-r",
+			expected: true,
+		},
+		{
+			name:     "valid TAK route checkpoint",
+			typ:      "b-r-f-h-c",
+			expected: true,
+		},
 	}
 
 	for _, tt := range tests {

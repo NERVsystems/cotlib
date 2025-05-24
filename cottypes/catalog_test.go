@@ -410,3 +410,209 @@ func TestUpsertLoggingLevel(t *testing.T) {
 		t.Error("Found INFO level logs about updating types, which should be at DEBUG level only")
 	}
 }
+
+// TestTAKTypes tests that TAK-specific types are properly loaded and accessible.
+func TestTAKTypes(t *testing.T) {
+	cat := cottypes.GetCatalog()
+	if cat == nil {
+		t.Fatal("GetCatalog() returned nil")
+	}
+
+	// Table of representative TAK types that should be present
+	takTypesToTest := []struct {
+		name         string
+		expectedFull string
+		expectedDesc string
+	}{
+		{"b-t-f", "TAK/Chat/FreeText", "GeoChat text message"},
+		{"u-d-f", "TAK/Drawing/FreeForm", "Free-form drawing"},
+		{"y-c-r", "TAK/Reply/Chat", "Chat reply"},
+		{"t-x-c", "TAK/Chat/Client", "Client chat message"},
+		{"t-x-d", "TAK/Drawing/General", "Drawing root"},
+		{"t-x-takp-v", "TAK/Presence/Version", "Presence version broadcast"},
+		{"b-r-f-h-c", "TAK/Medical/CASEVAC", "CASEVAC request"},
+		{"b-m-p-w", "TAK/Route/Waypoint", "Waypoint"},
+		{"b-e-r", "TAK/Emergency/Request", "Emergency request"},
+		{"b-m-p-s", "TAK/SpotMap/Spot", "Spot-map point"},
+	}
+
+	t.Run("tak_types_exist", func(t *testing.T) {
+		for _, tt := range takTypesToTest {
+			typ, err := cat.GetType(tt.name)
+			if err != nil {
+				t.Errorf("TAK type %s not found: %v", tt.name, err)
+				continue
+			}
+
+			if typ.FullName != tt.expectedFull {
+				t.Errorf("TAK type %s: expected FullName %q, got %q",
+					tt.name, tt.expectedFull, typ.FullName)
+			}
+
+			if typ.Description != tt.expectedDesc {
+				t.Errorf("TAK type %s: expected Description %q, got %q",
+					tt.name, tt.expectedDesc, typ.Description)
+			}
+		}
+	})
+
+	t.Run("tak_namespace_search", func(t *testing.T) {
+		// Search for TAK types by description
+		chatTypes := cat.FindByDescription("Chat")
+		foundChatTypes := false
+		for _, typ := range chatTypes {
+			if strings.HasPrefix(typ.FullName, "TAK/") {
+				foundChatTypes = true
+				break
+			}
+		}
+		if !foundChatTypes {
+			t.Error("No TAK chat types found in description search")
+		}
+
+		// Search for TAK types by full name
+		takTypes := cat.FindByFullName("TAK/")
+		if len(takTypes) == 0 {
+			t.Error("No types found with TAK/ namespace")
+		}
+
+		// Verify all found types are actually TAK types
+		for _, typ := range takTypes {
+			if !strings.HasPrefix(typ.FullName, "TAK/") {
+				t.Errorf("Type %s found in TAK search but doesn't have TAK/ prefix: %s",
+					typ.Name, typ.FullName)
+			}
+		}
+	})
+
+	t.Run("no_tak_wildcard_expansion", func(t *testing.T) {
+		// Verify that TAK types don't get wildcard expansion
+		// TAK types should not start with "a-" prefix
+		allTypes := cat.GetAllTypes()
+		for _, typ := range allTypes {
+			if strings.HasPrefix(typ.FullName, "TAK/") && strings.HasPrefix(typ.Name, "a-") {
+				t.Errorf("TAK type %s should not start with 'a-' prefix", typ.Name)
+			}
+		}
+	})
+}
+
+// TestIsTAKHelper tests the IsTAK helper function.
+func TestIsTAKHelper(t *testing.T) {
+	tests := []struct {
+		name     string
+		typ      cottypes.Type
+		expected bool
+	}{
+		{
+			name: "tak_type",
+			typ: cottypes.Type{
+				Name:        "b-t-f",
+				FullName:    "TAK/Chat/FreeText",
+				Description: "GeoChat text message",
+			},
+			expected: true,
+		},
+		{
+			name: "mitre_type",
+			typ: cottypes.Type{
+				Name:        "a-f-G-E-X-N",
+				FullName:    "Gnd/Equip/Nbc Equipment",
+				Description: "NBC EQUIPMENT",
+			},
+			expected: false,
+		},
+		{
+			name: "empty_fullname",
+			typ: cottypes.Type{
+				Name:        "test",
+				FullName:    "",
+				Description: "Test",
+			},
+			expected: false,
+		},
+		{
+			name: "partial_tak_match",
+			typ: cottypes.Type{
+				Name:        "test",
+				FullName:    "Something TAK/Related",
+				Description: "Test",
+			},
+			expected: false, // Should only match prefix
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := cottypes.IsTAK(tt.typ)
+			if result != tt.expected {
+				t.Errorf("IsTAK() = %v, want %v for type %+v", result, tt.expected, tt.typ)
+			}
+		})
+	}
+}
+
+// TestTAKNamespaceIntegrity tests that the TAK namespace doesn't conflict with MITRE types.
+func TestTAKNamespaceIntegrity(t *testing.T) {
+	cat := cottypes.GetCatalog()
+	if cat == nil {
+		t.Fatal("GetCatalog() returned nil")
+	}
+
+	allTypes := cat.GetAllTypes()
+
+	var takTypes, mitreTypes []cottypes.Type
+	for _, typ := range allTypes {
+		if cottypes.IsTAK(typ) {
+			takTypes = append(takTypes, typ)
+		} else {
+			mitreTypes = append(mitreTypes, typ)
+		}
+	}
+
+	t.Run("namespace_separation", func(t *testing.T) {
+		// Verify we have both TAK and MITRE types
+		if len(takTypes) == 0 {
+			t.Error("No TAK types found in catalog")
+		}
+		if len(mitreTypes) == 0 {
+			t.Error("No MITRE types found in catalog")
+		}
+
+		t.Logf("Found %d TAK types and %d MITRE types", len(takTypes), len(mitreTypes))
+	})
+
+	t.Run("no_tak_affiliation_expansion", func(t *testing.T) {
+		// TAK types should not have affiliation variants
+		// Check that there are no TAK types with different affiliations
+		takTypeNames := make(map[string]bool)
+		for _, typ := range takTypes {
+			takTypeNames[typ.Name] = true
+		}
+
+		// Look for potential wrongly expanded TAK types
+		for name := range takTypeNames {
+			if strings.HasPrefix(name, "a-") {
+				t.Errorf("TAK type %s should not start with affiliation prefix 'a-'", name)
+			}
+		}
+	})
+
+	t.Run("fullname_consistency", func(t *testing.T) {
+		// All TAK types should have TAK/ prefix in FullName
+		for _, typ := range takTypes {
+			if !strings.HasPrefix(typ.FullName, "TAK/") {
+				t.Errorf("TAK type %s has incorrect FullName: %s (should start with TAK/)",
+					typ.Name, typ.FullName)
+			}
+		}
+
+		// MITRE types should not have TAK/ prefix in FullName
+		for _, typ := range mitreTypes {
+			if strings.HasPrefix(typ.FullName, "TAK/") {
+				t.Errorf("MITRE type %s incorrectly has TAK/ prefix in FullName: %s",
+					typ.Name, typ.FullName)
+			}
+		}
+	})
+}

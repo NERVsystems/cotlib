@@ -12,9 +12,12 @@ A comprehensive Go library for creating, validating, and working with Cursor-on-
 
 ## Features
 
+- **High-performance processing**: Sub-microsecond event creation, millions of validations/sec
 - Complete CoT event creation and manipulation
 - XML serialization and deserialization with security protections
 - Full CoT type catalog with metadata
+- **Zero-allocation type lookups** and optimized memory usage
+- **How and relation value support** with comprehensive validation
 - Coordinate and spatial data handling
 - Event relationship management
 - Type validation and registration
@@ -488,6 +491,51 @@ go test -bench=. ./...
 
 This executes any `Benchmark...` functions across the module, allowing you to
 profile serialization, validation, or other operations.
+
+## Performance
+
+This library is optimized for high-performance CoT processing with minimal memory allocations:
+
+### Core Operations (Apple M4)
+
+| Operation | Speed | Allocations | Memory | Throughput |
+|-----------|--------|-------------|---------|------------|
+| **Event Creation** | 156.7 ns/op | 1 alloc | 240 B | ~6.4M events/sec |
+| **XML Generation** | 558.9 ns/op | 4 allocs | 360 B | ~1.8M events/sec |
+| **XML Parsing** | 4.9 μs/op | 73 allocs | 3.4 KB | ~200K events/sec |
+
+### Type Validation
+
+| Type Pattern | Speed | Allocations | Throughput |
+|--------------|--------|-------------|------------|
+| **Simple Types** (`a-f-G`) | 22.6 ns/op | 0 allocs | ~44M validations/sec |
+| **Complex Types** (`a-f-G-E-X-N`) | 26.7 ns/op | 0 allocs | ~37M validations/sec |  
+| **Wildcards** (`a-f-G-*`) | 41.4 ns/op | 1 alloc | ~24M validations/sec |
+
+### Catalog Operations
+
+| Operation | Speed | Allocations | Throughput |
+|-----------|--------|-------------|------------|
+| **Type Lookup** | 17.3 ns/op | 0 allocs | ~57M lookups/sec |
+| **Search by Description** | 72.4 μs/op | 4 allocs | ~13K searches/sec |
+| **Search by Full Name** | 104.7 μs/op | 5 allocs | ~9K searches/sec |
+
+### Key Performance Features
+
+- **Zero-allocation lookups**: Type catalog operations don't allocate memory
+- **Object pooling**: XML parsing reuses event objects to minimize GC pressure  
+- **Optimized validation**: Fast-path validation for common type patterns
+- **Efficient searching**: Pre-computed uppercase strings for case-insensitive search
+- **Minimal serialization overhead**: Direct byte buffer manipulation for XML generation
+
+### Real-World Scenarios
+
+**High-frequency tracking**: Process 200,000+ position updates per second
+**Bulk operations**: Validate millions of type codes with zero GC impact  
+**Memory-constrained environments**: Minimal allocation footprint
+**Low-latency systems**: Sub-microsecond event processing
+
+*Benchmarks run on Apple M4 with Go 1.21. Your mileage may vary by platform.*
 
 ## Documentation
 

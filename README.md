@@ -144,6 +144,24 @@ unchanged:
 - `__serverdestination`
 - `__video`
 - `__group`
+- `archive`
+- `attachmentList`
+- `environment`
+- `fileshare`
+- `precisionlocation`
+- `takv`
+- `track`
+- `mission`
+- `status`
+- `shape`
+
+Example: adding a `shape` extension with a `strokeColor` attribute:
+
+```go
+event.Detail = &cotlib.Detail{
+    Shape: &cotlib.Shape{Raw: []byte(`<shape strokeColor="#00FF00"/>`)},
+}
+```
 
 Any unknown elements are stored in `Detail.Unknown` and serialized back
 verbatim.

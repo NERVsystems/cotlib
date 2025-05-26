@@ -36,4 +36,3 @@ Break down the remaining XSD work into manageable task groups:
 
 ### 6. Miscellaneous Schemas
 - [x] Finalize `color.xsd` and `hierarchy.xsd` integration.
-- Review interactions with other detail schemas for completeness.

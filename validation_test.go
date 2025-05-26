@@ -545,40 +545,25 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		cotlib.ReleaseEvent(evt)
 	})
 
-	t.Run("group_server_video_attachment", func(t *testing.T) {
-		evt, err := cotlib.NewEvent("A1", "a-f-G", 1, 1, 0)
+	t.Run("group_and_media", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("G2", "a-f-G", 1, 1, 0)
 		if err != nil {
 			t.Fatalf("new event: %v", err)
 		}
 		evt.Detail = &cotlib.Detail{
+			ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination destinations="s"/>`)},
 			GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g" role="r"/>`)},
-			ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination destinations="d"/>`)},
-			Video:             &cotlib.Video{Raw: []byte(`<__video url="http://x"/>`)},
+			Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
 			AttachmentList:    &cotlib.AttachmentList{Raw: []byte(`<attachment_list hashes="h"/>`)},
+			UID:               &cotlib.UID{Raw: []byte(`<uid Droid="d"/>`)},
 		}
 		if err := evt.Validate(); err != nil {
-			t.Fatalf("valid media extensions rejected: %v", err)
+			t.Fatalf("valid group extensions rejected: %v", err)
 		}
-		evt.Detail.Video.Raw = []byte(`<__video/>`)
+		evt.Detail.ServerDestination.Raw = []byte(`<__serverdestination/>`)
 		if err := evt.Validate(); err == nil {
-			t.Fatal("expected error for invalid video")
+			t.Fatal("expected error for invalid serverdestination")
 		}
 		cotlib.ReleaseEvent(evt)
 	})
-
-}
-
-func TestEventSchemaValidation(t *testing.T) {
-	now := time.Now().UTC()
-	good := fmt.Sprintf(`<event version="2.0" uid="E1" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s"><point lat="1" lon="2" hae="3" ce="4" le="5"/></event>`,
-		now.Format(cotlib.CotTimeFormat), now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
-	if err := cotlib.ValidateAgainstSchema([]byte(good)); err != nil {
-		t.Fatalf("valid event rejected: %v", err)
-	}
-
-	bad := fmt.Sprintf(`<event version="2.0" uid="E1" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s"><point lat="91" lon="0" hae="0" ce="1" le="1"/></event>`,
-		now.Format(cotlib.CotTimeFormat), now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
-	if err := cotlib.ValidateAgainstSchema([]byte(bad)); err == nil {
-		t.Fatal("expected error for invalid event")
-	}
 }

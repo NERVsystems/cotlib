@@ -124,6 +124,11 @@ type UserIcon struct {
 	Raw RawMessage
 }
 
+// UID represents the TAK uid extension.
+type UID struct {
+	Raw RawMessage
+}
+
 // Bullseye represents the TAK bullseye extension.
 type Bullseye struct {
 	Raw RawMessage
@@ -451,6 +456,19 @@ func (ui *UserIcon) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error
 
 func (ui UserIcon) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	return encodeRaw(enc, ui.Raw)
+}
+
+func (u *UID) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	u.Raw = raw
+	return nil
+}
+
+func (u UID) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, u.Raw)
 }
 
 func (b *Bullseye) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {

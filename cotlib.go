@@ -1573,7 +1573,12 @@ func (e *Event) ToXML() ([]byte, error) {
 
 // SetEventHowFromDescriptor sets the how field on an event using a descriptor.
 // For example: SetEventHowFromDescriptor(event, "gps") sets how to "h-g-i-g-o".
+// It returns an error if event is nil or the descriptor is invalid.
 func SetEventHowFromDescriptor(event *Event, descriptor string) error {
+	if event == nil {
+		return fmt.Errorf("nil event")
+	}
+
 	howValue, err := cottypes.GetHowValue(descriptor)
 	if err != nil {
 		return fmt.Errorf("failed to get how value for descriptor %s: %w", descriptor, err)
@@ -1583,7 +1588,12 @@ func SetEventHowFromDescriptor(event *Event, descriptor string) error {
 }
 
 // AddValidatedLink adds a link to the event after validating the relation and type.
+// It returns an error if called on a nil Event.
 func (e *Event) AddValidatedLink(uid, linkType, relation string) error {
+	if e == nil {
+		return fmt.Errorf("nil event")
+	}
+
 	if err := ValidateType(linkType); err != nil {
 		return fmt.Errorf("invalid link type: %w", err)
 	}

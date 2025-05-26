@@ -197,6 +197,12 @@ func TestSetEventHowFromDescriptor(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("nil_event", func(t *testing.T) {
+		if err := cotlib.SetEventHowFromDescriptor(nil, "gps"); err == nil {
+			t.Error("Expected error for nil event, but got none")
+		}
+	})
 }
 
 // TestAddValidatedLink tests the AddValidatedLink method.
@@ -229,6 +235,13 @@ func TestAddValidatedLink(t *testing.T) {
 		err := event.AddValidatedLink("test-uid", "a-f-G", "invalid-relation")
 		if err == nil {
 			t.Error("Expected error for invalid relation, but got none")
+		}
+	})
+
+	t.Run("nil_event", func(t *testing.T) {
+		var nilEvent *cotlib.Event
+		if err := nilEvent.AddValidatedLink("uid", "a-f-G", "c"); err == nil {
+			t.Error("Expected error for nil event, but got none")
 		}
 	})
 }

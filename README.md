@@ -554,6 +554,14 @@ allocations. When you are done with an event, return it to the pool:
 evt, _ := cotlib.UnmarshalXMLEvent(data)
 defer cotlib.ReleaseEvent(evt)
 ```
+## Build Tags
+
+The optional `novalidator` build tag disables XML schema validation. When used, `ValidateAgainstSchema` becomes a no-op and always returns `nil`.
+
+```bash
+go build -tags novalidator
+```
+
 
 ## Benchmarks
 

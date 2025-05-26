@@ -87,6 +87,18 @@ func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
 			good:   []byte(`<color argb="1"/>`),
 			bad:    []byte(`<color/>`),
 		},
+		{
+			name:   "__chat",
+			schema: "tak-details-__chat",
+			good:   []byte(`<__chat chatroom="c" groupOwner="false" id="1" senderCallsign="s"><chatgrp id="g" uid0="u"/></__chat>`),
+			bad:    []byte(`<__chat chatroom="c"><chatgrp id="g" uid0="u"/></__chat>`),
+		},
+		{
+			name:   "__chatreceipt",
+			schema: "tak-details-__chatreceipt",
+			good:   []byte(`<__chatreceipt chatroom="c" groupOwner="false" id="1" senderCallsign="s"><chatgrp id="g" uid0="u"/></__chatreceipt>`),
+			bad:    []byte(`<__chatreceipt chatroom="c" groupOwner="false"><chatgrp id="g" uid0="u"/></__chatreceipt>`),
+		},
 	}
 
 	for _, tt := range tests {

@@ -3,4 +3,5 @@
   <xs:complexType name="labels_on">
     <xs:attribute name="value" type="xs:boolean" use="required" />
   </xs:complexType>
+  <xs:element name="labelson" type="labels_on"/>
 </xs:schema>

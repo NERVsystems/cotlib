@@ -34,6 +34,24 @@ var takDetailsShapeXSD []byte
 //go:embed schemas/details/color.xsd
 var takDetailsColorXSD []byte
 
+//go:embed schemas/details/__geofence.xsd
+var takDetailsGeofenceXSD []byte
+
+//go:embed schemas/details/strokeColor.xsd
+var takDetailsStrokeColorXSD []byte
+
+//go:embed schemas/details/strokeWeight.xsd
+var takDetailsStrokeWeightXSD []byte
+
+//go:embed schemas/details/fillColor.xsd
+var takDetailsFillColorXSD []byte
+
+//go:embed schemas/details/height.xsd
+var takDetailsHeightXSD []byte
+
+//go:embed schemas/details/height_unit.xsd
+var takDetailsHeightUnitXSD []byte
+
 var (
 	schemas map[string]*Schema
 	once    sync.Once
@@ -150,6 +168,42 @@ func initSchemas() {
 		panic(fmt.Errorf("compile TAK details color schema: %w", err))
 	}
 	schemas["tak-details-color"] = takDetailsColor
+
+	takDetailsGeofence, err := Compile(takDetailsGeofenceXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile TAK details __geofence schema: %w", err))
+	}
+	schemas["tak-details-__geofence"] = takDetailsGeofence
+
+	takDetailsStrokeColor, err := Compile(takDetailsStrokeColorXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile TAK details strokecolor schema: %w", err))
+	}
+	schemas["tak-details-strokeColor"] = takDetailsStrokeColor
+
+	takDetailsStrokeWeight, err := Compile(takDetailsStrokeWeightXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile TAK details strokeweight schema: %w", err))
+	}
+	schemas["tak-details-strokeWeight"] = takDetailsStrokeWeight
+
+	takDetailsFillColor, err := Compile(takDetailsFillColorXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile TAK details fillcolor schema: %w", err))
+	}
+	schemas["tak-details-fillColor"] = takDetailsFillColor
+
+	takDetailsHeight, err := Compile(takDetailsHeightXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile TAK details height schema: %w", err))
+	}
+	schemas["tak-details-height"] = takDetailsHeight
+
+	takDetailsHeightUnit, err := Compile(takDetailsHeightUnitXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile TAK details height_unit schema: %w", err))
+	}
+	schemas["tak-details-height_unit"] = takDetailsHeightUnit
 }
 
 // ValidateAgainstSchema validates XML against a named schema.

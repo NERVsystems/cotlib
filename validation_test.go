@@ -25,6 +25,7 @@ func TestWildcardPatterns(t *testing.T) {
 		{"multiple wildcard segments", "a-f-G-*-*", false},
 		{"double asterisk segment", "a-f-G**", false},
 		{"multi-embedded asterisks", "a*f*G", false},
+		{"trailing dash", "a-f-G-", false},
 	}
 
 	for _, tt := range tests {

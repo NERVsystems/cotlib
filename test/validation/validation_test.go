@@ -278,6 +278,11 @@ func TestWildcardPatterns(t *testing.T) {
 			pattern: "a-f-G*X",
 			wantErr: true,
 		},
+		{
+			name:    "trailing dash",
+			pattern: "a-f-G-",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

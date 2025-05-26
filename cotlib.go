@@ -976,6 +976,10 @@ func ValidateType(typ string) error {
 		return fmt.Errorf("type too long: %w", ErrInvalidType)
 	}
 
+	if strings.HasSuffix(typ, "-") {
+		return fmt.Errorf("type cannot end with dash: %w", ErrInvalidType)
+	}
+
 	// Fast path for wildcard patterns that don't need catalog lookup
 	if strings.Contains(typ, "*") {
 		parts := strings.Split(typ, "-")
@@ -986,7 +990,10 @@ func ValidateType(typ string) error {
 		// Only allow a trailing segment consisting solely of '*'
 		for i, p := range parts {
 			if strings.Contains(p, "*") {
-				if p != "*" || i != len(parts)-1 {
+				if p != "*" {
+					return fmt.Errorf("wildcard must be standalone segment: %w", ErrInvalidType)
+				}
+				if i != len(parts)-1 {
 					return fmt.Errorf("wildcard only allowed at end of type: %w", ErrInvalidType)
 				}
 			}

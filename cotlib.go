@@ -1245,6 +1245,16 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("invalid uid: %w", err)
 			}
 		}
+		if e.Detail.Bullseye != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-bullseye", e.Detail.Bullseye.Raw); err != nil {
+				return fmt.Errorf("invalid bullseye: %w", err)
+			}
+		}
+		if e.Detail.RouteInfo != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-routeinfo", e.Detail.RouteInfo.Raw); err != nil {
+				return fmt.Errorf("invalid routeinfo: %w", err)
+			}
+		}
 		if e.Detail.Environment != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-environment", e.Detail.Environment.Raw); err != nil {
 				return fmt.Errorf("invalid environment: %w", err)

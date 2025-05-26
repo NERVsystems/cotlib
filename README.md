@@ -190,9 +190,9 @@ fmt.Println(string(out)) // prints the same XML
 ### Validator Package
 
 The optional `validator` subpackage provides schema checks for common detail
-extensions. `validator.ValidateChat` ensures a `__chat` element contains both
-`sender` and `message` attributes. `Event.Validate` calls this automatically
-when a chat extension is present.
+extensions. `validator.ValidateAgainstSchema` validates XML against embedded
+XSD files. `Event.Validate` automatically checks `__chat` and `__chatReceipt`
+extensions using these schemas.
 
 ### Type Validation and Catalog
 
@@ -415,7 +415,7 @@ if err := cotlib.RegisterCoTTypesFromXMLContent(ctx, xmlContent); err != nil {
 
 The `cmd/cotgen` utility expands the CoT XML definitions and writes the
 `cottypes/generated_types.go` file used by the library. Ensure the
-`cot-types` directory (or your own XML definitions) is present, then run:
+`cot-types` directory (or `cottypes` as a fallback) is present, then run:
 
 ```bash
 go run ./cmd/cotgen
@@ -423,7 +423,7 @@ go run ./cmd/cotgen
 go generate ./cottypes
 ```
 
-Add your custom type entries to `cot-types/CoTtypes.xml` before running the
+Add your custom type entries to `cottypes/CoTtypes.xml` (or `cot-types/CoTtypes.xml`) before running the
 generator to embed them into the resulting Go code.
 
 ## TAK Types and Extensions
@@ -432,17 +432,17 @@ The library supports both canonical MITRE CoT types and TAK-specific extensions.
 
 ### Adding New CoT Types
 
-**For MITRE/canonical types:** Add entries to `cot-types/CoTtypes.xml`
-**For TAK-specific types:** Add entries to `cot-types/TAKtypes.xml`
+**For MITRE/canonical types:** Add entries to `cottypes/CoTtypes.xml`
+**For TAK-specific types:** Add entries to `cottypes/TAKtypes.xml`
 
-The generator automatically discovers and processes all `*.xml` files in the `cot-types/` directory.
+The generator automatically discovers and processes all `*.xml` files in the `cot-types/` directory (falling back to `cottypes/` if needed).
 
 ### TAK Namespace
 
 All TAK-specific types use the `TAK/` namespace prefix in their `full` attribute to distinguish them from MITRE types:
 
 ```xml
-<!-- TAK-specific types in cot-types/TAKtypes.xml -->
+<!-- TAK-specific types in cottypes/TAKtypes.xml -->
 <cot cot="b-t-f" full="TAK/Bits/File" desc="File Transfer" />
 <cot cot="u-d-f" full="TAK/Drawing/FreeForm" desc="Free Form Drawing" />
 <cot cot="t-x-c" full="TAK/Chat/Message" desc="Chat Message" />
@@ -474,7 +474,7 @@ if err := cotlib.ValidateType("b-t-f"); err != nil {
 
 ### Generator Workflow
 
-1. The generator scans `cot-types/*.xml` for type definitions
+1. The generator scans `cot-types/*.xml` (or `cottypes/*.xml`) for type definitions
 2. Parses each XML file into the standard `<types><cot>` structure  
 3. Validates TAK namespace integrity (no `a-` prefixes with `TAK/` full names)
 4. Expands MITRE wildcards (`a-.-`) but leaves TAK types unchanged
@@ -484,9 +484,9 @@ if err := cotlib.ValidateType("b-t-f"); err != nil {
 
 To add new CoT types to the catalog:
 
-1. **For MITRE types:** Edit `cot-types/CoTtypes.xml`
-2. **For TAK extensions:** Edit `cot-types/TAKtypes.xml` 
-3. **For new categories:** Create a new XML file in `cot-types/`
+1. **For MITRE types:** Edit `cottypes/CoTtypes.xml` (or `cot-types/CoTtypes.xml`)
+2. **For TAK extensions:** Edit `cottypes/TAKtypes.xml` (or `cot-types/TAKtypes.xml`)
+3. **For new categories:** Create a new XML file in `cottypes/` or `cot-types/`
 4. Run `go generate ./cottypes` to regenerate the catalog
 5. Verify with tests: `go test ./cottypes -v -run TestTAK`
 

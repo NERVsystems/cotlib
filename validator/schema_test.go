@@ -19,6 +19,22 @@ func TestValidateAgainstSchemaNonet(t *testing.T) {
 	}
 }
 
+func TestValidateAgainstSchemaUnknown(t *testing.T) {
+	validator.ResetForTest()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("unexpected panic: %v", r)
+		}
+	}()
+	err := validator.ValidateAgainstSchema("nonexistent", []byte("<x/>"))
+	if err == nil {
+		t.Fatal("expected error for unknown schema")
+	}
+	if err.Error() != "unknown schema nonexistent" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
 	tests := []struct {
 		name   string

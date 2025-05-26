@@ -203,3 +203,102 @@ func TestValidateDrawingShapeSchemas(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateRemainingDetailSchemas(t *testing.T) {
+	tests := []struct {
+		name   string
+		schema string
+		good   []byte
+		bad    []byte
+	}{
+		{
+			name:   "chatreceipt",
+			schema: "tak-details-__chatreceipt",
+			good:   []byte(`<__chatreceipt chatroom="c" groupOwner="false" id="1" senderCallsign="A"><chatgrp id="g" uid0="u0"/></__chatreceipt>`),
+			bad:    []byte(`<__chatreceipt id="1" senderCallsign="A"></__chatreceipt>`),
+		},
+		{
+			name:   "serverdestination",
+			schema: "tak-details-__serverdestination",
+			good:   []byte(`<__serverdestination destinations="a"/>`),
+			bad:    []byte(`<__serverdestination/>`),
+		},
+		{
+			name:   "group",
+			schema: "tak-details-__group",
+			good:   []byte(`<__group name="n" role="r"/>`),
+			bad:    []byte(`<__group name="n"/>`),
+		},
+		{
+			name:   "chatgrp",
+			schema: "tak-details-chatgrp",
+			good:   []byte(`<chatgrp id="c" uid0="u0"/>`),
+			bad:    []byte(`<chatgrp id="c"/>`),
+		},
+		{
+			name:   "archive",
+			schema: "tak-details-archive",
+			good:   []byte(`<archive/>`),
+			bad:    []byte(`<archive>bad</archive>`),
+		},
+		{
+			name:   "uid",
+			schema: "tak-details-uid",
+			good:   []byte(`<uid Droid="http://x"/>`),
+			bad:    []byte(`<uid/>`),
+		},
+		{
+			name:   "usericon",
+			schema: "tak-details-usericon",
+			good:   []byte(`<usericon iconsetpath="p"/>`),
+			bad:    []byte(`<usericon/>`),
+		},
+		{
+			name:   "color",
+			schema: "tak-details-color",
+			good:   []byte(`<color argb="1"/>`),
+			bad:    []byte(`<color/>`),
+		},
+		{
+			name:   "height",
+			schema: "tak-details-height",
+			good:   []byte(`<height>1</height>`),
+			bad:    []byte(`<height>bad</height>`),
+		},
+		{
+			name:   "height_unit",
+			schema: "tak-details-height_unit",
+			good:   []byte(`<height_unit>1</height_unit>`),
+			bad:    []byte(`<height_unit>x</height_unit>`),
+		},
+		{
+			name:   "labels_on",
+			schema: "tak-details-labels_on",
+			good:   []byte(`<labelson value="true"/>`),
+			bad:    []byte(`<labelson/>`),
+		},
+		{
+			name:   "link",
+			schema: "tak-details-link",
+			good:   []byte(`<link uid="u" type="a-f-G" relation="p-p"/>`),
+			bad:    []byte(`<link uid="u"/>`),
+		},
+		{
+			name:   "emergency",
+			schema: "tak-details-emergency",
+			good:   []byte(`<emergency>help</emergency>`),
+			bad:    []byte(`<emergency>bad value</emergency>`),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validator.ValidateAgainstSchema(tt.schema, tt.good); err != nil {
+				t.Fatalf("valid %s rejected: %v", tt.name, err)
+			}
+			if err := validator.ValidateAgainstSchema(tt.schema, tt.bad); err == nil {
+				t.Fatalf("expected error for invalid %s", tt.name)
+			}
+		})
+	}
+}

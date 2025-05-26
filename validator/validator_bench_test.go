@@ -75,3 +75,63 @@ func BenchmarkValidateAgainstSchemaEventPoint(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkValidateAgainstSchemaStatus(b *testing.B) {
+	xml := []byte(`<status battery="80"/>`)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if err := validator.ValidateAgainstSchema("tak-details-status", xml); err != nil {
+			b.Fatalf("validation failed: %v", err)
+		}
+	}
+}
+
+func BenchmarkValidateAgainstSchemaVideo(b *testing.B) {
+	xml := []byte(`<__video url="http://x"/>`)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if err := validator.ValidateAgainstSchema("tak-details-__video", xml); err != nil {
+			b.Fatalf("validation failed: %v", err)
+		}
+	}
+}
+
+func BenchmarkValidateAgainstSchemaMission(b *testing.B) {
+	xml := []byte(`<mission name="op" tool="t" type="x"/>`)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if err := validator.ValidateAgainstSchema("tak-details-mission", xml); err != nil {
+			b.Fatalf("validation failed: %v", err)
+		}
+	}
+}
+
+func BenchmarkValidateAgainstSchemaTakv(b *testing.B) {
+	xml := []byte(`<takv platform="Android" version="1"/>`)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if err := validator.ValidateAgainstSchema("tak-details-takv", xml); err != nil {
+			b.Fatalf("validation failed: %v", err)
+		}
+	}
+}
+
+func BenchmarkValidateAgainstSchemaBullseye(b *testing.B) {
+	xml := []byte(`<bullseye mils="true" distance="10" bearingRef="T" bullseyeUID="b" distanceUnits="u-r-b-bullseye" edgeToCenter="false" rangeRingVisible="true" title="t" hasRangeRings="false"/>`)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if err := validator.ValidateAgainstSchema("tak-details-bullseye", xml); err != nil {
+			b.Fatalf("validation failed: %v", err)
+		}
+	}
+}
+
+func BenchmarkValidateAgainstSchemaRouteInfo(b *testing.B) {
+	xml := []byte(`<__routeinfo><__navcues/></__routeinfo>`)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if err := validator.ValidateAgainstSchema("tak-details-routeinfo", xml); err != nil {
+			b.Fatalf("validation failed: %v", err)
+		}
+	}
+}

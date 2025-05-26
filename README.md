@@ -247,6 +247,8 @@ The library enforces strict validation of CoT types:
 - Length limits
 - Wildcard pattern validation
 - Type catalog verification
+- Automatic resolution of `f`, `h`, `n`, or `u` segments to catalog
+  entries containing `.`
 
 ```go
 // Examples of different validation scenarios:

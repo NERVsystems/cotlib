@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-//go:embed schemas/**
+//go:embed schemas/** schemas/details/__chat.xsd schemas/details/__chatreceipt.xsd schemas/details/__geofence.xsd schemas/details/__group.xsd schemas/details/__serverdestination.xsd schemas/details/__video.xsd
 var schemasFS embed.FS
 
 //go:embed schemas/details/environment.xsd

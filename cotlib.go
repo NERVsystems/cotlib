@@ -88,6 +88,7 @@ import (
 	"github.com/NERVsystems/cotlib/ctxlog"
 
 	"github.com/NERVsystems/cotlib/cottypes"
+	"github.com/NERVsystems/cotlib/validator"
 )
 
 // Security limits for XML parsing and validation
@@ -1145,6 +1146,13 @@ func (e *Event) ValidateAt(now time.Time) error {
 	// Validate point
 	if err := e.Point.Validate(); err != nil {
 		return err
+	}
+
+	// Validate chat extension if present
+	if e.Detail != nil && e.Detail.Chat != nil {
+		if err := validator.ValidateChat(e.Detail.Chat.Raw); err != nil {
+			return fmt.Errorf("chat validation failed: %w", err)
+		}
 	}
 
 	return nil

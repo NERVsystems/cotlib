@@ -3,7 +3,7 @@
 - [x] Add tests for embedded wildcard rejection
 - [x] Add validation hooks in Event.ValidateAt or during XML unmarshalling
 - [x] Integrate remaining top-level schemas
-  - Drawing shape schemas (Circle, Free Form, Rectangle, Telestration)
+  - [x] Drawing shape schemas (Circle, Free Form, Rectangle, Telestration)
   - [x] Geo Fence and Range & Bearing schemas
   - [x] Route schemas (Route.xsd, tak-route.xsd)
   - [x] Marker schemas (2525, Icon Set, Spot)

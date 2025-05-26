@@ -112,7 +112,7 @@ func main() {
 </event>`
 
     // Parse XML into CoT event
-    event, err := cotlib.UnmarshalXMLEvent([]byte(xmlData))
+    event, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
     if err != nil {
         fmt.Printf("Error parsing XML: %v\n", err)
         return
@@ -182,7 +182,7 @@ xmlData := `<?xml version="1.0"?>
   </detail>
 </event>`
 
-evt, _ := cotlib.UnmarshalXMLEvent([]byte(xmlData))
+evt, _ := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
 out, _ := evt.ToXML()
 fmt.Println(string(out)) // prints the same XML
 ```
@@ -563,7 +563,7 @@ log.Info("logger ready")
 allocations. When you are done with an event, return it to the pool:
 
 ```go
-evt, _ := cotlib.UnmarshalXMLEvent(data)
+evt, _ := cotlib.UnmarshalXMLEvent(context.Background(), data)
 defer cotlib.ReleaseEvent(evt)
 ```
 ## Build Tags

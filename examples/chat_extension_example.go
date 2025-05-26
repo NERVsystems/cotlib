@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -13,6 +14,7 @@ import (
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	cotlib.SetLogger(logger)
+	ctx := cotlib.WithLogger(context.Background(), logger)
 
 	xmlInput := `<?xml version="1.0" encoding="UTF-8"?>
 <event version="2.0" uid="CHAT-1" type="t-x-c" time="2023-05-15T18:30:22Z" start="2023-05-15T18:30:22Z" stale="2023-05-15T18:30:32Z">
@@ -23,7 +25,7 @@ func main() {
   </detail>
 </event>`
 
-	evt, err := cotlib.UnmarshalXMLEvent([]byte(xmlInput))
+	evt, err := cotlib.UnmarshalXMLEvent(ctx, []byte(xmlInput))
 	if err != nil {
 		logger.Error("failed to parse event", "error", err)
 		return

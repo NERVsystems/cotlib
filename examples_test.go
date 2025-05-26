@@ -2,6 +2,7 @@ package cotlib_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"sort"
 
@@ -228,7 +229,7 @@ func Example_roundTripStrokeColorUsericon() {
 	xmlData, _ := evt.ToXML()
 	cotlib.ReleaseEvent(evt)
 
-	out, _ := cotlib.UnmarshalXMLEvent(xmlData)
+	out, _ := cotlib.UnmarshalXMLEvent(context.Background(), xmlData)
 	fmt.Printf("strokeColor: %s\n", out.StrokeColor)
 	fmt.Printf("usericon: %s\n", out.UserIcon)
 	outXML, _ := out.ToXML()

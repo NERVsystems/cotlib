@@ -1,10 +1,12 @@
 package cottypes
 
 import (
+	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 	"sync"
+
+	"github.com/NERVsystems/cotlib/ctxlog"
 )
 
 // Type represents a CoT type with its metadata.
@@ -19,21 +21,20 @@ type Type struct {
 
 // Catalog maintains a registry of CoT types and provides lookup and search functions.
 type Catalog struct {
-	types  map[string]Type
-	mu     sync.RWMutex
-	logger *slog.Logger
+	types map[string]Type
+	mu    sync.RWMutex
 }
 
-// NewCatalog creates a new catalog instance with the given logger.
-func NewCatalog(logger *slog.Logger) *Catalog {
+// NewCatalog creates a new catalog instance.
+func NewCatalog() *Catalog {
 	return &Catalog{
-		types:  make(map[string]Type),
-		logger: logger,
+		types: make(map[string]Type),
 	}
 }
 
 // GetType returns the Type for the given name if it exists, or an error if not found.
-func (c *Catalog) GetType(name string) (Type, error) {
+func (c *Catalog) GetType(ctx context.Context, name string) (Type, error) {
+	logger := ctxlog.LoggerFromContext(ctx)
 	if name == "" {
 		return Type{}, fmt.Errorf("empty type name")
 	}
@@ -43,7 +44,7 @@ func (c *Catalog) GetType(name string) (Type, error) {
 
 	t, ok := c.types[name]
 	if !ok {
-		c.logger.Debug("Type not found", "name", name)
+		logger.Debug("Type not found", "name", name)
 		return Type{}, fmt.Errorf("unknown type: %s", name)
 	}
 
@@ -51,7 +52,8 @@ func (c *Catalog) GetType(name string) (Type, error) {
 }
 
 // GetFullName returns the full name for a CoT type, or an error if not found.
-func (c *Catalog) GetFullName(name string) (string, error) {
+func (c *Catalog) GetFullName(ctx context.Context, name string) (string, error) {
+	logger := ctxlog.LoggerFromContext(ctx)
 	if name == "" {
 		return "", fmt.Errorf("empty type name")
 	}
@@ -61,7 +63,7 @@ func (c *Catalog) GetFullName(name string) (string, error) {
 
 	t, ok := c.types[name]
 	if !ok {
-		c.logger.Debug("Type not found", "name", name)
+		logger.Debug("Type not found", "name", name)
 		return "", fmt.Errorf("unknown type: %s", name)
 	}
 
@@ -69,7 +71,8 @@ func (c *Catalog) GetFullName(name string) (string, error) {
 }
 
 // GetDescription returns the description for a CoT type, or an error if not found.
-func (c *Catalog) GetDescription(name string) (string, error) {
+func (c *Catalog) GetDescription(ctx context.Context, name string) (string, error) {
+	logger := ctxlog.LoggerFromContext(ctx)
 	if name == "" {
 		return "", fmt.Errorf("empty type name")
 	}
@@ -79,7 +82,7 @@ func (c *Catalog) GetDescription(name string) (string, error) {
 
 	t, ok := c.types[name]
 	if !ok {
-		c.logger.Debug("Type not found", "name", name)
+		logger.Debug("Type not found", "name", name)
 		return "", fmt.Errorf("unknown type: %s", name)
 	}
 
@@ -87,7 +90,9 @@ func (c *Catalog) GetDescription(name string) (string, error) {
 }
 
 // GetAllTypes returns all types in the catalog.
-func (c *Catalog) GetAllTypes() []Type {
+func (c *Catalog) GetAllTypes(ctx context.Context) []Type {
+	logger := ctxlog.LoggerFromContext(ctx)
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -96,15 +101,16 @@ func (c *Catalog) GetAllTypes() []Type {
 		types = append(types, t)
 	}
 
-	c.logger.Debug("Retrieved all types", "count", len(types))
+	logger.Debug("Retrieved all types", "count", len(types))
 	return types
 }
 
 // FindByDescription searches for types matching the given description (case-insensitive, partial match).
 // If desc is empty, returns all types.
-func (c *Catalog) FindByDescription(desc string) []Type {
+func (c *Catalog) FindByDescription(ctx context.Context, desc string) []Type {
+	logger := ctxlog.LoggerFromContext(ctx)
 	if desc == "" {
-		return c.GetAllTypes()
+		return c.GetAllTypes(ctx)
 	}
 
 	c.mu.RLock()
@@ -119,7 +125,7 @@ func (c *Catalog) FindByDescription(desc string) []Type {
 		}
 	}
 
-	c.logger.Debug("Search by description",
+	logger.Debug("Search by description",
 		"query", desc,
 		"matches", len(matches))
 	return matches
@@ -127,9 +133,10 @@ func (c *Catalog) FindByDescription(desc string) []Type {
 
 // FindByFullName searches for types matching the given full name (case-insensitive, partial match).
 // If name is empty, returns all types.
-func (c *Catalog) FindByFullName(name string) []Type {
+func (c *Catalog) FindByFullName(ctx context.Context, name string) []Type {
+	logger := ctxlog.LoggerFromContext(ctx)
 	if name == "" {
-		return c.GetAllTypes()
+		return c.GetAllTypes(ctx)
 	}
 
 	c.mu.RLock()
@@ -144,14 +151,15 @@ func (c *Catalog) FindByFullName(name string) []Type {
 		}
 	}
 
-	c.logger.Debug("Search by full name",
+	logger.Debug("Search by full name",
 		"query", name,
 		"matches", len(matches))
 	return matches
 }
 
 // Upsert adds or updates a type in the catalog.
-func (c *Catalog) Upsert(name string, t Type) error {
+func (c *Catalog) Upsert(ctx context.Context, name string, t Type) error {
+	logger := ctxlog.LoggerFromContext(ctx)
 	if name == "" {
 		return fmt.Errorf("empty type name")
 	}
@@ -171,12 +179,12 @@ func (c *Catalog) Upsert(name string, t Type) error {
 	// Always log at DEBUG level (never INFO) to prevent log spam
 	// when adding thousands of types. The caller should log a summary instead.
 	if exists {
-		c.logger.Debug("Updated existing type",
+		logger.Debug("Updated existing type",
 			"name", name,
 			"old_full_name", existing.FullName,
 			"new_full_name", t.FullName)
 	} else {
-		c.logger.Debug("Added new type",
+		logger.Debug("Added new type",
 			"name", name,
 			"full_name", t.FullName)
 	}
@@ -185,9 +193,10 @@ func (c *Catalog) Upsert(name string, t Type) error {
 }
 
 // Find returns all types that match the given pattern (exact or prefix match).
-func (c *Catalog) Find(pattern string) []Type {
+func (c *Catalog) Find(ctx context.Context, pattern string) []Type {
+	logger := ctxlog.LoggerFromContext(ctx)
 	if pattern == "" {
-		return c.GetAllTypes()
+		return c.GetAllTypes(ctx)
 	}
 
 	c.mu.RLock()
@@ -195,7 +204,7 @@ func (c *Catalog) Find(pattern string) []Type {
 
 	// First try exact match
 	if t, ok := c.types[pattern]; ok {
-		c.logger.Debug("Found exact match", "pattern", pattern)
+		logger.Debug("Found exact match", "pattern", pattern)
 		return []Type{t}
 	}
 
@@ -207,7 +216,7 @@ func (c *Catalog) Find(pattern string) []Type {
 		}
 	}
 
-	c.logger.Debug("Search by pattern",
+	logger.Debug("Search by pattern",
 		"pattern", pattern,
 		"matches", len(matches))
 	return matches

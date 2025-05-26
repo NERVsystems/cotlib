@@ -318,3 +318,14 @@ func TestValidateRangeBearingCircleSchema(t *testing.T) {
 		t.Fatalf("expected error for invalid circle")
 	}
 }
+
+func TestValidateLinksSchema(t *testing.T) {
+	good := []byte(`<xs3p:links xmlns:xs3p="http://titanium.dstc.edu.au/xml/xs3p"><schema file-location="a" docfile-location="b"/></xs3p:links>`)
+	bad := []byte(`<xs3p:links xmlns:xs3p="http://titanium.dstc.edu.au/xml/xs3p"><schema file-location="a"/></xs3p:links>`)
+	if err := validator.ValidateAgainstSchema("links", good); err != nil {
+		t.Fatalf("valid links rejected: %v", err)
+	}
+	if err := validator.ValidateAgainstSchema("links", bad); err == nil {
+		t.Fatal("expected error for invalid links")
+	}
+}

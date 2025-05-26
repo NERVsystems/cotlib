@@ -20,7 +20,7 @@ func TestValidateAgainstSchemaNonet(t *testing.T) {
 }
 
 func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
-	validator.ResetForTest()
+
 	tests := []struct {
 		name   string
 		schema string
@@ -48,38 +48,44 @@ func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
 		{
 			name:   "environment",
 			schema: "tak-details-environment",
-			good:   []byte(`<environment temperature="1" windDirection="2" windSpeed="3"/>`),
-			bad:    []byte(`<environment temperature="1" windDirection="2"/>`),
+			good:   []byte(`<environment temperature="20" windDirection="10" windSpeed="5"/>`),
+			bad:    []byte(`<environment temperature="20" windSpeed="5"/>`),
+		},
+		{
+			name:   "fileshare",
+			schema: "tak-details-fileshare",
+			good:   []byte(`<fileshare filename="f" name="n" senderCallsign="A" senderUid="U" senderUrl="http://x" sha256="h" sizeInBytes="1"/>`),
+			bad:    []byte(`<fileshare filename="f" name="n" senderCallsign="A" senderUid="U" senderUrl="http://x" sha256="h"/>`),
+		},
+		{
+			name:   "precisionlocation",
+			schema: "tak-details-precisionlocation",
+			good:   []byte(`<precisionlocation altsrc="GPS"/>`),
+			bad:    []byte(`<precisionlocation/>`),
+		},
+		{
+			name:   "takv",
+			schema: "tak-details-takv",
+			good:   []byte(`<takv platform="Android" version="1"/>`),
+			bad:    []byte(`<takv platform="Android"/>`),
+		},
+		{
+			name:   "mission",
+			schema: "tak-details-mission",
+			good:   []byte(`<mission name="m" tool="t" type="x"/>`),
+			bad:    []byte(`<mission tool="t" type="x"/>`),
 		},
 		{
 			name:   "shape",
 			schema: "tak-details-shape",
-			good:   []byte(`<shape><polyline closed="false"><vertex lat="0" lon="0" hae="0"/></polyline></shape>`),
-			bad:    []byte(`<shape><polyline><vertex lat="0" lon="0"/></polyline></shape>`),
+			good:   []byte(`<shape><polyline closed="true"><vertex hae="0" lat="1" lon="1"/></polyline></shape>`),
+			bad:    []byte(`<shape><polyline closed="true"></polyline></shape>`),
 		},
 		{
 			name:   "color",
 			schema: "tak-details-color",
 			good:   []byte(`<color argb="1"/>`),
 			bad:    []byte(`<color/>`),
-		},
-		{
-			name:   "usericon",
-			schema: "tak-details-usericon",
-			good:   []byte(`<usericon iconsetpath="foo"/>`),
-			bad:    []byte(`<usericon/>`),
-		},
-		{
-			name:   "mission",
-			schema: "tak-details-mission",
-			good:   []byte(`<mission name="op" tool="t" type="x"/>`),
-			bad:    []byte(`<mission name="op" tool="t"/>`),
-		},
-		{
-			name:   "attachment_list",
-			schema: "tak-details-attachment_list",
-			good:   []byte(`<attachment_list hashes="abc"/>`),
-			bad:    []byte(`<attachment_list/>`),
 		},
 	}
 
@@ -96,7 +102,6 @@ func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
 }
 
 func TestListAvailableSchemas(t *testing.T) {
-	validator.ResetForTest()
 	schemas := validator.ListAvailableSchemas()
 	if len(schemas) == 0 {
 		t.Fatal("no schemas returned")

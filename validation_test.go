@@ -332,7 +332,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 		Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
 		GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g" role="member"/>`)},
 
-		Unknown:           []cotlib.RawMessage{[]byte(`<extra foo="bar"/>`)},
+		Unknown: []cotlib.RawMessage{[]byte(`<extra foo="bar"/>`)},
 	}
 
 	xmlData, err := evt.ToXML()
@@ -542,6 +542,84 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		evt.Detail.StrokeColor.Raw = []byte(`<strokecolor/>`)
 		if err := evt.Validate(); err == nil {
 			t.Fatal("expected error for invalid strokecolor")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("emergency", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("EM1", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Emergency: &cotlib.Emergency{Raw: []byte(`<emergency>help</emergency>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid emergency rejected: %v", err)
+		}
+		evt.Detail.Emergency.Raw = []byte(`<emergency>bad value</emergency>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid emergency")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("height", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("H1", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Height:     &cotlib.Height{Raw: []byte(`<height>1</height>`)},
+			HeightUnit: &cotlib.HeightUnit{Raw: []byte(`<height_unit>1</height_unit>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid height rejected: %v", err)
+		}
+		evt.Detail.Height.Raw = []byte(`<height>bad</height>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid height")
+		}
+		evt.Detail.Height.Raw = []byte(`<height>1</height>`)
+		evt.Detail.HeightUnit.Raw = []byte(`<height_unit>x</height_unit>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid height_unit")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("hierarchy", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("H2", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Hierarchy: &cotlib.Hierarchy{Raw: []byte(`<hierarchy><group uid="g" name="n"/></hierarchy>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid hierarchy rejected: %v", err)
+		}
+		evt.Detail.Hierarchy.Raw = []byte(`<hierarchy/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid hierarchy")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("link_detail", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("L1", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			LinkDetail: &cotlib.DetailLink{Raw: []byte(`<link uid="u" type="a-f-G" relation="p-p"/>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid link detail rejected: %v", err)
+		}
+		evt.Detail.LinkDetail.Raw = []byte(`<link uid="u"/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid link detail")
 		}
 		cotlib.ReleaseEvent(evt)
 	})

@@ -48,8 +48,8 @@ The schemas were sourced from: `../AndroidTacticalAssaultKit-CIV/takcot/xsd/`
 
 The repository includes the complete set of TAKCoT schemas:
 
-### Main Schemas
-- Chat.xsd (renamed to tak-chat.xsd)
+-### Main Schemas
+- Chat.xsd (integrated as tak-chat.xsd)
 - Route.xsd
 - Various marker and drawing shape schemas
 
@@ -62,7 +62,7 @@ The repository includes the complete set of TAKCoT schemas:
 
 ## Limitations
 
-Currently, only self-contained detail schemas are actively used in the validator. Complex schemas with dependencies (like the main Chat.xsd and Route.xsd) require additional work to resolve their includes and dependencies.
+Currently, only self-contained detail schemas are actively used in the validator. Complex schemas with dependencies (like the main Route.xsd) require additional work to resolve their includes and dependencies.
 
 ## Future Enhancements
 

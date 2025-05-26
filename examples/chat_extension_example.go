@@ -30,7 +30,7 @@ func main() {
 	}
 
 	if evt.Detail.Chat != nil {
-		fmt.Printf("Chat extension: %s\n", string(evt.Detail.Chat.Raw))
+		fmt.Printf("Chat from %s: %s\n", evt.Detail.Chat.Sender, evt.Detail.Chat.Message)
 	}
 	if evt.Detail.Video != nil {
 		fmt.Printf("Video extension: %s\n", string(evt.Detail.Video.Raw))

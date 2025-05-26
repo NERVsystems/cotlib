@@ -566,5 +566,4 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		}
 		cotlib.ReleaseEvent(evt)
 	})
-
 }

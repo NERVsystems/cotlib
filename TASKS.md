@@ -9,7 +9,7 @@
   - [x] Geo Fence and Range & Bearing schemas
   - [x] Route schemas (Route.xsd, tak-route.xsd)
   - [x] Marker schemas (2525, Icon Set, Spot)
-- [ ] Develop comprehensive tests for all new detail extensions
+- [x] Develop comprehensive tests for all new detail extensions
 - [ ] Expand benchmarks for representative schemas
 
 ## Schema Integration Groups

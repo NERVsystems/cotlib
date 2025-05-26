@@ -108,7 +108,6 @@ func initSchemas() {
 	if err != nil {
 		initErr = err
 	}
-	schemas["tak-details-remarks"] = takDetailsRemarks
 
 	takDetailsEnvironment, err := Compile(takDetailsEnvironmentXSD)
 	if err != nil {

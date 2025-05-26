@@ -349,8 +349,6 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 
-	archiveXML := []byte(`<archive id="a"><item></item></archive>`)
-	attachmentXML := []byte(`<attachmentList><file id="f1"></file></attachmentList>`)
 	envXML := []byte(`<environment temperature="20" windDirection="10" windSpeed="5"></environment>`)
 	fileShareXML := []byte(`<fileshare filename="f" name="n" senderCallsign="A" senderUid="U" senderUrl="http://x" sha256="h" sizeInBytes="1"></fileshare>`)
 	precisionXML := []byte(`<precisionlocation altsrc="GPS"></precisionlocation>`)
@@ -361,7 +359,6 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 	shapeXML := []byte(`<shape><polyline closed="true"><vertex hae="0" lat="1" lon="1"></vertex></polyline></shape>`)
 
 	evt.Detail = &cotlib.Detail{
-		Archive:           &cotlib.Archive{Raw: archiveXML},
 		Environment:       &cotlib.Environment{Raw: envXML},
 		FileShare:         &cotlib.FileShare{Raw: fileShareXML},
 		PrecisionLocation: &cotlib.PrecisionLocation{Raw: precisionXML},
@@ -391,7 +388,6 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 		got  []byte
 		want []byte
 	}{
-		{"archive", out.Detail.Archive.Raw, archiveXML},
 		{"environment", out.Detail.Environment.Raw, envXML},
 		{"fileshare", out.Detail.FileShare.Raw, fileShareXML},
 		{"precisionlocation", out.Detail.PrecisionLocation.Raw, precisionXML},

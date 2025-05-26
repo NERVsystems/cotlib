@@ -1,8 +1,6 @@
 - [x] Tighten wildcard validation to reject embedded '*'
 - [x] Use context-based logging throughout
 - [x] Add tests for embedded wildcard rejection
-# Full Schema Coverage TODO
-<!-- Remaining detail schemas have been embedded and compiled -->
 - [x] Add validation hooks in Event.ValidateAt or during XML unmarshalling
 - [x] Integrate remaining top-level schemas
   - Drawing shape schemas (Circle, Free Form, Rectangle, Telestration)

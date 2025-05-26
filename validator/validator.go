@@ -204,6 +204,12 @@ func initSchemas() {
 		panic(fmt.Errorf("compile TAK details height_unit schema: %w", err))
 	}
 	schemas["tak-details-height_unit"] = takDetailsHeightUnit
+
+	eventPoint, err := Compile(eventPointXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile event point schema: %w", err))
+	}
+	schemas["event-point"] = eventPoint
 }
 
 // ValidateAgainstSchema validates XML against a named schema.

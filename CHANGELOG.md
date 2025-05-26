@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Detail extensions with round-trip preservation in `Detail.Unknown`
+- Validator package with schema checks for `__chat` extensions
 
 ### Changed
 - Allowed `HAE` sentinel value `9999999.0` and expanded valid range to -12000..40000000

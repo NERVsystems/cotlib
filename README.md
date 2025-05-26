@@ -182,6 +182,13 @@ out, _ := evt.ToXML()
 fmt.Println(string(out)) // prints the same XML
 ```
 
+### Validator Package
+
+The optional `validator` subpackage provides schema checks for common detail
+extensions. `validator.ValidateChat` ensures a `__chat` element contains both
+`sender` and `message` attributes. `Event.Validate` calls this automatically
+when a chat extension is present.
+
 ### Type Validation and Catalog
 
 The library provides comprehensive type validation and catalog management:

@@ -314,7 +314,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 	evt.Detail = &cotlib.Detail{
-		Chat:              &cotlib.Chat{Sender: "s", Message: "m"},
+		Chat:              &cotlib.Chat{ID: "", Message: "m", Sender: "s"},
 		ChatReceipt:       &cotlib.ChatReceipt{Ack: "y"},
 		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence radius="5"/>`)},
 		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination host="srv"/>`)},
@@ -412,22 +412,25 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 }
 
 func TestChatSchemaValidation(t *testing.T) {
-	evt, err := cotlib.NewEvent("CHAT-1", "t-x-c", 1, 1, 0)
-	if err != nil {
-		t.Fatalf("new event: %v", err)
-	}
-	evt.Detail = &cotlib.Detail{
-		Chat: &cotlib.Chat{Sender: "A", Message: "hi"},
-	}
-	if err := evt.Validate(); err != nil {
+	valid := []byte(`<__chat sender="A" message="hi"/>`)
+	if err := validator.ValidateAgainstSchema("chat", valid); err != nil {
 		t.Fatalf("valid chat rejected: %v", err)
 	}
 
-	evt.Detail.Chat.Message = ""
-	if err := evt.Validate(); err == nil {
-		t.Fatal("expected error for missing message")
+	invalid := []byte(`<__chat unknown="x"/>`)
+	if err := validator.ValidateAgainstSchema("chat", invalid); err == nil {
+		t.Fatal("expected error for invalid chat")
 	}
-	cotlib.ReleaseEvent(evt)
+
+	validReceipt := []byte(`<__chatReceipt ack="y"/>`)
+	if err := validator.ValidateAgainstSchema("chatReceipt", validReceipt); err != nil {
+		t.Fatalf("valid chatReceipt rejected: %v", err)
+	}
+
+	invalidReceipt := []byte(`<__chatReceipt/>`)
+	if err := validator.ValidateAgainstSchema("chatReceipt", invalidReceipt); err == nil {
+		t.Fatal("expected error for invalid chatReceipt")
+	}
 }
 
 func TestUnmarshalInvalidChatExtensions(t *testing.T) {

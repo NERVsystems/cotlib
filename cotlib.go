@@ -1148,18 +1148,24 @@ func (e *Event) ValidateAt(now time.Time) error {
 		return err
 	}
 
-	// Validate chat extension if present
+	// Validate chat-related extensions if present
 	if e.Detail != nil {
 		if e.Detail.Chat != nil {
-			data, _ := xml.Marshal(e.Detail.Chat)
-			if err := validator.ValidateChat(data); err != nil {
+			data, err := xml.Marshal(e.Detail.Chat)
+			if err != nil {
+				return fmt.Errorf("marshal chat: %w", err)
+			}
+			if err := validator.ValidateAgainstSchema("chat", data); err != nil {
 				return fmt.Errorf("chat validation failed: %w", err)
 			}
 		}
 		if e.Detail.ChatReceipt != nil {
-			data, _ := xml.Marshal(e.Detail.ChatReceipt)
+			data, err := xml.Marshal(e.Detail.ChatReceipt)
+			if err != nil {
+				return fmt.Errorf("marshal chatReceipt: %w", err)
+			}
 			if err := validator.ValidateAgainstSchema("chatReceipt", data); err != nil {
-				return fmt.Errorf("invalid chat receipt: %w", err)
+				return fmt.Errorf("chatReceipt validation failed: %w", err)
 			}
 		}
 	}

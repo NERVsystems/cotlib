@@ -190,9 +190,9 @@ fmt.Println(string(out)) // prints the same XML
 ### Validator Package
 
 The optional `validator` subpackage provides schema checks for common detail
-extensions. `validator.ValidateChat` ensures a `__chat` element contains both
-`sender` and `message` attributes. `Event.Validate` calls this automatically
-when a chat extension is present.
+extensions. `validator.ValidateAgainstSchema` validates XML against embedded
+XSD files. `Event.Validate` automatically checks `__chat` and `__chatReceipt`
+extensions using these schemas.
 
 ### Type Validation and Catalog
 

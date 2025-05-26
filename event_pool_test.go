@@ -47,3 +47,21 @@ func TestUnmarshalXMLEventCtxLogsError(t *testing.T) {
 		t.Errorf("expected error log, got: %s", logOutput)
 	}
 }
+
+func TestNewEventPoolReuseOnValidationError(t *testing.T) {
+	pct := debug.SetGCPercent(-1)
+	defer debug.SetGCPercent(pct)
+
+	base := getEvent()
+	ReleaseEvent(base)
+
+	if _, err := NewEvent("test", "a-f-G", 95, 0, 0); err == nil {
+		t.Fatal("expected validation error")
+	}
+
+	e := getEvent()
+	if e != base {
+		t.Error("event was not returned to pool after validation failure")
+	}
+	ReleaseEvent(e)
+}

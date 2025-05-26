@@ -1,0 +1,9 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="__chat">
+    <xs:complexType>
+      <xs:attribute name="id" type="xs:string" use="optional"/>
+      <xs:attribute name="message" type="xs:string" use="optional"/>
+      <xs:attribute name="sender" type="xs:string" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

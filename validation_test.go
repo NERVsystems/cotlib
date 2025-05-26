@@ -330,7 +330,8 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence elevationMonitored="false" minElevation="0" monitor="in" trigger="enter" tracking="true" maxElevation="1" boundingSphere="1"/>`)},
 		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination destinations="srv"/>`)},
 		Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
-		GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g" role="r"/>`)},
+		GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g" role="member"/>`)},
+
 		Unknown:           []cotlib.RawMessage{[]byte(`<extra foo="bar"/>`)},
 	}
 
@@ -545,25 +546,49 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		cotlib.ReleaseEvent(evt)
 	})
 
-	t.Run("group_and_media", func(t *testing.T) {
+	t.Run("group_and_user", func(t *testing.T) {
 		evt, err := cotlib.NewEvent("G2", "a-f-G", 1, 1, 0)
 		if err != nil {
 			t.Fatalf("new event: %v", err)
 		}
 		evt.Detail = &cotlib.Detail{
-			ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination destinations="s"/>`)},
-			GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g" role="r"/>`)},
-			Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
-			AttachmentList:    &cotlib.AttachmentList{Raw: []byte(`<attachment_list hashes="h"/>`)},
-			UID:               &cotlib.UID{Raw: []byte(`<uid Droid="d"/>`)},
+			GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g" role="member"/>`)},
+			ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination destinations="srv"/>`)},
+			UserIcon:          &cotlib.UserIcon{Raw: []byte(`<usericon iconsetpath="icons"/>`)},
+			LabelsOn:          &cotlib.LabelsOn{Raw: []byte(`<labelson value="true"/>`)},
 		}
 		if err := evt.Validate(); err != nil {
-			t.Fatalf("valid group extensions rejected: %v", err)
+			t.Fatalf("valid group/user extensions rejected: %v", err)
 		}
+
+		evt.Detail.GroupExtension.Raw = []byte(`<__group name="g"/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid __group")
+		}
+		evt.Detail.GroupExtension.Raw = []byte(`<__group name="g" role="member"/>`)
+
 		evt.Detail.ServerDestination.Raw = []byte(`<__serverdestination/>`)
 		if err := evt.Validate(); err == nil {
-			t.Fatal("expected error for invalid serverdestination")
+			t.Fatal("expected error for invalid __serverdestination")
+		}
+		evt.Detail.ServerDestination.Raw = []byte(`<__serverdestination destinations="srv"/>`)
+
+		evt.Detail.UserIcon.Raw = []byte(`<usericon/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid usericon")
 		}
 		cotlib.ReleaseEvent(evt)
 	})
+
+	t.Run("uid_schema", func(t *testing.T) {
+		good := []byte(`<uid Droid="droid://123" nett="net"/>`)
+		if err := validator.ValidateAgainstSchema("tak-details-uid", good); err != nil {
+			t.Fatalf("valid uid rejected: %v", err)
+		}
+		bad := []byte(`<uid nett="net"/>`)
+		if err := validator.ValidateAgainstSchema("tak-details-uid", bad); err == nil {
+			t.Fatal("expected error for invalid uid")
+		}
+	})
+
 }

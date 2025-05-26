@@ -45,32 +45,41 @@ func main() {
 		Level: slog.LevelInfo,
 	}))
 
-	// Determine the correct path to cot-types directory
-	// When run via "go generate ./cottypes", working directory is cottypes/
-	// When run directly from root, working directory is root
-	cotTypesDir := "cot-types"
-	if _, err := os.Stat(cotTypesDir); os.IsNotExist(err) {
-		// Try parent directory
-		cotTypesDir = filepath.Join("..", "cot-types")
-		if _, err := os.Stat(cotTypesDir); os.IsNotExist(err) {
-			logger.Error("cot-types directory not found in current or parent directory")
-			os.Exit(1)
+	// Determine the correct path to the XML definitions.
+	// The generator first tries the cot-types directory and falls back to
+	// cottypes for backward compatibility. It checks both the current and
+	// parent directories.
+	searchDirs := []string{
+		"cot-types",
+		filepath.Join("..", "cot-types"),
+		"cottypes",
+		filepath.Join("..", "cottypes"),
+	}
+
+	var (
+		cotTypesDir string
+		xmlFiles    []string
+	)
+
+	for _, dir := range searchDirs {
+		files, err := filepath.Glob(filepath.Join(dir, "*.xml"))
+		if err != nil {
+			logger.Warn("failed searching for XML files", "dir", dir, "error", err)
+			continue
+		}
+		if len(files) > 0 {
+			cotTypesDir = dir
+			xmlFiles = files
+			break
 		}
 	}
 
-	logger.Debug("Using cot-types directory", "path", cotTypesDir)
-
-	// Discover all XML files in cot-types directory
-	xmlFiles, err := filepath.Glob(filepath.Join(cotTypesDir, "*.xml"))
-	if err != nil {
-		logger.Error("Failed to find XML files", "error", err)
+	if cotTypesDir == "" {
+		logger.Error("no XML files found in cot-types or cottypes directories")
 		os.Exit(1)
 	}
 
-	if len(xmlFiles) == 0 {
-		logger.Error("No XML files found in cot-types directory", "dir", cotTypesDir)
-		os.Exit(1)
-	}
+	logger.Debug("Using type directory", "path", cotTypesDir)
 
 	logger.Info("Discovered XML files", "count", len(xmlFiles), "files", xmlFiles)
 

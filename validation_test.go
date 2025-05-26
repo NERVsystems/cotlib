@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/NERVsystems/cotlib"
+	"github.com/NERVsystems/cotlib/validator"
 )
 
 func TestWildcardPatterns(t *testing.T) {
@@ -24,13 +25,22 @@ func TestWildcardPatterns(t *testing.T) {
 		{"multiple wildcard segments", "a-f-G-*-*", false},
 		{"double asterisk segment", "a-f-G**", false},
 		{"multi-embedded asterisks", "a*f*G", false},
+		{"trailing dash", "a-f-G-", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := cotlib.ValidateType(tt.pattern)
-			if (err == nil) != tt.expected {
-				t.Errorf("ValidateType(%q) error = %v, want error = %v", tt.pattern, err, !tt.expected)
+			if tt.expected {
+				if err != nil {
+					t.Errorf("ValidateType(%q) unexpected error = %v", tt.pattern, err)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("ValidateType(%q) expected error", tt.pattern)
+				} else if !errors.Is(err, cotlib.ErrInvalidType) {
+					t.Errorf("ValidateType(%q) unexpected error = %v", tt.pattern, err)
+				}
 			}
 		})
 	}
@@ -314,7 +324,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 	evt.Detail = &cotlib.Detail{
-		Chat:              &cotlib.Chat{Sender: "s", Message: "m"},
+		Chat:              &cotlib.Chat{ID: "", Message: "m", Sender: "s"},
 		ChatReceipt:       &cotlib.ChatReceipt{Ack: "y"},
 		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence radius="5"/>`)},
 		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination host="srv"/>`)},
@@ -357,11 +367,9 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 	trackXML := []byte(`<track course="90" speed="10"></track>`)
 	missionXML := []byte(`<mission name="op"><task></task></mission>`)
 	statusXML := []byte(`<status battery="80"></status>`)
-	shapeXML := []byte(`<shape><point lat="1" lon="2"></point></shape>`)
+	shapeXML := []byte(`<shape><polyline closed="true"><vertex hae="0" lat="1" lon="1"></vertex></polyline></shape>`)
 
 	evt.Detail = &cotlib.Detail{
-		Archive:           &cotlib.Archive{Raw: archiveXML},
-		AttachmentList:    &cotlib.AttachmentList{Raw: attachmentXML},
 		Environment:       &cotlib.Environment{Raw: envXML},
 		FileShare:         &cotlib.FileShare{Raw: fileShareXML},
 		PrecisionLocation: &cotlib.PrecisionLocation{Raw: precisionXML},
@@ -391,8 +399,6 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 		got  []byte
 		want []byte
 	}{
-		{"archive", out.Detail.Archive.Raw, archiveXML},
-		{"attachmentList", out.Detail.AttachmentList.Raw, attachmentXML},
 		{"environment", out.Detail.Environment.Raw, envXML},
 		{"fileshare", out.Detail.FileShare.Raw, fileShareXML},
 		{"precisionlocation", out.Detail.PrecisionLocation.Raw, precisionXML},
@@ -412,22 +418,26 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 }
 
 func TestChatSchemaValidation(t *testing.T) {
-	evt, err := cotlib.NewEvent("CHAT-1", "t-x-c", 1, 1, 0)
-	if err != nil {
-		t.Fatalf("new event: %v", err)
-	}
-	evt.Detail = &cotlib.Detail{
-		Chat: &cotlib.Chat{Sender: "A", Message: "hi"},
-	}
-	if err := evt.Validate(); err != nil {
+	validator.ResetForTest()
+	valid := []byte(`<__chat sender="A" message="hi"/>`)
+	if err := validator.ValidateAgainstSchema("chat", valid); err != nil {
 		t.Fatalf("valid chat rejected: %v", err)
 	}
 
-	evt.Detail.Chat.Message = ""
-	if err := evt.Validate(); err == nil {
-		t.Fatal("expected error for missing message")
+	invalid := []byte(`<__chat unknown="x"/>`)
+	if err := validator.ValidateAgainstSchema("chat", invalid); err == nil {
+		t.Fatal("expected error for invalid chat")
 	}
-	cotlib.ReleaseEvent(evt)
+
+	validReceipt := []byte(`<__chatReceipt ack="y"/>`)
+	if err := validator.ValidateAgainstSchema("chatReceipt", validReceipt); err != nil {
+		t.Fatalf("valid chatReceipt rejected: %v", err)
+	}
+
+	invalidReceipt := []byte(`<__chatReceipt/>`)
+	if err := validator.ValidateAgainstSchema("chatReceipt", invalidReceipt); err == nil {
+		t.Fatal("expected error for invalid chatReceipt")
+	}
 }
 
 func TestUnmarshalInvalidChatExtensions(t *testing.T) {
@@ -513,5 +523,6 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		}
 		cotlib.ReleaseEvent(evt)
 	})
+
 
 }

@@ -546,3 +546,18 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 	})
 
 }
+
+func TestEventSchemaValidation(t *testing.T) {
+	now := time.Now().UTC()
+	good := fmt.Sprintf(`<event version="2.0" uid="E1" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s"><point lat="1" lon="2" hae="3" ce="4" le="5"/></event>`,
+		now.Format(cotlib.CotTimeFormat), now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+	if err := cotlib.ValidateAgainstSchema([]byte(good)); err != nil {
+		t.Fatalf("valid event rejected: %v", err)
+	}
+
+	bad := fmt.Sprintf(`<event version="2.0" uid="E1" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s"><point lat="91" lon="0" hae="0" ce="1" le="1"/></event>`,
+		now.Format(cotlib.CotTimeFormat), now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+	if err := cotlib.ValidateAgainstSchema([]byte(bad)); err == nil {
+		t.Fatal("expected error for invalid event")
+	}
+}

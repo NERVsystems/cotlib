@@ -853,6 +853,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 		}
 	})
 }
+
 func TestToXMLIncludesPointWithZeroCoordinates(t *testing.T) {
 	now := time.Now().UTC()
 	evt := &Event{
@@ -878,5 +879,68 @@ func TestToXMLIncludesPointWithZeroCoordinates(t *testing.T) {
 	}
 	if !strings.Contains(string(xmlData), "<point") {
 		t.Error("point element missing in XML output")
+	}
+}
+
+func TestValidateTypeWildcardResolution(t *testing.T) {
+	tests := []struct {
+		name    string
+		typ     string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "friendly pickup zone should resolve to neutral",
+			typ:     "b-g-f-G-G-A-P",
+			wantErr: false,
+		},
+		{
+			name:    "neutral pickup zone should be valid",
+			typ:     "b-g-.-G-G-A-P",
+			wantErr: false,
+		},
+		{
+			name:    "neutral landing zone should be valid",
+			typ:     "b-g-.-G-G-A-L",
+			wantErr: false,
+		},
+		{
+			name:    "hostile pickup zone should resolve to neutral",
+			typ:     "b-g-h-G-G-A-P",
+			wantErr: false,
+		},
+		{
+			name:    "unknown pickup zone should resolve to neutral",
+			typ:     "b-g-u-G-G-A-P",
+			wantErr: false,
+		},
+		{
+			name:    "atomic wildcard should still work",
+			typ:     "a-.-G",
+			wantErr: false,
+		},
+		{
+			name:    "invalid atomic wildcard should fail",
+			typ:     "b-.-G",
+			wantErr: true,
+			errMsg:  "unknown type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateType(tt.typ)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ValidateType(%q) expected error but got none", tt.typ)
+				} else if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("ValidateType(%q) error = %v, want error containing %q", tt.typ, err, tt.errMsg)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ValidateType(%q) unexpected error = %v", tt.typ, err)
+				}
+			}
+		})
 	}
 }

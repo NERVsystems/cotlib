@@ -76,7 +76,6 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"github.com/NERVsystems/cotlib/ctxlog"
 	"io"
 	"log/slog"
 	"os"
@@ -85,6 +84,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/NERVsystems/cotlib/ctxlog"
 
 	"github.com/NERVsystems/cotlib/cottypes"
 )
@@ -990,7 +991,7 @@ func ValidateType(typ string) error {
 	}
 
 	// Fast path for atomic type wildcards (a-.-X)
-	if strings.Contains(typ, ".-") {
+	if strings.HasPrefix(typ, "a-.") {
 		parts := strings.Split(typ, "-")
 		if len(parts) < 2 {
 			return fmt.Errorf("invalid type format")

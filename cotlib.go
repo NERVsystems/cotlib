@@ -576,6 +576,7 @@ type Detail struct {
 	LabelsOn          *LabelsOn          `xml:"labelson,omitempty"`
 	ColorExtension    *ColorExtension    `xml:"color,omitempty"`
 	UserIcon          *UserIcon          `xml:"usericon,omitempty"`
+	UID               *UID               `xml:"uid,omitempty"`
 	Bullseye          *Bullseye          `xml:"bullseye,omitempty"`
 	RouteInfo         *RouteInfo         `xml:"routeInfo,omitempty"`
 	Remarks           *Remarks           `xml:"remarks,omitempty"`
@@ -753,6 +754,12 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 					return err
 				}
 				d.UserIcon = &ui
+			case "uid":
+				var u UID
+				if err := dec.DecodeElement(&u, &t); err != nil {
+					return err
+				}
+				d.UID = &u
 			case "bullseye":
 				var b Bullseye
 				if err := dec.DecodeElement(&b, &t); err != nil {
@@ -909,6 +916,11 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	}
 	if d.UserIcon != nil {
 		if err := encodeRaw(enc, d.UserIcon.Raw); err != nil {
+			return err
+		}
+	}
+	if d.UID != nil {
+		if err := encodeRaw(enc, d.UID.Raw); err != nil {
 			return err
 		}
 	}
@@ -1198,6 +1210,31 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("invalid archive: %w", err)
 			}
 		}
+		if e.Detail.ServerDestination != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__serverdestination", e.Detail.ServerDestination.Raw); err != nil {
+				return fmt.Errorf("invalid __serverdestination: %w", err)
+			}
+		}
+		if e.Detail.Video != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__video", e.Detail.Video.Raw); err != nil {
+				return fmt.Errorf("invalid __video: %w", err)
+			}
+		}
+		if e.Detail.GroupExtension != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__group", e.Detail.GroupExtension.Raw); err != nil {
+				return fmt.Errorf("invalid __group: %w", err)
+			}
+		}
+		if e.Detail.AttachmentList != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-attachment_list", e.Detail.AttachmentList.Raw); err != nil {
+				return fmt.Errorf("invalid attachment_list: %w", err)
+			}
+		}
+		if e.Detail.UID != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-uid", e.Detail.UID.Raw); err != nil {
+				return fmt.Errorf("invalid uid: %w", err)
+			}
+		}
 		if e.Detail.Environment != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-environment", e.Detail.Environment.Raw); err != nil {
 				return fmt.Errorf("invalid environment: %w", err)
@@ -1261,6 +1298,31 @@ func (e *Event) ValidateAt(now time.Time) error {
 		if e.Detail.UserIcon != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-usericon", e.Detail.UserIcon.Raw); err != nil {
 				return fmt.Errorf("invalid usericon: %w", err)
+			}
+		}
+		if e.Detail.UID != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-uid", e.Detail.UID.Raw); err != nil {
+				return fmt.Errorf("invalid uid: %w", err)
+			}
+		}
+		if e.Detail.ServerDestination != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__serverdestination", e.Detail.ServerDestination.Raw); err != nil {
+				return fmt.Errorf("invalid __serverdestination: %w", err)
+			}
+		}
+		if e.Detail.Video != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__video", e.Detail.Video.Raw); err != nil {
+				return fmt.Errorf("invalid __video: %w", err)
+			}
+		}
+		if e.Detail.GroupExtension != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__group", e.Detail.GroupExtension.Raw); err != nil {
+				return fmt.Errorf("invalid __group: %w", err)
+			}
+		}
+		if e.Detail.AttachmentList != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-attachment_list", e.Detail.AttachmentList.Raw); err != nil {
+				return fmt.Errorf("invalid attachment_list: %w", err)
 			}
 		}
 		if e.Detail.Remarks != nil {

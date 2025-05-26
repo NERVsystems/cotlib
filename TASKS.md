@@ -6,11 +6,7 @@
   - __chat.xsd
   - __chatreceipt.xsd
   - __geofence.xsd
-  - __group.xsd
-  - __serverdestination.xsd
-  - __video.xsd
   - archive.xsd
-  - attachment_list.xsd
   - chatgrp.xsd
   - color.xsd
   - environment.xsd
@@ -28,7 +24,6 @@
   - strokeWeight.xsd
   - takv.xsd
   - uid.xsd
-  - usericon.xsd
 - [ ] Add validation hooks in Event.ValidateAt or during XML unmarshalling
 - [ ] Integrate remaining top-level schemas
   - Drawing shape schemas (Circle, Free Form, Rectangle, Telestration)
@@ -48,15 +43,14 @@ Break down the remaining XSD work into manageable task groups:
 - [x] Add validation tests covering chat message details.
 
 ### 2. Geofence and Drawing Schemas
-- Integrate `__geofence.xsd`, `shape.xsd`, `strokeColor.xsd`, `strokeWeight.xsd`, `fillColor.xsd`, `height.xsd`, and `height_unit.xsd`.
-- Extend validator tests for geofence and drawing elements.
+- [x] Integrate `__geofence.xsd`, `shape.xsd`, `strokeColor.xsd`, `strokeWeight.xsd`, `fillColor.xsd`, `height.xsd`, and `height_unit.xsd`.
+- [x] Extend validator tests for geofence and drawing elements.
 
 ### 3. Group and User Schemas
-- Handle `__group.xsd`, `__serverdestination.xsd`, `uid.xsd`, `usericon.xsd`, and `labels_on.xsd`.
-- Provide tests for group membership and user identity details.
+- [x] Handle `__group.xsd`, `__serverdestination.xsd`, `uid.xsd`, `usericon.xsd`, and `labels_on.xsd`.
+- [x] Provide tests for group membership and user identity details.
 
 ### 4. Media and Attachment Schemas
-- Embed `__video.xsd`, `attachment_list.xsd`, `fileshare.xsd`, `link.xsd`, and `archive.xsd`.
 - Test validation of video, file share, and link attachments.
 
 ### 5. Environment and Mission Schemas

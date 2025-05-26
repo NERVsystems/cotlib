@@ -328,9 +328,9 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 		Chat:              &cotlib.Chat{ID: "", Message: "m", Sender: "s"},
 		ChatReceipt:       &cotlib.ChatReceipt{Ack: "y"},
 		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence elevationMonitored="false" minElevation="0" monitor="in" trigger="enter" tracking="true" maxElevation="1" boundingSphere="1"/>`)},
-		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination host="srv"/>`)},
+		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination destinations="srv"/>`)},
 		Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
-		GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g"/>`)},
+		GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g" role="r"/>`)},
 		Unknown:           []cotlib.RawMessage{[]byte(`<extra foo="bar"/>`)},
 	}
 
@@ -541,6 +541,28 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		evt.Detail.StrokeColor.Raw = []byte(`<strokecolor/>`)
 		if err := evt.Validate(); err == nil {
 			t.Fatal("expected error for invalid strokecolor")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("group_and_media", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("G2", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination destinations="s"/>`)},
+			GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g" role="r"/>`)},
+			Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
+			AttachmentList:    &cotlib.AttachmentList{Raw: []byte(`<attachment_list hashes="h"/>`)},
+			UID:               &cotlib.UID{Raw: []byte(`<uid Droid="d"/>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid group extensions rejected: %v", err)
+		}
+		evt.Detail.ServerDestination.Raw = []byte(`<__serverdestination/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid serverdestination")
 		}
 		cotlib.ReleaseEvent(evt)
 	})

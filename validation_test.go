@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/NERVsystems/cotlib"
+	"github.com/NERVsystems/cotlib/validator"
 )
 
 func TestWildcardPatterns(t *testing.T) {
@@ -312,8 +313,8 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 	evt.Detail = &cotlib.Detail{
-		Chat:              &cotlib.Chat{Raw: []byte(`<__chat id="c1"/>`)},
-		ChatReceipt:       &cotlib.ChatReceipt{Raw: []byte(`<__chatReceipt ack="y"/>`)},
+		Chat:              &cotlib.Chat{ID: "c1"},
+		ChatReceipt:       &cotlib.ChatReceipt{Ack: "y"},
 		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence radius="5"/>`)},
 		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination host="srv"/>`)},
 		Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
@@ -331,7 +332,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if out.Detail == nil || out.Detail.Chat == nil || len(out.Detail.Chat.Raw) == 0 {
+	if out.Detail == nil || out.Detail.Chat == nil || out.Detail.Chat.ID == "" {
 		t.Errorf("chat extension lost")
 	}
 	if len(out.Detail.Unknown) != 1 {
@@ -407,4 +408,24 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 		}
 	}
 	cotlib.ReleaseEvent(out)
+}
+
+func TestChatSchemaValidation(t *testing.T) {
+	valid := []byte(`<__chat message="hi" sender="bob"/>`)
+	if err := validator.ValidateAgainstSchema("chat", valid); err != nil {
+		t.Fatalf("valid chat rejected: %v", err)
+	}
+	invalid := []byte(`<__chat unknown="x"/>`)
+	if err := validator.ValidateAgainstSchema("chat", invalid); err == nil {
+		t.Fatal("expected error for invalid chat xml")
+	}
+
+	receiptValid := []byte(`<__chatReceipt ack="y"/>`)
+	if err := validator.ValidateAgainstSchema("chatReceipt", receiptValid); err != nil {
+		t.Fatalf("valid receipt rejected: %v", err)
+	}
+	receiptInvalid := []byte(`<__chatReceipt />`)
+	if err := validator.ValidateAgainstSchema("chatReceipt", receiptInvalid); err == nil {
+		t.Fatal("expected error for invalid chatReceipt")
+	}
 }

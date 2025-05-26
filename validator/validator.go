@@ -34,6 +34,9 @@ var takDetailsShapeXSD []byte
 //go:embed schemas/details/color.xsd
 var takDetailsColorXSD []byte
 
+//go:embed schemas/details/hierarchy.xsd
+var takDetailsHierarchyXSD []byte
+
 //go:embed schemas/details/__geofence.xsd
 var takDetailsGeofenceXSD []byte
 
@@ -168,6 +171,12 @@ func initSchemas() {
 		panic(fmt.Errorf("compile TAK details color schema: %w", err))
 	}
 	schemas["tak-details-color"] = takDetailsColor
+
+	takDetailsHierarchy, err := Compile(takDetailsHierarchyXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile TAK details hierarchy schema: %w", err))
+	}
+	schemas["tak-details-hierarchy"] = takDetailsHierarchy
 
 	takDetailsGeofence, err := Compile(takDetailsGeofenceXSD)
 	if err != nil {

@@ -7,8 +7,8 @@
 - [ ] Integrate remaining top-level schemas
   - Drawing shape schemas (Circle, Free Form, Rectangle, Telestration)
   - Geo Fence and Range & Bearing schemas
-  - Route schemas (Route.xsd, tak-route.xsd)
-  - Marker schemas (2525, Icon Set, Spot)
+  - [x] Route schemas (Route.xsd, tak-route.xsd)
+  - [x] Marker schemas (2525, Icon Set, Spot)
 - [ ] Develop comprehensive tests for all new detail extensions
 - [ ] Expand benchmarks for representative schemas
 
@@ -28,12 +28,12 @@ Break down the remaining XSD work into manageable task groups:
 <!-- Completed -->
 
 ### 4. Media and Attachment Schemas
-- Test validation of video, file share, and link attachments.
+- [x] Test validation of video, file share, and link attachments.
 
 ### 5. Environment and Mission Schemas
 - [x] Add `environment.xsd`, `mission.xsd`, `precisionlocation.xsd`, and `takv.xsd`.
 - [x] Implement tests focusing on mission planning and environment details.
 
 ### 6. Miscellaneous Schemas
-- Finalize `color.xsd` and `hierarchy.xsd` integration.
+- [x] Finalize `color.xsd` and `hierarchy.xsd` integration.
 - Review interactions with other detail schemas for completeness.

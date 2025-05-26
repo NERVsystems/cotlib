@@ -4,9 +4,10 @@
   <xs:include schemaLocation="details/remarks.xsd"/>
   <xs:include schemaLocation="details/precisionlocation.xsd"/>
   <xs:include schemaLocation="details/usericon.xsd"/>
-  <xs:include schemaLocation="details/color.xsd"/>  
+  <xs:include schemaLocation="details/color.xsd"/>
   <xs:include schemaLocation="details/status.xsd"/>
-  <xs:include schemaLocation="details/link.xsd"/> 
+  <xs:include schemaLocation="details/link.xsd"/>
+  <xs:include schemaLocation="event/point.xsd"/>
   <xs:element name="event">
     <xs:complexType>
       <xs:sequence>

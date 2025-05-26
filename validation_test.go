@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/NERVsystems/cotlib"
-	"github.com/NERVsystems/cotlib/validator"
 )
 
 func TestWildcardPatterns(t *testing.T) {
@@ -315,8 +314,8 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 	evt.Detail = &cotlib.Detail{
-		Chat:              &cotlib.Chat{Raw: []byte(`<__chat sender="s" message="m"/>`)},
-		ChatReceipt:       &cotlib.ChatReceipt{Raw: []byte(`<__chatReceipt ack="y"/>`)},
+		Chat:              &cotlib.Chat{Sender: "s", Message: "m"},
+		ChatReceipt:       &cotlib.ChatReceipt{Ack: "y"},
 		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence radius="5"/>`)},
 		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination host="srv"/>`)},
 		Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
@@ -334,7 +333,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if out.Detail == nil || out.Detail.Chat == nil || out.Detail.Chat.ID == "" {
+	if out.Detail == nil || out.Detail.Chat == nil || out.Detail.Chat.Message == "" {
 		t.Errorf("chat extension lost")
 	}
 	if len(out.Detail.Unknown) != 1 {
@@ -418,13 +417,13 @@ func TestChatSchemaValidation(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 	evt.Detail = &cotlib.Detail{
-		Chat: &cotlib.Chat{Raw: []byte(`<__chat sender="A" message="hi"/>`)},
+		Chat: &cotlib.Chat{Sender: "A", Message: "hi"},
 	}
 	if err := evt.Validate(); err != nil {
 		t.Fatalf("valid chat rejected: %v", err)
 	}
 
-	evt.Detail.Chat.Raw = []byte(`<__chat sender="A"/>`)
+	evt.Detail.Chat.Message = ""
 	if err := evt.Validate(); err == nil {
 		t.Fatal("expected error for missing message")
 	}

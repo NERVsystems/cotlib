@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"github.com/NERVsystems/cotlib/ctxlog"
 	"log/slog"
+	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/NERVsystems/cotlib/ctxlog"
 )
 
 var (
@@ -16,6 +18,53 @@ var (
 	catalogOnce sync.Once
 	logger      = slog.Default()
 )
+
+var doctypePattern = regexp.MustCompile(`(?i)<!\s*DOCTYPE`)
+
+// limitTokenReader enforces basic XML token limits during decoding.
+type limitTokenReader struct {
+	dec   *xml.Decoder
+	depth int
+	count int
+}
+
+func (l *limitTokenReader) Token() (xml.Token, error) {
+	off := l.dec.InputOffset()
+	tok, err := l.dec.RawToken()
+	if err != nil {
+		return tok, err
+	}
+	if l.dec.InputOffset()-off > 4096 {
+		return nil, fmt.Errorf("invalid input")
+	}
+	switch t := tok.(type) {
+	case xml.StartElement:
+		l.depth++
+		l.count++
+		if l.depth > 32 || l.count > 10000 {
+			return nil, fmt.Errorf("invalid input")
+		}
+		for _, a := range t.Attr {
+			if len(a.Value) > 512*1024 {
+				return nil, fmt.Errorf("invalid input")
+			}
+		}
+	case xml.EndElement:
+		if l.depth > 0 {
+			l.depth--
+		}
+	case xml.CharData:
+		if len(t) > 512*1024 {
+			return nil, fmt.Errorf("invalid input")
+		}
+	}
+	return tok, nil
+}
+
+func decodeWithLimits(dec *xml.Decoder, v any) error {
+	ltd := &limitTokenReader{dec: dec}
+	return xml.NewTokenDecoder(ltd).Decode(v)
+}
 
 // SetLogger sets the logger for the catalog package.
 func SetLogger(l *slog.Logger) {
@@ -101,6 +150,11 @@ func GetCatalog() *Catalog {
 func RegisterXML(ctx context.Context, data []byte) error {
 	logger := ctxlog.LoggerFromContext(ctx)
 
+	if doctypePattern.Match(data) {
+		logger.Error("invalid doctype detected")
+		return fmt.Errorf("invalid input")
+	}
+
 	var types struct {
 		Types []struct {
 			Cot  string `xml:"cot,attr"`
@@ -109,7 +163,10 @@ func RegisterXML(ctx context.Context, data []byte) error {
 		} `xml:"cot"`
 	}
 
-	if err := xml.NewDecoder(bytes.NewReader(data)).Decode(&types); err != nil {
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.CharsetReader = nil
+	dec.Entity = nil
+	if err := decodeWithLimits(dec, &types); err != nil {
 		return fmt.Errorf("failed to decode XML: %w", err)
 	}
 

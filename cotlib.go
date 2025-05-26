@@ -248,16 +248,20 @@ func basicSyntaxOK(name string) bool {
 func RegisterCoTTypesFromFile(ctx context.Context, filename string) error {
 	logger := LoggerFromContext(ctx)
 
-	file, err := os.Open(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
-		logger.Error("failed to open file",
+		logger.Error("failed to read file",
 			"path", filename,
 			"error", err)
 		return err
 	}
-	defer file.Close()
 
-	// Simple structure to parse the XML
+	if doctypePattern.Match(data) {
+		logger.Error("invalid doctype detected",
+			"path", filename)
+		return ErrInvalidInput
+	}
+
 	var types struct {
 		XMLName xml.Name `xml:"types"`
 		CoTs    []struct {
@@ -265,8 +269,10 @@ func RegisterCoTTypesFromFile(ctx context.Context, filename string) error {
 		} `xml:"cot"`
 	}
 
-	decoder := xml.NewDecoder(file)
-	if err := decoder.Decode(&types); err != nil {
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.CharsetReader = nil
+	dec.Entity = nil
+	if err := decodeWithLimits(dec, &types); err != nil {
 		logger.Error("failed to decode XML",
 			"path", filename,
 			"error", err)
@@ -293,9 +299,18 @@ func RegisterCoTTypesFromFile(ctx context.Context, filename string) error {
 // RegisterCoTTypesFromReader loads and registers CoT types from an XML reader
 func RegisterCoTTypesFromReader(ctx context.Context, r io.Reader) error {
 	logger := LoggerFromContext(ctx)
-	decoder := xml.NewDecoder(r)
 
-	// Simple structure to parse the XML
+	data, err := io.ReadAll(r)
+	if err != nil {
+		logger.Error("failed to read from reader", "error", err)
+		return err
+	}
+
+	if doctypePattern.Match(data) {
+		logger.Error("invalid doctype detected")
+		return ErrInvalidInput
+	}
+
 	var types struct {
 		XMLName xml.Name `xml:"types"`
 		CoTs    []struct {
@@ -303,7 +318,10 @@ func RegisterCoTTypesFromReader(ctx context.Context, r io.Reader) error {
 		} `xml:"cot"`
 	}
 
-	if err := decoder.Decode(&types); err != nil {
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.CharsetReader = nil
+	dec.Entity = nil
+	if err := decodeWithLimits(dec, &types); err != nil {
 		logger.Error("failed to decode XML from reader",
 			"error", err)
 		return err
@@ -330,13 +348,13 @@ func RegisterCoTTypesFromReader(ctx context.Context, r io.Reader) error {
 func RegisterCoTTypesFromXMLContent(ctx context.Context, xmlContent string) error {
 	logger := LoggerFromContext(ctx)
 
-	// Use a Reader for the XML content
-	reader := strings.NewReader(xmlContent)
+	data := []byte(xmlContent)
 
-	// Use the standard decoder
-	decoder := xml.NewDecoder(reader)
+	if doctypePattern.Match(data) {
+		logger.Error("invalid doctype detected")
+		return ErrInvalidInput
+	}
 
-	// Simple structure to parse the XML
 	var types struct {
 		XMLName xml.Name `xml:"types"`
 		CoTs    []struct {
@@ -344,7 +362,10 @@ func RegisterCoTTypesFromXMLContent(ctx context.Context, xmlContent string) erro
 		} `xml:"cot"`
 	}
 
-	if err := decoder.Decode(&types); err != nil {
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.CharsetReader = nil
+	dec.Entity = nil
+	if err := decodeWithLimits(dec, &types); err != nil {
 		logger.Error("failed to decode XML content",
 			"error", err)
 		return err
@@ -375,7 +396,6 @@ func RegisterAllCoTTypes() error {
 func LoadCoTTypesFromFile(ctx context.Context, path string) error {
 	logger := LoggerFromContext(ctx)
 
-	// Read the file
 	data, err := os.ReadFile(path)
 	if err != nil {
 		logger.Error("failed to read file",
@@ -384,11 +404,19 @@ func LoadCoTTypesFromFile(ctx context.Context, path string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	// Parse the XML
+	if doctypePattern.Match(data) {
+		logger.Error("invalid doctype detected",
+			"path", path)
+		return ErrInvalidInput
+	}
+
 	var types struct {
 		Types []string `xml:"type"`
 	}
-	if err := xml.Unmarshal(data, &types); err != nil {
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.CharsetReader = nil
+	dec.Entity = nil
+	if err := decodeWithLimits(dec, &types); err != nil {
 		logger.Error("failed to parse XML",
 			"path", path,
 			"error", err)

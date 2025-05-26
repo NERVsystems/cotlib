@@ -5,6 +5,7 @@
   <xs:include schemaLocation="details/strokeWeight.xsd"/>
   <xs:include schemaLocation="details/contact.xsd"/>
   <xs:include schemaLocation="details/remarks.xsd"/>
+  <xs:include schemaLocation="details/labels_on.xsd"/>
   
   <xs:simpleType name="route_fil">
     <xs:restriction base="xs:string">

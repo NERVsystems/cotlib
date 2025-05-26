@@ -44,6 +44,24 @@ func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
 			good:   []byte(`<status battery="80"/>`),
 			bad:    []byte(`<status battery="bad"/>`),
 		},
+		{
+			name:   "video",
+			schema: "tak-details-__video",
+			good:   []byte(`<__video url="http://x"/>`),
+			bad:    []byte(`<__video/>`),
+		},
+		{
+			name:   "fileshare",
+			schema: "tak-details-fileshare",
+			good:   []byte(`<fileshare filename="f" name="n" senderCallsign="A" senderUid="U" senderUrl="http://x" sha256="h" sizeInBytes="1"/>`),
+			bad:    []byte(`<fileshare filename="f"/>`),
+		},
+		{
+			name:   "attachment_list",
+			schema: "tak-details-attachment_list",
+			good:   []byte(`<attachment_list hashes="abc"/>`),
+			bad:    []byte(`<attachment_list/>`),
+		},
 	}
 
 	for _, tt := range tests {

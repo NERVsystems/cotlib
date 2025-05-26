@@ -94,3 +94,112 @@ func TestListAvailableSchemas(t *testing.T) {
 		t.Fatal("no schemas returned")
 	}
 }
+
+func TestValidateAdditionalDetailSchemas(t *testing.T) {
+	tests := []struct {
+		name   string
+		schema string
+		good   []byte
+		bad    []byte
+	}{
+		{
+			name:   "environment",
+			schema: "tak-details-environment",
+			good:   []byte(`<environment temperature="20" windDirection="10" windSpeed="5"/>`),
+			bad:    []byte(`<environment temperature="20" windDirection="10"/>`),
+		},
+		{
+			name:   "mission",
+			schema: "tak-details-mission",
+			good:   []byte(`<mission name="op" tool="t" type="x"/>`),
+			bad:    []byte(`<mission tool="t" type="x"/>`),
+		},
+		{
+			name:   "precisionlocation",
+			schema: "tak-details-precisionlocation",
+			good:   []byte(`<precisionlocation altsrc="GPS"/>`),
+			bad:    []byte(`<precisionlocation/>`),
+		},
+		{
+			name:   "takv",
+			schema: "tak-details-takv",
+			good:   []byte(`<takv platform="Android" version="1"/>`),
+			bad:    []byte(`<takv platform="Android"/>`),
+		},
+		{
+			name:   "shape",
+			schema: "tak-details-shape",
+			good:   []byte(`<shape><polyline closed="true"><vertex lat="1" lon="1" hae="0"/></polyline></shape>`),
+			bad:    []byte(`<shape><polyline><vertex lat="1" lon="1" hae="0"/></polyline></shape>`),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validator.ValidateAgainstSchema(tt.schema, tt.good); err != nil {
+				t.Fatalf("valid %s rejected: %v", tt.name, err)
+			}
+			if err := validator.ValidateAgainstSchema(tt.schema, tt.bad); err == nil {
+				t.Fatalf("expected error for invalid %s", tt.name)
+			}
+		})
+	}
+}
+
+func TestValidateDrawingShapeSchemas(t *testing.T) {
+	basePoint := `<point lat="0" lon="0" hae="0" ce="0" le="0"/>`
+	tests := []struct {
+		name   string
+		schema string
+		good   string
+		bad    string
+	}{
+		{
+			name:   "circle",
+			schema: "Drawing_Shapes_-_Circle",
+			good: `<event version="2.0" uid="C1" type="u-d-c-c" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+				basePoint + `<detail><shape><ellipse angle="0" major="1" minor="1"/><link relation="p-p" type="a-f-G" uid="X"/></shape>` +
+				`<strokeColor value="1"/><strokeWeight value="1"/><fillColor value="1"/><contact callsign="A"/><remarks/>` +
+				`<archive/><labels_on value="true"/><precisionlocation altsrc="GPS"/></detail></event>`,
+			bad: `<event version="2.0" uid="C1" type="u-d-c-c" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+				basePoint + `<detail><strokeColor value="1"/></detail></event>`,
+		},
+		{
+			name:   "free_form",
+			schema: "Drawing_Shapes_-_Free_Form",
+			good: `<event version="2.0" uid="F1" type="u-d-f" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+				basePoint + `<detail><link point="0,0"/><strokeColor value="1"/><strokeWeight value="1"/><fillColor value="1"/><contact callsign="A"/><remarks/>` +
+				`<archive/><labels_on value="true"/><color value="1"/><precisionlocation altsrc="GPS"/></detail></event>`,
+			bad: `<event version="2.0" uid="F1" type="u-d-f" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+				basePoint + `<detail><strokeColor value="1"/></detail></event>`,
+		},
+		{
+			name:   "rectangle",
+			schema: "Drawing_Shapes_-_Rectangle",
+			good: `<event version="2.0" uid="R1" type="u-d-r" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+				basePoint + `<detail><link point="0,0"/><strokeColor value="1"/><strokeWeight value="1"/><fillColor value="1"/><contact callsign="A"/>` +
+				`<tog enabled="1"/><remarks/><archive/><labels_on value="true"/><precisionlocation altsrc="GPS"/></detail></event>`,
+			bad: `<event version="2.0" uid="R1" type="u-d-r" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+				basePoint + `<detail><strokeColor value="1"/></detail></event>`,
+		},
+		{
+			name:   "telestration",
+			schema: "Drawing_Shapes_-_Telestration",
+			good: `<event version="2.0" uid="T1" type="u-d-f-m" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+				basePoint + `<detail><link line="0,0"/><strokeColor value="1"/><strokeWeight value="1"/><contact callsign="A"/><remarks/><archive/><labels_on value="true"/><color value="1"/></detail></event>`,
+			bad: `<event version="2.0" uid="T1" type="u-d-f-m" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+				basePoint + `<detail><strokeColor value="1"/></detail></event>`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validator.ValidateAgainstSchema(tt.schema, []byte(tt.good)); err != nil {
+				t.Fatalf("valid %s rejected: %v", tt.name, err)
+			}
+			if err := validator.ValidateAgainstSchema(tt.schema, []byte(tt.bad)); err == nil {
+				t.Fatalf("expected error for invalid %s", tt.name)
+			}
+		})
+	}
+}

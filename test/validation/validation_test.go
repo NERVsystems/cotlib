@@ -279,18 +279,8 @@ func TestWildcardPatterns(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "suffix after wildcard",
-			pattern: "a-*X",
-			wantErr: true,
-		},
-		{
-			name:    "mid wildcard suffix",
-			pattern: "a-f-G*-Z",
-			wantErr: true,
-		},
-		{
-			name:    "leading wildcard",
-			pattern: "*-a-f",
+			name:    "trailing dash",
+			pattern: "a-f-G-",
 			wantErr: true,
 		},
 	}

@@ -10,8 +10,7 @@ import (
 // RawMessage represents raw XML data preserved during decoding.
 type RawMessage []byte
 
-// Chat represents the TAK __chat extension.
-// Chat represents the TAK __chat extension with basic attributes.
+// Chat represents the TAK __chat extension with ID, Message, and Sender attributes.
 type Chat struct {
 	XMLName xml.Name `xml:"__chat"`
 	ID      string   `xml:"id,attr,omitempty"`
@@ -19,8 +18,7 @@ type Chat struct {
 	Sender  string   `xml:"sender,attr,omitempty"`
 }
 
-// ChatReceipt represents the TAK __chatReceipt extension.
-// ChatReceipt represents the TAK __chatReceipt extension.
+// ChatReceipt represents the TAK __chatReceipt extension acknowledging chat messages.
 type ChatReceipt struct {
 	XMLName xml.Name `xml:"__chatReceipt"`
 	Ack     string   `xml:"ack,attr"`

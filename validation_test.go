@@ -410,6 +410,7 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 }
 
 func TestChatSchemaValidation(t *testing.T) {
+	validator.ResetForTest()
 	valid := []byte(`<__chat sender="A" message="hi"/>`)
 	if err := validator.ValidateAgainstSchema("chat", valid); err != nil {
 		t.Fatalf("valid chat rejected: %v", err)

@@ -34,6 +34,7 @@ A comprehensive Go library for creating, validating, and working with Cursor-on-
 ```bash
 go get github.com/NERVsystems/cotlib
 ```
+**Note:** Schema validation relies on the `libxml2` library and requires CGO to be enabled when building.
 
 ## Usage
 

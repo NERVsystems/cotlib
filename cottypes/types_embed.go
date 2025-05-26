@@ -26,7 +26,8 @@ func SetLogger(l *slog.Logger) {
 func GetCatalog() *Catalog {
 	var initErr error
 	catalogOnce.Do(func() {
-		catalog = NewCatalog(logger)
+		catalog = NewCatalog()
+		ctx := ctxlog.WithLogger(context.Background(), logger)
 
 		// Validate expanded types
 		if len(expandedTypes) == 0 {
@@ -46,7 +47,7 @@ func GetCatalog() *Catalog {
 				return
 			}
 
-			if err := catalog.Upsert(t.Name, Type{
+			if err := catalog.Upsert(ctx, t.Name, Type{
 				Name:        t.Name,
 				FullName:    t.FullName,
 				Description: t.Description,
@@ -78,7 +79,7 @@ func GetCatalog() *Catalog {
 		criticalTypes := []string{"a-f-G-E-X-N", "a-h-G-E-X-N", "a-n-G-E-X-N", "a-u-G-E-X-N"}
 		var missingCritical []string
 		for _, typ := range criticalTypes {
-			if _, err := catalog.GetType(typ); err != nil {
+			if _, err := catalog.GetType(ctx, typ); err != nil {
 				missingCritical = append(missingCritical, typ)
 			}
 		}
@@ -132,7 +133,7 @@ func RegisterXML(ctx context.Context, data []byte) error {
 				affiliations := []string{"f", "h", "n", "u"} // f=friendly, h=hostile, n=neutral, u=unknown
 				for _, aff := range affiliations {
 					expandedType := "a-" + aff + "-" + parts[1]
-					if err := cat.Upsert(expandedType, Type{
+					if err := cat.Upsert(ctx, expandedType, Type{
 						Name:        expandedType,
 						FullName:    t.Full,
 						Description: t.Desc,
@@ -149,7 +150,7 @@ func RegisterXML(ctx context.Context, data []byte) error {
 				successCount += expandedCount
 			}
 		} else {
-			if err := cat.Upsert(cotType, Type{
+			if err := cat.Upsert(ctx, cotType, Type{
 				Name:        cotType,
 				FullName:    t.Full,
 				Description: t.Desc,

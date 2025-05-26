@@ -79,7 +79,7 @@ func TestValidationBaseline(t *testing.T) {
   <!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;">
 ]>
 <event></event>`)
-		_, err := cotlib.UnmarshalXMLEvent(xmlData)
+		_, err := cotlib.UnmarshalXMLEvent(context.Background(), xmlData)
 		if !errors.Is(err, cotlib.ErrInvalidInput) {
 			t.Error("Expected DOCTYPE to be rejected")
 		}
@@ -93,7 +93,7 @@ func TestValidationBaseline(t *testing.T) {
 			`<?xml version="1.0"?><!   DOCTYPE foo><event></event>`,
 		}
 		for _, xmlStr := range cases {
-			_, err := cotlib.UnmarshalXMLEvent([]byte(xmlStr))
+			_, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlStr))
 			if !errors.Is(err, cotlib.ErrInvalidInput) {
 				t.Errorf("Expected DOCTYPE to be rejected for %q", xmlStr)
 			}
@@ -129,7 +129,7 @@ func TestValidationBaseline(t *testing.T) {
     </nested1>
   </detail>
 </event>`)
-		_, err := cotlib.UnmarshalXMLEvent(xmlData)
+		_, err := cotlib.UnmarshalXMLEvent(context.Background(), xmlData)
 		if err == nil {
 			t.Error("Expected depth limit error")
 		}
@@ -209,7 +209,7 @@ func TestValidationBaseline(t *testing.T) {
 		xmlData := []byte(`<?xml version="1.0"?>
 <event xmlns="` + strings.Repeat("x", 1025) + `">
 </event>`)
-		_, err := cotlib.UnmarshalXMLEvent(xmlData)
+		_, err := cotlib.UnmarshalXMLEvent(context.Background(), xmlData)
 		if err == nil {
 			t.Error("Expected namespace length error")
 		}
@@ -218,7 +218,7 @@ func TestValidationBaseline(t *testing.T) {
 	t.Run("max_xml_size", func(t *testing.T) {
 		big := strings.Repeat("a", (2<<20)+1)
 		xmlData := []byte("<event>" + big + "</event>")
-		_, err := cotlib.UnmarshalXMLEvent(xmlData)
+		_, err := cotlib.UnmarshalXMLEvent(context.Background(), xmlData)
 		if !errors.Is(err, cotlib.ErrInvalidInput) {
 			t.Error("Expected size limit error")
 		}
@@ -227,7 +227,7 @@ func TestValidationBaseline(t *testing.T) {
 	t.Run("token_length_limit", func(t *testing.T) {
 		name := strings.Repeat("x", 1025)
 		xmlData := []byte("<event><" + name + "/></event>")
-		_, err := cotlib.UnmarshalXMLEvent(xmlData)
+		_, err := cotlib.UnmarshalXMLEvent(context.Background(), xmlData)
 		if !errors.Is(err, cotlib.ErrInvalidInput) {
 			t.Error("Expected token length error")
 		}
@@ -240,7 +240,7 @@ func TestValidationBaseline(t *testing.T) {
 			b.WriteString("<a></a>")
 		}
 		b.WriteString("</event>")
-		_, err := cotlib.UnmarshalXMLEvent([]byte(b.String()))
+		_, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(b.String()))
 		if !errors.Is(err, cotlib.ErrInvalidInput) {
 			t.Error("Expected element count error")
 		}

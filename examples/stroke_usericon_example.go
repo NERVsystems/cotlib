@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -13,6 +14,7 @@ import (
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	cotlib.SetLogger(logger)
+	ctx := cotlib.WithLogger(context.Background(), logger)
 
 	evt, err := cotlib.NewEvent("EXAMPLE-1", "u-d-p", 34.0, -117.0, 0)
 	if err != nil {
@@ -29,7 +31,7 @@ func main() {
 	}
 	fmt.Println(string(xmlData))
 
-	out, err := cotlib.UnmarshalXMLEvent(xmlData)
+	out, err := cotlib.UnmarshalXMLEvent(ctx, xmlData)
 	if err != nil {
 		logger.Error("unmarshal", "err", err)
 		return

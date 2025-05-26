@@ -25,3 +25,13 @@ func BenchmarkValidateAgainstSchemaTrack(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkValidateAgainstSchemaColor(b *testing.B) {
+	xml := []byte(`<color argb="1"/>`)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if err := validator.ValidateAgainstSchema("tak-details-color", xml); err != nil {
+			b.Fatalf("validation failed: %v", err)
+		}
+	}
+}

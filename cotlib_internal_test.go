@@ -1,6 +1,7 @@
 package cotlib
 
 import (
+	"context"
 	"sync"
 	"testing"
 )
@@ -26,4 +27,18 @@ func TestMaxValueLenRace(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestLoggerFromContextWithNilLogger(t *testing.T) {
+	prev := logger.Load()
+	defer SetLogger(prev)
+
+	SetLogger(nil)
+
+	l := LoggerFromContext(context.Background())
+	if l == nil {
+		t.Fatal("LoggerFromContext returned nil")
+	}
+
+	l.Info("test message")
 }

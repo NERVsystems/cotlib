@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/NERVsystems/cotlib"
+	"github.com/NERVsystems/cotlib/validator"
 )
 
 func TestWildcardPatterns(t *testing.T) {

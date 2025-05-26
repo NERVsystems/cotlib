@@ -203,3 +203,114 @@ func TestValidateDrawingShapeSchemas(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateRemainingDetailSchemas(t *testing.T) {
+	tests := []struct {
+		name   string
+		schema string
+		good   []byte
+		bad    []byte
+	}{
+		{
+			name:   "color",
+			schema: "tak-details-color",
+			good:   []byte(`<color argb="1"/>`),
+			bad:    []byte(`<color/>`),
+		},
+		{
+			name:   "fillColor",
+			schema: "tak-details-fillColor",
+			good:   []byte(`<fillcolor value="1"/>`),
+			bad:    []byte(`<fillcolor/>`),
+		},
+		{
+			name:   "strokeColor",
+			schema: "tak-details-strokeColor",
+			good:   []byte(`<strokecolor value="1"/>`),
+			bad:    []byte(`<strokecolor/>`),
+		},
+		{
+			name:   "strokeWeight",
+			schema: "tak-details-strokeWeight",
+			good:   []byte(`<strokeweight value="1"/>`),
+			bad:    []byte(`<strokeweight/>`),
+		},
+		{
+			name:   "height",
+			schema: "tak-details-height",
+			good:   []byte(`<height>10</height>`),
+			bad:    []byte(`<height>abc</height>`),
+		},
+		{
+			name:   "height_unit",
+			schema: "tak-details-height_unit",
+			good:   []byte(`<height_unit>1</height_unit>`),
+			bad:    []byte(`<height_unit>abc</height_unit>`),
+		},
+		{
+			name:   "uid",
+			schema: "tak-details-uid",
+			good:   []byte(`<uid Droid="A" nett="N"/>`),
+			bad:    []byte(`<uid/>`),
+		},
+		{
+			name:   "usericon",
+			schema: "tak-details-usericon",
+			good:   []byte(`<usericon iconsetpath="p"/>`),
+			bad:    []byte(`<usericon/>`),
+		},
+		{
+			name:   "chatgrp",
+			schema: "tak-details-chatgrp",
+			good:   []byte(`<chatgrp id="c" uid0="u"/>`),
+			bad:    []byte(`<chatgrp id="c"/>`),
+		},
+		{
+			name:   "group",
+			schema: "tak-details-__group",
+			good:   []byte(`<__group name="n" role="r"/>`),
+			bad:    []byte(`<__group name="n"/>`),
+		},
+		{
+			name:   "serverdestination",
+			schema: "tak-details-__serverdestination",
+			good:   []byte(`<__serverdestination destinations="d"/>`),
+			bad:    []byte(`<__serverdestination/>`),
+		},
+		{
+			name:   "geofence",
+			schema: "tak-details-__geofence",
+			good:   []byte(`<__geofence elevationMonitored="true" minElevation="1" monitor="m" trigger="t" tracking="false" maxElevation="2" boundingSphere="3"/>`),
+			bad:    []byte(`<__geofence elevationMonitored="true" minElevation="1" monitor="m" trigger="t" tracking="false" maxElevation="2"/>`),
+		},
+		{
+			name:   "link",
+			schema: "tak-details-link",
+			good:   []byte(`<link relation="p-p" type="a-f-G" uid="u"/>`),
+			bad:    []byte(`<link relation="p-p" type="a-f-G"/>`),
+		},
+		{
+			name:   "labels_on",
+			schema: "tak-details-labels_on",
+			good:   []byte(`<labelson value="true"/>`),
+			bad:    []byte(`<labelson/>`),
+		},
+		{
+			name:   "archive",
+			schema: "tak-details-archive",
+			good:   []byte(`<archive/>`),
+			bad:    []byte(`<archive foo="bar"/>`),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validator.ValidateAgainstSchema(tt.schema, tt.good); err != nil {
+				t.Fatalf("valid %s rejected: %v", tt.name, err)
+			}
+			if err := validator.ValidateAgainstSchema(tt.schema, tt.bad); err == nil {
+				t.Fatalf("expected error for invalid %s", tt.name)
+			}
+		})
+	}
+}

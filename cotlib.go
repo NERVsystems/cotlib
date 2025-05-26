@@ -556,6 +556,7 @@ type Detail struct {
 	Contact           *Contact           `xml:"contact,omitempty"`
 	Chat              *Chat              `xml:"__chat,omitempty"`
 	ChatReceipt       *ChatReceipt       `xml:"__chatReceipt,omitempty"`
+	Emergency         *Emergency         `xml:"emergency,omitempty"`
 	Geofence          *Geofence          `xml:"__geofence,omitempty"`
 	ServerDestination *ServerDestination `xml:"__serverdestination,omitempty"`
 	Video             *Video             `xml:"__video,omitempty"`
@@ -573,8 +574,12 @@ type Detail struct {
 	StrokeColor       *StrokeColor       `xml:"strokecolor,omitempty"`
 	StrokeWeight      *StrokeWeight      `xml:"strokeweight,omitempty"`
 	FillColor         *FillColor         `xml:"fillcolor,omitempty"`
+	Height            *Height            `xml:"height,omitempty"`
+	HeightUnit        *HeightUnit        `xml:"height_unit,omitempty"`
 	LabelsOn          *LabelsOn          `xml:"labelson,omitempty"`
 	ColorExtension    *ColorExtension    `xml:"color,omitempty"`
+	Hierarchy         *Hierarchy         `xml:"hierarchy,omitempty"`
+	LinkDetail        *DetailLink        `xml:"link,omitempty"`
 	UserIcon          *UserIcon          `xml:"usericon,omitempty"`
 	UID               *UID               `xml:"uid,omitempty"`
 	Bullseye          *Bullseye          `xml:"bullseye,omitempty"`
@@ -634,6 +639,12 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 					return err
 				}
 				d.ChatReceipt = &c
+			case "emergency":
+				var em Emergency
+				if err := dec.DecodeElement(&em, &t); err != nil {
+					return err
+				}
+				d.Emergency = &em
 			case "__geofence":
 				var gf Geofence
 				if err := dec.DecodeElement(&gf, &t); err != nil {
@@ -736,6 +747,18 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 					return err
 				}
 				d.FillColor = &fc
+			case "height":
+				var h Height
+				if err := dec.DecodeElement(&h, &t); err != nil {
+					return err
+				}
+				d.Height = &h
+			case "height_unit":
+				var hu HeightUnit
+				if err := dec.DecodeElement(&hu, &t); err != nil {
+					return err
+				}
+				d.HeightUnit = &hu
 			case "labelson":
 				var lo LabelsOn
 				if err := dec.DecodeElement(&lo, &t); err != nil {
@@ -748,6 +771,18 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 					return err
 				}
 				d.ColorExtension = &co
+			case "hierarchy":
+				var h Hierarchy
+				if err := dec.DecodeElement(&h, &t); err != nil {
+					return err
+				}
+				d.Hierarchy = &h
+			case "link":
+				var dl DetailLink
+				if err := dec.DecodeElement(&dl, &t); err != nil {
+					return err
+				}
+				d.LinkDetail = &dl
 			case "usericon":
 				var ui UserIcon
 				if err := dec.DecodeElement(&ui, &t); err != nil {
@@ -816,6 +851,11 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	}
 	if d.ChatReceipt != nil {
 		if err := enc.Encode(d.ChatReceipt); err != nil {
+			return err
+		}
+	}
+	if d.Emergency != nil {
+		if err := encodeRaw(enc, d.Emergency.Raw); err != nil {
 			return err
 		}
 	}
@@ -904,6 +944,16 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 			return err
 		}
 	}
+	if d.Height != nil {
+		if err := encodeRaw(enc, d.Height.Raw); err != nil {
+			return err
+		}
+	}
+	if d.HeightUnit != nil {
+		if err := encodeRaw(enc, d.HeightUnit.Raw); err != nil {
+			return err
+		}
+	}
 	if d.LabelsOn != nil {
 		if err := encodeRaw(enc, d.LabelsOn.Raw); err != nil {
 			return err
@@ -911,6 +961,16 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	}
 	if d.ColorExtension != nil {
 		if err := encodeRaw(enc, d.ColorExtension.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Hierarchy != nil {
+		if err := encodeRaw(enc, d.Hierarchy.Raw); err != nil {
+			return err
+		}
+	}
+	if d.LinkDetail != nil {
+		if err := encodeRaw(enc, d.LinkDetail.Raw); err != nil {
 			return err
 		}
 	}
@@ -1189,6 +1249,11 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("chatReceipt validation failed: %w", err)
 			}
 		}
+		if e.Detail.Emergency != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-emergency", e.Detail.Emergency.Raw); err != nil {
+				return fmt.Errorf("invalid emergency: %w", err)
+			}
+		}
 		if e.Detail.ServerDestination != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-__serverdestination", e.Detail.ServerDestination.Raw); err != nil {
 				return fmt.Errorf("invalid __serverdestination: %w", err)
@@ -1305,6 +1370,16 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("invalid fillcolor: %w", err)
 			}
 		}
+		if e.Detail.Height != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-height", e.Detail.Height.Raw); err != nil {
+				return fmt.Errorf("invalid height: %w", err)
+			}
+		}
+		if e.Detail.HeightUnit != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-height_unit", e.Detail.HeightUnit.Raw); err != nil {
+				return fmt.Errorf("invalid height_unit: %w", err)
+			}
+		}
 		if e.Detail.LabelsOn != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-labels_on", e.Detail.LabelsOn.Raw); err != nil {
 				return fmt.Errorf("invalid labelson: %w", err)
@@ -1313,6 +1388,16 @@ func (e *Event) ValidateAt(now time.Time) error {
 		if e.Detail.ColorExtension != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-color", e.Detail.ColorExtension.Raw); err != nil {
 				return fmt.Errorf("invalid color: %w", err)
+			}
+		}
+		if e.Detail.Hierarchy != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-hierarchy", e.Detail.Hierarchy.Raw); err != nil {
+				return fmt.Errorf("invalid hierarchy: %w", err)
+			}
+		}
+		if e.Detail.LinkDetail != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-link", e.Detail.LinkDetail.Raw); err != nil {
+				return fmt.Errorf("invalid link detail: %w", err)
 			}
 		}
 		if e.Detail.UserIcon != nil {
@@ -1415,6 +1500,16 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("invalid fillcolor: %w", err)
 			}
 		}
+		if e.Detail.Height != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-height", e.Detail.Height.Raw); err != nil {
+				return fmt.Errorf("invalid height: %w", err)
+			}
+		}
+		if e.Detail.HeightUnit != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-height_unit", e.Detail.HeightUnit.Raw); err != nil {
+				return fmt.Errorf("invalid height_unit: %w", err)
+			}
+		}
 		if e.Detail.LabelsOn != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-labels_on", e.Detail.LabelsOn.Raw); err != nil {
 				return fmt.Errorf("invalid labelson: %w", err)
@@ -1423,6 +1518,16 @@ func (e *Event) ValidateAt(now time.Time) error {
 		if e.Detail.ColorExtension != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-color", e.Detail.ColorExtension.Raw); err != nil {
 				return fmt.Errorf("invalid color: %w", err)
+			}
+		}
+		if e.Detail.Hierarchy != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-hierarchy", e.Detail.Hierarchy.Raw); err != nil {
+				return fmt.Errorf("invalid hierarchy: %w", err)
+			}
+		}
+		if e.Detail.LinkDetail != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-link", e.Detail.LinkDetail.Raw); err != nil {
+				return fmt.Errorf("invalid link detail: %w", err)
 			}
 		}
 		if e.Detail.UserIcon != nil {

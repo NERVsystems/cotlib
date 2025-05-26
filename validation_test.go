@@ -2,6 +2,7 @@ package cotlib_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -341,7 +342,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 	}
 	cotlib.ReleaseEvent(evt)
 
-	out, err := cotlib.UnmarshalXMLEvent(xmlData)
+	out, err := cotlib.UnmarshalXMLEvent(context.Background(), xmlData)
 	if err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
@@ -386,7 +387,7 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 	}
 	cotlib.ReleaseEvent(evt)
 
-	out, err := cotlib.UnmarshalXMLEvent(xmlData)
+	out, err := cotlib.UnmarshalXMLEvent(context.Background(), xmlData)
 	if err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
@@ -452,7 +453,7 @@ func TestUnmarshalInvalidChatExtensions(t *testing.T) {
 			now.Add(10*time.Second).Format(cotlib.CotTimeFormat),
 			`<__chat unknown="x"/>`,
 		)
-		if _, err := cotlib.UnmarshalXMLEvent([]byte(xmlData)); err == nil {
+		if _, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData)); err == nil {
 			t.Error("expected error for invalid chat")
 		}
 	})
@@ -463,7 +464,7 @@ func TestUnmarshalInvalidChatExtensions(t *testing.T) {
 			now.Add(10*time.Second).Format(cotlib.CotTimeFormat),
 			`<__chatReceipt/>`,
 		)
-		if _, err := cotlib.UnmarshalXMLEvent([]byte(xmlData)); err == nil {
+		if _, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData)); err == nil {
 			t.Error("expected error for invalid chatReceipt")
 		}
 	})

@@ -1,15 +1,18 @@
 package cottypes_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/NERVsystems/cotlib/cottypes"
+	"github.com/NERVsystems/cotlib/ctxlog"
 )
 
 // TestIntegrationRequirements verifies that all the implementation requirements are met.
 func TestIntegrationRequirements(t *testing.T) {
 	cat := cottypes.GetCatalog()
+	ctx := ctxlog.WithLogger(context.Background(), nil)
 	if cat == nil {
 		t.Fatal("GetCatalog() returned nil")
 	}
@@ -17,7 +20,7 @@ func TestIntegrationRequirements(t *testing.T) {
 	t.Run("generator_autonomy_preserved", func(t *testing.T) {
 		// Verify that the generator loads from multiple XML files
 		// by checking we have both MITRE and TAK types
-		allTypes := cat.GetAllTypes()
+		allTypes := cat.GetAllTypes(ctx)
 
 		var mitreCount, takCount int
 		for _, typ := range allTypes {
@@ -40,7 +43,7 @@ func TestIntegrationRequirements(t *testing.T) {
 
 	t.Run("dedicated_tak_namespace", func(t *testing.T) {
 		// Verify all TAK types use the TAK/ namespace
-		takTypes := cat.FindByFullName("TAK/")
+		takTypes := cat.FindByFullName(ctx, "TAK/")
 
 		if len(takTypes) == 0 {
 			t.Fatal("No types found with TAK/ namespace")
@@ -76,7 +79,7 @@ func TestIntegrationRequirements(t *testing.T) {
 		}
 
 		for _, typeName := range requiredTAKTypes {
-			typ, err := cat.GetType(typeName)
+			typ, err := cat.GetType(ctx, typeName)
 			if err != nil {
 				t.Errorf("Required TAK type %s not found: %v", typeName, err)
 				continue
@@ -96,7 +99,7 @@ func TestIntegrationRequirements(t *testing.T) {
 		// Verify catalog operations work for both MITRE and TAK types
 
 		// Test MITRE type lookup
-		mitreType, err := cat.GetType("a-f-G-E-X-N")
+		mitreType, err := cat.GetType(ctx, "a-f-G-E-X-N")
 		if err != nil {
 			t.Errorf("MITRE type lookup failed: %v", err)
 		} else if cottypes.IsTAK(mitreType) {
@@ -104,7 +107,7 @@ func TestIntegrationRequirements(t *testing.T) {
 		}
 
 		// Test TAK type lookup
-		takType, err := cat.GetType("b-t-f")
+		takType, err := cat.GetType(ctx, "b-t-f")
 		if err != nil {
 			t.Errorf("TAK type lookup failed: %v", err)
 		} else if !cottypes.IsTAK(takType) {
@@ -112,12 +115,12 @@ func TestIntegrationRequirements(t *testing.T) {
 		}
 
 		// Test case-insensitive search works for both
-		mitreResults := cat.FindByDescription("NBC")
+		mitreResults := cat.FindByDescription(ctx, "NBC")
 		if len(mitreResults) == 0 {
 			t.Error("Case-insensitive search failed for MITRE types")
 		}
 
-		takResults := cat.FindByDescription("Chat")
+		takResults := cat.FindByDescription(ctx, "Chat")
 		foundTAKChat := false
 		for _, result := range takResults {
 			if cottypes.IsTAK(result) {
@@ -133,13 +136,13 @@ func TestIntegrationRequirements(t *testing.T) {
 	t.Run("prevent_regression", func(t *testing.T) {
 		// This test itself serves as regression prevention
 		// Verify we have a reasonable number of each type
-		allTypes := cat.GetAllTypes()
+		allTypes := cat.GetAllTypes(ctx)
 
 		if len(allTypes) < 5000 {
 			t.Errorf("Expected at least 5000 total types, got %d", len(allTypes))
 		}
 
-		takTypes := cat.FindByFullName("TAK/")
+		takTypes := cat.FindByFullName(ctx, "TAK/")
 		if len(takTypes) < 50 {
 			t.Errorf("Expected at least 50 TAK types, got %d", len(takTypes))
 		}
@@ -158,7 +161,7 @@ func TestIntegrationRequirements(t *testing.T) {
 		}
 
 		for _, tc := range testCases {
-			typ, err := cat.GetType(tc.typeName)
+			typ, err := cat.GetType(ctx, tc.typeName)
 			if err != nil {
 				t.Errorf("Failed to get type %s: %v", tc.typeName, err)
 				continue

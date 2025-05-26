@@ -1,6 +1,9 @@
 package cotlib
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestUnmarshalXMLEventRoundTrip(t *testing.T) {
 	orig, err := NewEvent("RT1", "a-f-G", 10.0, 20.0, 0)
@@ -13,7 +16,7 @@ func TestUnmarshalXMLEventRoundTrip(t *testing.T) {
 	}
 	ReleaseEvent(orig)
 
-	evt, err := UnmarshalXMLEvent(xmlData)
+	evt, err := UnmarshalXMLEvent(context.Background(), xmlData)
 	if err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}

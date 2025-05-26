@@ -2,20 +2,24 @@ package cottypes_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/NERVsystems/cotlib/cottypes"
+	"github.com/NERVsystems/cotlib/ctxlog"
 )
 
 // TestTypeMetadata tests metadata lookup and search functions for CoT types.
 func TestTypeMetadata(t *testing.T) {
 	// Create a test logger
-	logger := slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	cottypes.SetLogger(logger)
+	ctx := ctxlog.WithLogger(context.Background(), logger)
 
 	cat := cottypes.GetCatalog()
 	if cat == nil {
@@ -25,7 +29,7 @@ func TestTypeMetadata(t *testing.T) {
 	// Test a known type
 	typ := "a-f-G-E-X-N" // NBC Equipment
 	t.Run("get_full_name", func(t *testing.T) {
-		fullName, err := cat.GetFullName(typ)
+		fullName, err := cat.GetFullName(ctx, typ)
 		if err != nil {
 			t.Fatalf("GetFullName() error = %v", err)
 		}
@@ -35,7 +39,7 @@ func TestTypeMetadata(t *testing.T) {
 	})
 
 	t.Run("get_description", func(t *testing.T) {
-		desc, err := cat.GetDescription(typ)
+		desc, err := cat.GetDescription(ctx, typ)
 		if err != nil {
 			t.Fatalf("GetDescription() error = %v", err)
 		}
@@ -52,7 +56,7 @@ func TestTypeMetadata(t *testing.T) {
 
 		for _, aff := range affiliations {
 			expandedType := "a-" + aff + "-" + baseType
-			fullName, err := cat.GetFullName(expandedType)
+			fullName, err := cat.GetFullName(ctx, expandedType)
 			if err != nil {
 				t.Errorf("GetFullName(%s) error = %v", expandedType, err)
 				continue
@@ -61,7 +65,7 @@ func TestTypeMetadata(t *testing.T) {
 				t.Errorf("GetFullName(%s) = %v, want %v", expandedType, fullName, "Gnd/Equip/Nbc Equipment")
 			}
 
-			desc, err := cat.GetDescription(expandedType)
+			desc, err := cat.GetDescription(ctx, expandedType)
 			if err != nil {
 				t.Errorf("GetDescription(%s) error = %v", expandedType, err)
 				continue
@@ -74,7 +78,7 @@ func TestTypeMetadata(t *testing.T) {
 
 	// Test search by description
 	t.Run("find_by_description", func(t *testing.T) {
-		matches := cat.FindByDescription("NBC")
+		matches := cat.FindByDescription(ctx, "NBC")
 		if len(matches) == 0 {
 			t.Error("FindByDescription() returned no matches")
 		}
@@ -92,7 +96,7 @@ func TestTypeMetadata(t *testing.T) {
 
 	// Test search by full name
 	t.Run("find_by_full_name", func(t *testing.T) {
-		matches := cat.FindByFullName("Nbc Equipment")
+		matches := cat.FindByFullName(ctx, "Nbc Equipment")
 		if len(matches) == 0 {
 			t.Error("FindByFullName() returned no matches")
 		}
@@ -115,10 +119,11 @@ func TestTypeCatalogFunctions(t *testing.T) {
 	if cat == nil {
 		t.Fatal("GetCatalog() returned nil")
 	}
+	ctx := context.Background()
 
 	// Test GetType
 	t.Run("get_type", func(t *testing.T) {
-		typ, err := cat.GetType("a-f-G-E-X-N")
+		typ, err := cat.GetType(ctx, "a-f-G-E-X-N")
 		if err != nil {
 			t.Fatalf("GetType() error = %v", err)
 		}
@@ -127,7 +132,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 		}
 
 		// Test non-existent type
-		_, err = cat.GetType("nonexistent-type")
+		_, err = cat.GetType(ctx, "nonexistent-type")
 		if err == nil {
 			t.Error("GetType() expected error for non-existent type")
 		}
@@ -135,7 +140,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 
 	// Test GetFullName
 	t.Run("get_full_name", func(t *testing.T) {
-		fullName, err := cat.GetFullName("a-f-G-E-X-N")
+		fullName, err := cat.GetFullName(ctx, "a-f-G-E-X-N")
 		if err != nil {
 			t.Fatalf("GetFullName() error = %v", err)
 		}
@@ -144,7 +149,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 		}
 
 		// Test non-existent type
-		_, err = cat.GetFullName("nonexistent-type")
+		_, err = cat.GetFullName(ctx, "nonexistent-type")
 		if err == nil {
 			t.Error("GetFullName() expected error for non-existent type")
 		}
@@ -152,7 +157,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 
 	// Test GetDescription
 	t.Run("get_description", func(t *testing.T) {
-		desc, err := cat.GetDescription("a-f-G-E-X-N")
+		desc, err := cat.GetDescription(ctx, "a-f-G-E-X-N")
 		if err != nil {
 			t.Fatalf("GetDescription() error = %v", err)
 		}
@@ -161,7 +166,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 		}
 
 		// Test non-existent type
-		_, err = cat.GetDescription("nonexistent-type")
+		_, err = cat.GetDescription(ctx, "nonexistent-type")
 		if err == nil {
 			t.Error("GetDescription() expected error for non-existent type")
 		}
@@ -169,7 +174,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 
 	// Test FindByDescription
 	t.Run("find_by_description", func(t *testing.T) {
-		types := cat.FindByDescription("NBC")
+		types := cat.FindByDescription(ctx, "NBC")
 		if len(types) == 0 {
 			t.Error("FindByDescription() returned no matches")
 		}
@@ -185,7 +190,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 		}
 
 		// Test no matches
-		types = cat.FindByDescription("nonexistent")
+		types = cat.FindByDescription(ctx, "nonexistent")
 		if len(types) != 0 {
 			t.Error("FindByDescription() returned matches for nonexistent description")
 		}
@@ -193,7 +198,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 
 	// Test FindByFullName
 	t.Run("find_by_full_name", func(t *testing.T) {
-		types := cat.FindByFullName("Nbc Equipment")
+		types := cat.FindByFullName(ctx, "Nbc Equipment")
 		if len(types) == 0 {
 			t.Error("FindByFullName() returned no matches")
 		}
@@ -209,7 +214,7 @@ func TestTypeCatalogFunctions(t *testing.T) {
 		}
 
 		// Test no matches
-		types = cat.FindByFullName("nonexistent")
+		types = cat.FindByFullName(ctx, "nonexistent")
 		if len(types) != 0 {
 			t.Error("FindByFullName() returned matches for nonexistent name")
 		}
@@ -222,10 +227,11 @@ func TestCatalogContents(t *testing.T) {
 	if cat == nil {
 		t.Fatal("GetCatalog() returned nil")
 	}
+	ctx := context.Background()
 
 	// Get all types
 	var types []cottypes.Type
-	for _, typ := range cat.FindByDescription("") {
+	for _, typ := range cat.FindByDescription(ctx, "") {
 		types = append(types, typ)
 	}
 
@@ -272,6 +278,7 @@ func TestCatalogInitialization(t *testing.T) {
 	// Test that GetCatalog returns the same instance
 	cat1 := cottypes.GetCatalog()
 	cat2 := cottypes.GetCatalog()
+	ctx := context.Background()
 	if cat1 != cat2 {
 		t.Error("GetCatalog() returned different instances")
 	}
@@ -282,7 +289,7 @@ func TestCatalogInitialization(t *testing.T) {
 	}
 
 	// Test that we have some types
-	types := cat1.GetAllTypes()
+	types := cat1.GetAllTypes(ctx)
 	if len(types) == 0 {
 		t.Error("Catalog is empty")
 	}
@@ -290,7 +297,7 @@ func TestCatalogInitialization(t *testing.T) {
 	// Test that critical types exist
 	criticalTypes := []string{"a-f-G-E-X-N", "a-h-G-E-X-N", "a-n-G-E-X-N", "a-u-G-E-X-N"}
 	for _, typ := range criticalTypes {
-		if _, err := cat1.GetType(typ); err != nil {
+		if _, err := cat1.GetType(ctx, typ); err != nil {
 			t.Errorf("Critical type %s not found: %v", typ, err)
 		}
 	}
@@ -299,7 +306,8 @@ func TestCatalogInitialization(t *testing.T) {
 // ExampleCatalog_GetFullName demonstrates how to get the full name for a CoT type.
 func ExampleCatalog_GetFullName() {
 	cat := cottypes.GetCatalog()
-	fullName, err := cat.GetFullName("a-f-G-E-X-N")
+	ctx := context.Background()
+	fullName, err := cat.GetFullName(ctx, "a-f-G-E-X-N")
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -311,7 +319,8 @@ func ExampleCatalog_GetFullName() {
 // ExampleCatalog_GetDescription demonstrates how to get the description for a CoT type.
 func ExampleCatalog_GetDescription() {
 	cat := cottypes.GetCatalog()
-	desc, err := cat.GetDescription("a-f-G-E-X-N")
+	ctx := context.Background()
+	desc, err := cat.GetDescription(ctx, "a-f-G-E-X-N")
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -360,10 +369,11 @@ func TestUpsertLoggingLevel(t *testing.T) {
 	logger := slog.New(handler)
 
 	// Create a catalog with our logger
-	catalog := cottypes.NewCatalog(logger)
+	catalog := cottypes.NewCatalog()
+	ctx := ctxlog.WithLogger(context.Background(), logger)
 
 	// Add a type
-	err := catalog.Upsert("test-type", cottypes.Type{
+	err := catalog.Upsert(ctx, "test-type", cottypes.Type{
 		Name:        "test-type",
 		FullName:    "Test Type",
 		Description: "A test type",
@@ -388,7 +398,7 @@ func TestUpsertLoggingLevel(t *testing.T) {
 	// Now update the type and check again
 	buf.Reset() // Clear the buffer
 
-	err = catalog.Upsert("test-type", cottypes.Type{
+	err = catalog.Upsert(ctx, "test-type", cottypes.Type{
 		Name:        "test-type",
 		FullName:    "Updated Test Type",
 		Description: "An updated test type",
@@ -417,6 +427,7 @@ func TestTAKTypes(t *testing.T) {
 	if cat == nil {
 		t.Fatal("GetCatalog() returned nil")
 	}
+	ctx := context.Background()
 
 	// Table of representative TAK types that should be present
 	takTypesToTest := []struct {
@@ -438,7 +449,7 @@ func TestTAKTypes(t *testing.T) {
 
 	t.Run("tak_types_exist", func(t *testing.T) {
 		for _, tt := range takTypesToTest {
-			typ, err := cat.GetType(tt.name)
+			typ, err := cat.GetType(ctx, tt.name)
 			if err != nil {
 				t.Errorf("TAK type %s not found: %v", tt.name, err)
 				continue
@@ -458,7 +469,7 @@ func TestTAKTypes(t *testing.T) {
 
 	t.Run("tak_namespace_search", func(t *testing.T) {
 		// Search for TAK types by description
-		chatTypes := cat.FindByDescription("Chat")
+		chatTypes := cat.FindByDescription(ctx, "Chat")
 		foundChatTypes := false
 		for _, typ := range chatTypes {
 			if strings.HasPrefix(typ.FullName, "TAK/") {
@@ -471,7 +482,7 @@ func TestTAKTypes(t *testing.T) {
 		}
 
 		// Search for TAK types by full name
-		takTypes := cat.FindByFullName("TAK/")
+		takTypes := cat.FindByFullName(ctx, "TAK/")
 		if len(takTypes) == 0 {
 			t.Error("No types found with TAK/ namespace")
 		}
@@ -488,7 +499,7 @@ func TestTAKTypes(t *testing.T) {
 	t.Run("no_tak_wildcard_expansion", func(t *testing.T) {
 		// Verify that TAK types don't get wildcard expansion
 		// TAK types should not start with "a-" prefix
-		allTypes := cat.GetAllTypes()
+		allTypes := cat.GetAllTypes(ctx)
 		for _, typ := range allTypes {
 			if strings.HasPrefix(typ.FullName, "TAK/") && strings.HasPrefix(typ.Name, "a-") {
 				t.Errorf("TAK type %s should not start with 'a-' prefix", typ.Name)
@@ -558,8 +569,9 @@ func TestTAKNamespaceIntegrity(t *testing.T) {
 	if cat == nil {
 		t.Fatal("GetCatalog() returned nil")
 	}
+	ctx := context.Background()
 
-	allTypes := cat.GetAllTypes()
+	allTypes := cat.GetAllTypes(ctx)
 
 	var takTypes, mitreTypes []cottypes.Type
 	for _, typ := range allTypes {

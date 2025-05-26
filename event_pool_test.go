@@ -20,7 +20,7 @@ func TestEventPoolReuseOnInvalidXML(t *testing.T) {
 
 	// Parse invalid XML to trigger error after pool allocation
 	invalid := []byte("<event><bad></event>")
-	if _, err := UnmarshalXMLEvent(invalid); err == nil {
+	if _, err := UnmarshalXMLEvent(context.Background(), invalid); err == nil {
 		t.Fatal("expected error from invalid XML")
 	}
 

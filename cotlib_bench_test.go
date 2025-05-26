@@ -2,6 +2,7 @@ package cotlib
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -39,10 +40,11 @@ func BenchmarkUnmarshalXMLEvent(b *testing.B) {
 	if err != nil {
 		b.Fatalf("ToXML error: %v", err)
 	}
+	ctx := context.Background()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := UnmarshalXMLEvent(xmlData); err != nil {
+		if _, err := UnmarshalXMLEvent(ctx, xmlData); err != nil {
 			b.Fatalf("UnmarshalXMLEvent error: %v", err)
 		}
 	}

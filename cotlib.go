@@ -207,8 +207,8 @@ func RegisterCoTType(name string) {
 	if !basicSyntaxOK(name) {
 		return
 	}
-	cat := cottypes.GetCatalog()
-	cat.Upsert(name, cottypes.Type{Name: name})
+        cat := cottypes.GetCatalog()
+        cat.Upsert(context.Background(), name, cottypes.Type{Name: name})
 }
 
 // basicSyntaxOK performs basic syntax validation on a CoT type
@@ -409,13 +409,13 @@ func LoadCoTTypesFromFile(ctx context.Context, path string) error {
 
 // LookupType returns the Type for the given name if it exists
 func LookupType(name string) (cottypes.Type, bool) {
-	t, err := cottypes.GetCatalog().GetType(name)
-	return t, err == nil
+        t, err := cottypes.GetCatalog().GetType(context.Background(), name)
+        return t, err == nil
 }
 
 // FindTypes returns all types matching the given query
 func FindTypes(query string) []cottypes.Type {
-	return cottypes.GetCatalog().Find(query)
+        return cottypes.GetCatalog().Find(context.Background(), query)
 }
 
 // isRegisteredType is an internal helper that checks if a type is registered
@@ -1015,8 +1015,8 @@ func ValidateType(typ string) error {
 	}
 
 	// Use the catalog for validation of non-wildcard types
-	cat := cottypes.GetCatalog()
-	_, err := cat.GetType(typ)
+        cat := cottypes.GetCatalog()
+        _, err := cat.GetType(context.Background(), typ)
 	if err != nil {
 		invalidErr := fmt.Errorf("invalid type: %w", ErrInvalidType)
 
@@ -1027,7 +1027,7 @@ func ValidateType(typ string) error {
 			case "f", "h", "n", "u":
 				orig := parts[i]
 				parts[i] = "."
-				if _, err2 := cat.GetType(strings.Join(parts, "-")); err2 == nil {
+                                if _, err2 := cat.GetType(context.Background(), strings.Join(parts, "-")); err2 == nil {
 					return nil
 				}
 				parts[i] = orig
@@ -1364,7 +1364,7 @@ func LoggerFromContext(ctx context.Context) *slog.Logger {
 //
 // Returns an error if the type is not registered in the catalog.
 func GetTypeFullName(name string) (string, error) {
-	return cottypes.GetCatalog().GetFullName(name)
+	return cottypes.GetCatalog().GetFullName(context.Background(), name)
 }
 
 // GetTypeDescription returns the human-readable description for a CoT type.
@@ -1375,7 +1375,7 @@ func GetTypeFullName(name string) (string, error) {
 //
 // Returns an error if the type is not registered in the catalog.
 func GetTypeDescription(name string) (string, error) {
-	return cottypes.GetCatalog().GetDescription(name)
+	return cottypes.GetCatalog().GetDescription(context.Background(), name)
 }
 
 // FindTypesByDescription searches for types matching the given description.
@@ -1389,7 +1389,7 @@ func GetTypeDescription(name string) (string, error) {
 // This is useful for building search interfaces and type discovery tools.
 // Returns an empty slice if no matches are found.
 func FindTypesByDescription(desc string) []cottypes.Type {
-	return cottypes.GetCatalog().FindByDescription(desc)
+	return cottypes.GetCatalog().FindByDescription(context.Background(), desc)
 }
 
 // FindTypesByFullName searches for types matching the given full name.
@@ -1403,21 +1403,14 @@ func FindTypesByDescription(desc string) []cottypes.Type {
 // This is useful for finding types based on their hierarchical classification.
 // Returns an empty slice if no matches are found.
 func FindTypesByFullName(name string) []cottypes.Type {
-	return cottypes.GetCatalog().FindByFullName(name)
+	return cottypes.GetCatalog().FindByFullName(context.Background(), name)
 }
 
 // UnmarshalXMLEvent parses an XML byte slice into an Event. The returned Event
 // is obtained from an internal pool; callers should release it with
 // ReleaseEvent when finished.
 // The function uses the standard library's encoding/xml Decoder under the hood.
-func UnmarshalXMLEvent(data []byte) (*Event, error) {
-	return UnmarshalXMLEventCtx(context.Background(), data)
-}
-
-// UnmarshalXMLEventCtx parses an XML byte slice into an Event using the
-// provided context for logging. The returned Event is obtained from an
-// internal pool and must be released with ReleaseEvent when finished.
-func UnmarshalXMLEventCtx(ctx context.Context, data []byte) (*Event, error) {
+func UnmarshalXMLEvent(ctx context.Context, data []byte) (*Event, error) {
 	logger := LoggerFromContext(ctx)
 
 	if len(data) > int(currentMaxXMLSize()) {
@@ -1459,6 +1452,13 @@ func UnmarshalXMLEventCtx(ctx context.Context, data []byte) (*Event, error) {
 	}
 
 	return evt, nil
+}
+
+// UnmarshalXMLEventCtx parses an XML byte slice into an Event using the
+// provided context for logging. The returned Event is obtained from an
+// internal pool and must be released with ReleaseEvent when finished.
+func UnmarshalXMLEventCtx(ctx context.Context, data []byte) (*Event, error) {
+	return UnmarshalXMLEvent(ctx, data)
 }
 
 // ValidateLatLon checks if latitude and longitude are within valid ranges

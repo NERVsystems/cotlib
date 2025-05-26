@@ -34,6 +34,7 @@ A comprehensive Go library for creating, validating, and working with Cursor-on-
 ```bash
 go get github.com/NERVsystems/cotlib
 ```
+**Note:** Schema validation relies on the `libxml2` library and requires CGO to be enabled when building.
 
 ## Usage
 
@@ -155,6 +156,10 @@ unchanged:
 - `mission`
 - `status`
 - `shape`
+
+The `__chat` and `__chatReceipt` extensions are validated against embedded
+XML schemas when decoding and during event validation. Invalid chat XML will
+cause an error.
 
 Example: adding a `shape` extension with a `strokeColor` attribute:
 
@@ -561,6 +566,14 @@ allocations. When you are done with an event, return it to the pool:
 evt, _ := cotlib.UnmarshalXMLEvent(data)
 defer cotlib.ReleaseEvent(evt)
 ```
+## Build Tags
+
+The optional `novalidator` build tag disables XML schema validation. When used, `ValidateAgainstSchema` becomes a no-op and always returns `nil`.
+
+```bash
+go build -tags novalidator
+```
+
 
 ## Benchmarks
 

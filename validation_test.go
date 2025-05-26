@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/NERVsystems/cotlib"
+	"github.com/NERVsystems/cotlib/validator"
 )
 
 func TestWildcardPatterns(t *testing.T) {
@@ -331,7 +332,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if out.Detail == nil || out.Detail.Chat == nil || len(out.Detail.Chat.Raw) == 0 {
+	if out.Detail == nil || out.Detail.Chat == nil || out.Detail.Chat.ID == "" {
 		t.Errorf("chat extension lost")
 	}
 	if len(out.Detail.Unknown) != 1 {

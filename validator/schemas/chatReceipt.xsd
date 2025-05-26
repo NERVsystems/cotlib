@@ -1,0 +1,7 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="__chatReceipt">
+    <xs:complexType>
+      <xs:attribute name="ack" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

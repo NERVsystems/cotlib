@@ -802,12 +802,12 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 		}
 	}
 	if d.Chat != nil {
-		if err := encodeRaw(enc, d.Chat.Raw); err != nil {
+		if err := enc.Encode(d.Chat); err != nil {
 			return err
 		}
 	}
 	if d.ChatReceipt != nil {
-		if err := encodeRaw(enc, d.ChatReceipt.Raw); err != nil {
+		if err := enc.Encode(d.ChatReceipt); err != nil {
 			return err
 		}
 	}
@@ -1471,14 +1471,32 @@ func (e *Event) ToXML() ([]byte, error) {
 			buf.WriteString("/>\n")
 		}
 		if e.Detail.Chat != nil {
-			buf.WriteString("    ")
-			buf.Write(e.Detail.Chat.Raw)
-			buf.WriteByte('\n')
+			buf.WriteString("    <__chat")
+			if e.Detail.Chat.ID != "" {
+				buf.WriteString(` id="`)
+				buf.WriteString(escapeAttr(e.Detail.Chat.ID))
+				buf.WriteByte('"')
+			}
+			if e.Detail.Chat.Message != "" {
+				buf.WriteString(` message="`)
+				buf.WriteString(escapeAttr(e.Detail.Chat.Message))
+				buf.WriteByte('"')
+			}
+			if e.Detail.Chat.Sender != "" {
+				buf.WriteString(` sender="`)
+				buf.WriteString(escapeAttr(e.Detail.Chat.Sender))
+				buf.WriteByte('"')
+			}
+			buf.WriteString("/>\n")
 		}
 		if e.Detail.ChatReceipt != nil {
-			buf.WriteString("    ")
-			buf.Write(e.Detail.ChatReceipt.Raw)
-			buf.WriteByte('\n')
+			buf.WriteString("    <__chatReceipt")
+			if e.Detail.ChatReceipt.Ack != "" {
+				buf.WriteString(` ack="`)
+				buf.WriteString(escapeAttr(e.Detail.ChatReceipt.Ack))
+				buf.WriteByte('"')
+			}
+			buf.WriteString("/>\n")
 		}
 		if e.Detail.Geofence != nil {
 			buf.WriteString("    ")

@@ -3,6 +3,7 @@ package cotlib
 import (
 	"bytes"
 	"encoding/xml"
+	"github.com/NERVsystems/cotlib/validator"
 	"io"
 )
 
@@ -10,13 +11,19 @@ import (
 type RawMessage []byte
 
 // Chat represents the TAK __chat extension.
+// Chat represents the TAK __chat extension with basic attributes.
 type Chat struct {
-	Raw RawMessage
+	XMLName xml.Name `xml:"__chat"`
+	ID      string   `xml:"id,attr,omitempty"`
+	Message string   `xml:"message,attr,omitempty"`
+	Sender  string   `xml:"sender,attr,omitempty"`
 }
 
 // ChatReceipt represents the TAK __chatReceipt extension.
+// ChatReceipt represents the TAK __chatReceipt extension.
 type ChatReceipt struct {
-	Raw RawMessage
+	XMLName xml.Name `xml:"__chatReceipt"`
+	Ack     string   `xml:"ack,attr"`
 }
 
 // Geofence represents the TAK __geofence extension.
@@ -169,12 +176,11 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 	if err != nil {
 		return err
 	}
-	c.Raw = raw
-	return nil
-}
-
-func (c Chat) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
-	return encodeRaw(enc, c.Raw)
+	if err := validator.ValidateAgainstSchema("chat", raw); err != nil {
+		return err
+	}
+	type alias Chat
+	return xml.Unmarshal(raw, (*alias)(c))
 }
 
 func (c *ChatReceipt) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
@@ -182,12 +188,11 @@ func (c *ChatReceipt) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) err
 	if err != nil {
 		return err
 	}
-	c.Raw = raw
-	return nil
-}
-
-func (c ChatReceipt) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
-	return encodeRaw(enc, c.Raw)
+	if err := validator.ValidateAgainstSchema("chatReceipt", raw); err != nil {
+		return err
+	}
+	type alias ChatReceipt
+	return xml.Unmarshal(raw, (*alias)(c))
 }
 
 func (g *Geofence) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {

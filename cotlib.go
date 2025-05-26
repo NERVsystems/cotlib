@@ -1249,296 +1249,340 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("chatReceipt validation failed: %w", err)
 			}
 		}
-		if e.Detail.Emergency != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-emergency", e.Detail.Emergency.Raw); err != nil {
-				return fmt.Errorf("invalid emergency: %w", err)
-			}
+
+		if err := e.validateDetailSchemas(); err != nil {
+			return err
 		}
-		if e.Detail.ServerDestination != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__serverdestination", e.Detail.ServerDestination.Raw); err != nil {
-				return fmt.Errorf("invalid __serverdestination: %w", err)
-			}
+	}
+
+	return nil
+}
+
+func (e *Event) validateDetailSchemas() error {
+	if e.Detail == nil {
+		return nil
+	}
+
+	type field struct {
+		name   string
+		schema string
+		data   func() ([]byte, bool, error)
+	}
+
+	fields := []field{
+		{
+			name:   "emergency",
+			schema: "tak-details-emergency",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Emergency == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Emergency.Raw, true, nil
+			},
+		},
+		{
+			name:   "__serverdestination",
+			schema: "tak-details-__serverdestination",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.ServerDestination == nil {
+					return nil, false, nil
+				}
+				return e.Detail.ServerDestination.Raw, true, nil
+			},
+		},
+		{
+			name:   "__group",
+			schema: "tak-details-__group",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.GroupExtension == nil {
+					return nil, false, nil
+				}
+				return e.Detail.GroupExtension.Raw, true, nil
+			},
+		},
+		{
+			name:   "contact",
+			schema: "tak-details-contact",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Contact == nil {
+					return nil, false, nil
+				}
+				b, err := xml.Marshal(e.Detail.Contact)
+				return b, true, err
+			},
+		},
+		{
+			name:   "track",
+			schema: "tak-details-track",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Track == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Track.Raw, true, nil
+			},
+		},
+		{
+			name:   "status",
+			schema: "tak-details-status",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Status == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Status.Raw, true, nil
+			},
+		},
+		{
+			name:   "archive",
+			schema: "tak-details-archive",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Archive == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Archive.Raw, true, nil
+			},
+		},
+		{
+			name:   "__video",
+			schema: "tak-details-__video",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Video == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Video.Raw, true, nil
+			},
+		},
+		{
+			name:   "attachment_list",
+			schema: "tak-details-attachment_list",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.AttachmentList == nil {
+					return nil, false, nil
+				}
+				return e.Detail.AttachmentList.Raw, true, nil
+			},
+		},
+		{
+			name:   "uid",
+			schema: "tak-details-uid",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.UID == nil {
+					return nil, false, nil
+				}
+				return e.Detail.UID.Raw, true, nil
+			},
+		},
+		{
+			name:   "bullseye",
+			schema: "tak-details-bullseye",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Bullseye == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Bullseye.Raw, true, nil
+			},
+		},
+		{
+			name:   "routeinfo",
+			schema: "tak-details-routeinfo",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.RouteInfo == nil {
+					return nil, false, nil
+				}
+				return e.Detail.RouteInfo.Raw, true, nil
+			},
+		},
+		{
+			name:   "environment",
+			schema: "tak-details-environment",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Environment == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Environment.Raw, true, nil
+			},
+		},
+		{
+			name:   "fileshare",
+			schema: "tak-details-fileshare",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.FileShare == nil {
+					return nil, false, nil
+				}
+				return e.Detail.FileShare.Raw, true, nil
+			},
+		},
+		{
+			name:   "precisionlocation",
+			schema: "tak-details-precisionlocation",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.PrecisionLocation == nil {
+					return nil, false, nil
+				}
+				return e.Detail.PrecisionLocation.Raw, true, nil
+			},
+		},
+		{
+			name:   "takv",
+			schema: "tak-details-takv",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Takv == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Takv.Raw, true, nil
+			},
+		},
+		{
+			name:   "mission",
+			schema: "tak-details-mission",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Mission == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Mission.Raw, true, nil
+			},
+		},
+		{
+			name:   "shape",
+			schema: "tak-details-shape",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Shape == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Shape.Raw, true, nil
+			},
+		},
+		{
+			name:   "__geofence",
+			schema: "tak-details-__geofence",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Geofence == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Geofence.Raw, true, nil
+			},
+		},
+		{
+			name:   "strokeColor",
+			schema: "tak-details-strokeColor",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.StrokeColor == nil {
+					return nil, false, nil
+				}
+				return e.Detail.StrokeColor.Raw, true, nil
+			},
+		},
+		{
+			name:   "strokeWeight",
+			schema: "tak-details-strokeWeight",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.StrokeWeight == nil {
+					return nil, false, nil
+				}
+				return e.Detail.StrokeWeight.Raw, true, nil
+			},
+		},
+		{
+			name:   "fillColor",
+			schema: "tak-details-fillColor",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.FillColor == nil {
+					return nil, false, nil
+				}
+				return e.Detail.FillColor.Raw, true, nil
+			},
+		},
+		{
+			name:   "height",
+			schema: "tak-details-height",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Height == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Height.Raw, true, nil
+			},
+		},
+		{
+			name:   "height_unit",
+			schema: "tak-details-height_unit",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.HeightUnit == nil {
+					return nil, false, nil
+				}
+				return e.Detail.HeightUnit.Raw, true, nil
+			},
+		},
+		{
+			name:   "labels_on",
+			schema: "tak-details-labels_on",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.LabelsOn == nil {
+					return nil, false, nil
+				}
+				return e.Detail.LabelsOn.Raw, true, nil
+			},
+		},
+		{
+			name:   "color",
+			schema: "tak-details-color",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.ColorExtension == nil {
+					return nil, false, nil
+				}
+				return e.Detail.ColorExtension.Raw, true, nil
+			},
+		},
+		{
+			name:   "hierarchy",
+			schema: "tak-details-hierarchy",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Hierarchy == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Hierarchy.Raw, true, nil
+			},
+		},
+		{
+			name:   "link",
+			schema: "tak-details-link",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.LinkDetail == nil {
+					return nil, false, nil
+				}
+				return e.Detail.LinkDetail.Raw, true, nil
+			},
+		},
+		{
+			name:   "usericon",
+			schema: "tak-details-usericon",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.UserIcon == nil {
+					return nil, false, nil
+				}
+				return e.Detail.UserIcon.Raw, true, nil
+			},
+		},
+		{
+			name:   "remarks",
+			schema: "tak-details-remarks",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Remarks == nil {
+					return nil, false, nil
+				}
+				return e.Detail.Remarks.Raw, true, nil
+			},
+		},
+	}
+
+	for _, f := range fields {
+		data, ok, err := f.data()
+		if err != nil {
+			return fmt.Errorf("marshal %s: %w", f.name, err)
 		}
-		if e.Detail.GroupExtension != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__group", e.Detail.GroupExtension.Raw); err != nil {
-				return fmt.Errorf("invalid __group: %w", err)
-			}
+		if !ok {
+			continue
 		}
-		if e.Detail.Contact != nil {
-			data, _ := xml.Marshal(e.Detail.Contact)
-			if err := validator.ValidateAgainstSchema("tak-details-contact", data); err != nil {
-				return fmt.Errorf("invalid contact: %w", err)
-			}
-		}
-		if e.Detail.Track != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-track", e.Detail.Track.Raw); err != nil {
-				return fmt.Errorf("invalid track: %w", err)
-			}
-		}
-		if e.Detail.Status != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-status", e.Detail.Status.Raw); err != nil {
-				return fmt.Errorf("invalid status: %w", err)
-			}
-		}
-		if e.Detail.Archive != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-archive", e.Detail.Archive.Raw); err != nil {
-				return fmt.Errorf("invalid archive: %w", err)
-			}
-		}
-		if e.Detail.ServerDestination != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__serverdestination", e.Detail.ServerDestination.Raw); err != nil {
-				return fmt.Errorf("invalid __serverdestination: %w", err)
-			}
-		}
-		if e.Detail.Video != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__video", e.Detail.Video.Raw); err != nil {
-				return fmt.Errorf("invalid __video: %w", err)
-			}
-		}
-		if e.Detail.GroupExtension != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__group", e.Detail.GroupExtension.Raw); err != nil {
-				return fmt.Errorf("invalid __group: %w", err)
-			}
-		}
-		if e.Detail.AttachmentList != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-attachment_list", e.Detail.AttachmentList.Raw); err != nil {
-				return fmt.Errorf("invalid attachment_list: %w", err)
-			}
-		}
-		if e.Detail.UID != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-uid", e.Detail.UID.Raw); err != nil {
-				return fmt.Errorf("invalid uid: %w", err)
-			}
-		}
-		if e.Detail.Bullseye != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-bullseye", e.Detail.Bullseye.Raw); err != nil {
-				return fmt.Errorf("invalid bullseye: %w", err)
-			}
-		}
-		if e.Detail.RouteInfo != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-routeinfo", e.Detail.RouteInfo.Raw); err != nil {
-				return fmt.Errorf("invalid routeinfo: %w", err)
-			}
-		}
-		if e.Detail.Environment != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-environment", e.Detail.Environment.Raw); err != nil {
-				return fmt.Errorf("invalid environment: %w", err)
-			}
-		}
-		if e.Detail.FileShare != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-fileshare", e.Detail.FileShare.Raw); err != nil {
-				return fmt.Errorf("invalid fileshare: %w", err)
-			}
-		}
-		if e.Detail.PrecisionLocation != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-precisionlocation", e.Detail.PrecisionLocation.Raw); err != nil {
-				return fmt.Errorf("invalid precisionlocation: %w", err)
-			}
-		}
-		if e.Detail.Takv != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-takv", e.Detail.Takv.Raw); err != nil {
-				return fmt.Errorf("invalid takv: %w", err)
-			}
-		}
-		if e.Detail.Mission != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-mission", e.Detail.Mission.Raw); err != nil {
-				return fmt.Errorf("invalid mission: %w", err)
-			}
-		}
-		if e.Detail.Shape != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-shape", e.Detail.Shape.Raw); err != nil {
-				return fmt.Errorf("invalid shape: %w", err)
-			}
-		}
-		if e.Detail.Geofence != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__geofence", e.Detail.Geofence.Raw); err != nil {
-				return fmt.Errorf("invalid __geofence: %w", err)
-			}
-		}
-		if e.Detail.StrokeColor != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-strokeColor", e.Detail.StrokeColor.Raw); err != nil {
-				return fmt.Errorf("invalid strokecolor: %w", err)
-			}
-		}
-		if e.Detail.StrokeWeight != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-strokeWeight", e.Detail.StrokeWeight.Raw); err != nil {
-				return fmt.Errorf("invalid strokeweight: %w", err)
-			}
-		}
-		if e.Detail.FillColor != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-fillColor", e.Detail.FillColor.Raw); err != nil {
-				return fmt.Errorf("invalid fillcolor: %w", err)
-			}
-		}
-		if e.Detail.Height != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-height", e.Detail.Height.Raw); err != nil {
-				return fmt.Errorf("invalid height: %w", err)
-			}
-		}
-		if e.Detail.HeightUnit != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-height_unit", e.Detail.HeightUnit.Raw); err != nil {
-				return fmt.Errorf("invalid height_unit: %w", err)
-			}
-		}
-		if e.Detail.LabelsOn != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-labels_on", e.Detail.LabelsOn.Raw); err != nil {
-				return fmt.Errorf("invalid labelson: %w", err)
-			}
-		}
-		if e.Detail.ColorExtension != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-color", e.Detail.ColorExtension.Raw); err != nil {
-				return fmt.Errorf("invalid color: %w", err)
-			}
-		}
-		if e.Detail.Hierarchy != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-hierarchy", e.Detail.Hierarchy.Raw); err != nil {
-				return fmt.Errorf("invalid hierarchy: %w", err)
-			}
-		}
-		if e.Detail.LinkDetail != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-link", e.Detail.LinkDetail.Raw); err != nil {
-				return fmt.Errorf("invalid link detail: %w", err)
-			}
-		}
-		if e.Detail.UserIcon != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-usericon", e.Detail.UserIcon.Raw); err != nil {
-				return fmt.Errorf("invalid usericon: %w", err)
-			}
-		}
-		if e.Detail.UID != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-uid", e.Detail.UID.Raw); err != nil {
-				return fmt.Errorf("invalid uid: %w", err)
-			}
-		}
-		if e.Detail.ServerDestination != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__serverdestination", e.Detail.ServerDestination.Raw); err != nil {
-				return fmt.Errorf("invalid __serverdestination: %w", err)
-			}
-		}
-		if e.Detail.Video != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__video", e.Detail.Video.Raw); err != nil {
-				return fmt.Errorf("invalid __video: %w", err)
-			}
-		}
-		if e.Detail.GroupExtension != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__group", e.Detail.GroupExtension.Raw); err != nil {
-				return fmt.Errorf("invalid __group: %w", err)
-			}
-		}
-		if e.Detail.AttachmentList != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-attachment_list", e.Detail.AttachmentList.Raw); err != nil {
-				return fmt.Errorf("invalid attachment_list: %w", err)
-			}
-		}
-		if e.Detail.Remarks != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-remarks", e.Detail.Remarks.Raw); err != nil {
-				return fmt.Errorf("invalid remarks: %w", err)
-			}
-		}
-		if e.Detail.Video != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__video", e.Detail.Video.Raw); err != nil {
-				return fmt.Errorf("invalid __video: %w", err)
-			}
-		}
-		if e.Detail.GroupExtension != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__group", e.Detail.GroupExtension.Raw); err != nil {
-				return fmt.Errorf("invalid __group: %w", err)
-			}
-		}
-		if e.Detail.AttachmentList != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-attachment_list", e.Detail.AttachmentList.Raw); err != nil {
-				return fmt.Errorf("invalid attachment_list: %w", err)
-			}
-		}
-		if e.Detail.Environment != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-environment", e.Detail.Environment.Raw); err != nil {
-				return fmt.Errorf("invalid environment: %w", err)
-			}
-		}
-		if e.Detail.FileShare != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-fileshare", e.Detail.FileShare.Raw); err != nil {
-				return fmt.Errorf("invalid fileshare: %w", err)
-			}
-		}
-		if e.Detail.PrecisionLocation != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-precisionlocation", e.Detail.PrecisionLocation.Raw); err != nil {
-				return fmt.Errorf("invalid precisionlocation: %w", err)
-			}
-		}
-		if e.Detail.Takv != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-takv", e.Detail.Takv.Raw); err != nil {
-				return fmt.Errorf("invalid takv: %w", err)
-			}
-		}
-		if e.Detail.Mission != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-mission", e.Detail.Mission.Raw); err != nil {
-				return fmt.Errorf("invalid mission: %w", err)
-			}
-		}
-		if e.Detail.Shape != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-shape", e.Detail.Shape.Raw); err != nil {
-				return fmt.Errorf("invalid shape: %w", err)
-			}
-		}
-		if e.Detail.Geofence != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-__geofence", e.Detail.Geofence.Raw); err != nil {
-				return fmt.Errorf("invalid __geofence: %w", err)
-			}
-		}
-		if e.Detail.StrokeColor != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-strokeColor", e.Detail.StrokeColor.Raw); err != nil {
-				return fmt.Errorf("invalid strokecolor: %w", err)
-			}
-		}
-		if e.Detail.StrokeWeight != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-strokeWeight", e.Detail.StrokeWeight.Raw); err != nil {
-				return fmt.Errorf("invalid strokeweight: %w", err)
-			}
-		}
-		if e.Detail.FillColor != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-fillColor", e.Detail.FillColor.Raw); err != nil {
-				return fmt.Errorf("invalid fillcolor: %w", err)
-			}
-		}
-		if e.Detail.Height != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-height", e.Detail.Height.Raw); err != nil {
-				return fmt.Errorf("invalid height: %w", err)
-			}
-		}
-		if e.Detail.HeightUnit != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-height_unit", e.Detail.HeightUnit.Raw); err != nil {
-				return fmt.Errorf("invalid height_unit: %w", err)
-			}
-		}
-		if e.Detail.LabelsOn != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-labels_on", e.Detail.LabelsOn.Raw); err != nil {
-				return fmt.Errorf("invalid labelson: %w", err)
-			}
-		}
-		if e.Detail.ColorExtension != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-color", e.Detail.ColorExtension.Raw); err != nil {
-				return fmt.Errorf("invalid color: %w", err)
-			}
-		}
-		if e.Detail.Hierarchy != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-hierarchy", e.Detail.Hierarchy.Raw); err != nil {
-				return fmt.Errorf("invalid hierarchy: %w", err)
-			}
-		}
-		if e.Detail.LinkDetail != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-link", e.Detail.LinkDetail.Raw); err != nil {
-				return fmt.Errorf("invalid link detail: %w", err)
-			}
-		}
-		if e.Detail.UserIcon != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-usericon", e.Detail.UserIcon.Raw); err != nil {
-				return fmt.Errorf("invalid usericon: %w", err)
-			}
-		}
-		if e.Detail.Remarks != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-remarks", e.Detail.Remarks.Raw); err != nil {
-				return fmt.Errorf("invalid remarks: %w", err)
-			}
+		if err := validator.ValidateAgainstSchema(f.schema, data); err != nil {
+			return fmt.Errorf("invalid %s: %w", f.name, err)
 		}
 	}
 

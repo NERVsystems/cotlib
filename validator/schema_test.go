@@ -302,3 +302,19 @@ func TestValidateRemainingDetailSchemas(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateRangeBearingCircleSchema(t *testing.T) {
+	basePoint := `<point lat="0" lon="0" hae="0" ce="0" le="0"/>`
+	good := `<event version="2.0" uid="RBC" type="u-r-b-c-c" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+		basePoint + `<detail><shape><ellipse angle="0" major="1" minor="1"/><link angle="0" major="1" minor="1"/></shape>` +
+		`<strokeColor value="1"/><strokeWeight value="1"/><fillColor value="1"/><contact callsign="A"/><remarks/>` +
+		`<archive/><labels_on value="true"/><precisionlocation altsrc="GPS"/><color argb="1"/></detail></event>`
+	bad := `<event version="2.0" uid="RBC" type="u-r-b-c-c" time="2000-01-01T00:00:00Z" start="2000-01-01T00:00:00Z" stale="2000-01-02T00:00:00Z" how="m-g">` +
+		basePoint + `<detail><strokeColor value="1"/></detail></event>`
+	if err := validator.ValidateAgainstSchema("Range_&_Bearing_-_Circle", []byte(good)); err != nil {
+		t.Fatalf("valid circle rejected: %v", err)
+	}
+	if err := validator.ValidateAgainstSchema("Range_&_Bearing_-_Circle", []byte(bad)); err == nil {
+		t.Fatalf("expected error for invalid circle")
+	}
+}

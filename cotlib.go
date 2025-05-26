@@ -546,7 +546,8 @@ var doctypePattern = regexp.MustCompile(`(?i)<!\s*DOCTYPE`)
 
 // Contact represents contact information
 type Contact struct {
-	Callsign string `xml:"callsign,attr,omitempty"`
+	XMLName  xml.Name `xml:"contact"`
+	Callsign string   `xml:"callsign,attr,omitempty"`
 }
 
 // Detail contains additional information about an event
@@ -1160,6 +1161,57 @@ func (e *Event) ValidateAt(now time.Time) error {
 			data, _ := xml.Marshal(e.Detail.ChatReceipt)
 			if err := validator.ValidateAgainstSchema("chatReceipt", data); err != nil {
 				return fmt.Errorf("invalid chat receipt: %w", err)
+			}
+		}
+		if e.Detail.Contact != nil {
+			data, _ := xml.Marshal(e.Detail.Contact)
+			if err := validator.ValidateAgainstSchema("tak-details-contact", data); err != nil {
+				return fmt.Errorf("invalid contact: %w", err)
+			}
+		}
+		if e.Detail.Track != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-track", e.Detail.Track.Raw); err != nil {
+				return fmt.Errorf("invalid track: %w", err)
+			}
+		}
+		if e.Detail.Status != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-status", e.Detail.Status.Raw); err != nil {
+				return fmt.Errorf("invalid status: %w", err)
+			}
+		}
+		if e.Detail.Environment != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-environment", e.Detail.Environment.Raw); err != nil {
+				return fmt.Errorf("invalid environment: %w", err)
+			}
+		}
+		if e.Detail.FileShare != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-fileshare", e.Detail.FileShare.Raw); err != nil {
+				return fmt.Errorf("invalid fileshare: %w", err)
+			}
+		}
+		if e.Detail.PrecisionLocation != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-precisionlocation", e.Detail.PrecisionLocation.Raw); err != nil {
+				return fmt.Errorf("invalid precisionlocation: %w", err)
+			}
+		}
+		if e.Detail.Takv != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-takv", e.Detail.Takv.Raw); err != nil {
+				return fmt.Errorf("invalid takv: %w", err)
+			}
+		}
+		if e.Detail.Mission != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-mission", e.Detail.Mission.Raw); err != nil {
+				return fmt.Errorf("invalid mission: %w", err)
+			}
+		}
+		if e.Detail.Shape != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-shape", e.Detail.Shape.Raw); err != nil {
+				return fmt.Errorf("invalid shape: %w", err)
+			}
+		}
+		if e.Detail.ColorExtension != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-color", e.Detail.ColorExtension.Raw); err != nil {
+				return fmt.Errorf("invalid color: %w", err)
 			}
 		}
 	}

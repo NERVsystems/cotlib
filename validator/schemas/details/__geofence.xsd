@@ -9,4 +9,5 @@
     <xs:attribute name="maxElevation" type="xs:decimal" use="required" />
     <xs:attribute name="boundingSphere" type="xs:decimal" use="required" />
   </xs:complexType>
+  <xs:element name="__geofence" type="__geofence"/>
 </xs:schema>

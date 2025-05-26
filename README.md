@@ -156,6 +156,10 @@ unchanged:
 - `mission`
 - `status`
 - `shape`
+- `strokecolor`
+- `strokeweight`
+- `fillcolor`
+- `labelson`
 
 The `__chat` and `__chatReceipt` extensions are validated against embedded
 XML schemas when decoding and during event validation. Invalid chat XML will

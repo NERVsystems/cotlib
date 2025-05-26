@@ -3,4 +3,5 @@
   <xs:complexType name="strokeWeight">
     <xs:attribute name="value" type="xs:decimal" use="required" />
   </xs:complexType>
+  <xs:element name="strokeweight" type="strokeWeight"/>
 </xs:schema>

@@ -3,4 +3,5 @@
   <xs:complexType name="strokeColor">
     <xs:attribute name="value" type="xs:byte" use="required" />
   </xs:complexType>
+  <xs:element name="strokecolor" type="strokeColor"/>
 </xs:schema>

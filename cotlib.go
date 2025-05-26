@@ -207,8 +207,8 @@ func RegisterCoTType(name string) {
 	if !basicSyntaxOK(name) {
 		return
 	}
-        cat := cottypes.GetCatalog()
-        cat.Upsert(context.Background(), name, cottypes.Type{Name: name})
+	cat := cottypes.GetCatalog()
+	cat.Upsert(context.Background(), name, cottypes.Type{Name: name})
 }
 
 // basicSyntaxOK performs basic syntax validation on a CoT type
@@ -409,13 +409,13 @@ func LoadCoTTypesFromFile(ctx context.Context, path string) error {
 
 // LookupType returns the Type for the given name if it exists
 func LookupType(name string) (cottypes.Type, bool) {
-        t, err := cottypes.GetCatalog().GetType(context.Background(), name)
-        return t, err == nil
+	t, err := cottypes.GetCatalog().GetType(context.Background(), name)
+	return t, err == nil
 }
 
 // FindTypes returns all types matching the given query
 func FindTypes(query string) []cottypes.Type {
-        return cottypes.GetCatalog().Find(context.Background(), query)
+	return cottypes.GetCatalog().Find(context.Background(), query)
 }
 
 // isRegisteredType is an internal helper that checks if a type is registered
@@ -1022,8 +1022,8 @@ func ValidateType(typ string) error {
 	}
 
 	// Use the catalog for validation of non-wildcard types
-        cat := cottypes.GetCatalog()
-        _, err := cat.GetType(context.Background(), typ)
+	cat := cottypes.GetCatalog()
+	_, err := cat.GetType(context.Background(), typ)
 	if err != nil {
 		invalidErr := fmt.Errorf("invalid type: %w", ErrInvalidType)
 
@@ -1034,7 +1034,7 @@ func ValidateType(typ string) error {
 			case "f", "h", "n", "u":
 				orig := parts[i]
 				parts[i] = "."
-                                if _, err2 := cat.GetType(context.Background(), strings.Join(parts, "-")); err2 == nil {
+				if _, err2 := cat.GetType(context.Background(), strings.Join(parts, "-")); err2 == nil {
 					return nil
 				}
 				parts[i] = orig
@@ -1228,6 +1228,31 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("invalid shape: %w", err)
 			}
 		}
+		if e.Detail.Geofence != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__geofence", e.Detail.Geofence.Raw); err != nil {
+				return fmt.Errorf("invalid __geofence: %w", err)
+			}
+		}
+		if e.Detail.StrokeColor != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-strokeColor", e.Detail.StrokeColor.Raw); err != nil {
+				return fmt.Errorf("invalid strokecolor: %w", err)
+			}
+		}
+		if e.Detail.StrokeWeight != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-strokeWeight", e.Detail.StrokeWeight.Raw); err != nil {
+				return fmt.Errorf("invalid strokeweight: %w", err)
+			}
+		}
+		if e.Detail.FillColor != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-fillColor", e.Detail.FillColor.Raw); err != nil {
+				return fmt.Errorf("invalid fillcolor: %w", err)
+			}
+		}
+		if e.Detail.LabelsOn != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-labels_on", e.Detail.LabelsOn.Raw); err != nil {
+				return fmt.Errorf("invalid labelson: %w", err)
+			}
+		}
 		if e.Detail.ColorExtension != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-color", e.Detail.ColorExtension.Raw); err != nil {
 				return fmt.Errorf("invalid color: %w", err)
@@ -1287,6 +1312,31 @@ func (e *Event) ValidateAt(now time.Time) error {
 		if e.Detail.Shape != nil {
 			if err := validator.ValidateAgainstSchema("tak-details-shape", e.Detail.Shape.Raw); err != nil {
 				return fmt.Errorf("invalid shape: %w", err)
+			}
+		}
+		if e.Detail.Geofence != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__geofence", e.Detail.Geofence.Raw); err != nil {
+				return fmt.Errorf("invalid __geofence: %w", err)
+			}
+		}
+		if e.Detail.StrokeColor != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-strokeColor", e.Detail.StrokeColor.Raw); err != nil {
+				return fmt.Errorf("invalid strokecolor: %w", err)
+			}
+		}
+		if e.Detail.StrokeWeight != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-strokeWeight", e.Detail.StrokeWeight.Raw); err != nil {
+				return fmt.Errorf("invalid strokeweight: %w", err)
+			}
+		}
+		if e.Detail.FillColor != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-fillColor", e.Detail.FillColor.Raw); err != nil {
+				return fmt.Errorf("invalid fillcolor: %w", err)
+			}
+		}
+		if e.Detail.LabelsOn != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-labels_on", e.Detail.LabelsOn.Raw); err != nil {
+				return fmt.Errorf("invalid labelson: %w", err)
 			}
 		}
 		if e.Detail.ColorExtension != nil {

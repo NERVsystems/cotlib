@@ -315,8 +315,8 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 	evt.Detail = &cotlib.Detail{
-		Chat:              &cotlib.Chat{Raw: []byte(`<__chat sender="s" message="m"/>`)},
-		ChatReceipt:       &cotlib.ChatReceipt{Raw: []byte(`<__chatReceipt ack="y"/>`)},
+		Chat:              &cotlib.Chat{ID: "", Message: "m", Sender: "s"},
+		ChatReceipt:       &cotlib.ChatReceipt{Ack: "y"},
 		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence radius="5"/>`)},
 		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination host="srv"/>`)},
 		Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
@@ -334,7 +334,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if out.Detail == nil || out.Detail.Chat == nil || out.Detail.Chat.ID == "" {
+	if out.Detail == nil || out.Detail.Chat == nil || out.Detail.Chat.Message == "" {
 		t.Errorf("chat extension lost")
 	}
 	if len(out.Detail.Unknown) != 1 {
@@ -413,22 +413,25 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 }
 
 func TestChatSchemaValidation(t *testing.T) {
-	evt, err := cotlib.NewEvent("CHAT-1", "t-x-c", 1, 1, 0)
-	if err != nil {
-		t.Fatalf("new event: %v", err)
-	}
-	evt.Detail = &cotlib.Detail{
-		Chat: &cotlib.Chat{Raw: []byte(`<__chat sender="A" message="hi"/>`)},
-	}
-	if err := evt.Validate(); err != nil {
+	valid := []byte(`<__chat sender="A" message="hi"/>`)
+	if err := validator.ValidateAgainstSchema("chat", valid); err != nil {
 		t.Fatalf("valid chat rejected: %v", err)
 	}
 
-	evt.Detail.Chat.Raw = []byte(`<__chat sender="A"/>`)
-	if err := evt.Validate(); err == nil {
-		t.Fatal("expected error for missing message")
+	invalid := []byte(`<__chat unknown="x"/>`)
+	if err := validator.ValidateAgainstSchema("chat", invalid); err == nil {
+		t.Fatal("expected error for invalid chat")
 	}
-	cotlib.ReleaseEvent(evt)
+
+	validReceipt := []byte(`<__chatReceipt ack="y"/>`)
+	if err := validator.ValidateAgainstSchema("chatReceipt", validReceipt); err != nil {
+		t.Fatalf("valid chatReceipt rejected: %v", err)
+	}
+
+	invalidReceipt := []byte(`<__chatReceipt/>`)
+	if err := validator.ValidateAgainstSchema("chatReceipt", invalidReceipt); err == nil {
+		t.Fatal("expected error for invalid chatReceipt")
+	}
 }
 
 func TestUnmarshalInvalidChatExtensions(t *testing.T) {

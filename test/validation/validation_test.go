@@ -278,13 +278,24 @@ func TestWildcardPatterns(t *testing.T) {
 			pattern: "a-f-G*X",
 			wantErr: true,
 		},
+		{
+			name:    "trailing dash",
+			pattern: "a-f-G-",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := cotlib.ValidateType(tt.pattern)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateType(%q) error = %v, want error = %v", tt.pattern, err, tt.wantErr)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ValidateType(%q) expected error", tt.pattern)
+				} else if !errors.Is(err, cotlib.ErrInvalidType) {
+					t.Errorf("ValidateType(%q) unexpected error = %v", tt.pattern, err)
+				}
+			} else if err != nil {
+				t.Errorf("ValidateType(%q) unexpected error = %v", tt.pattern, err)
 			}
 		})
 	}

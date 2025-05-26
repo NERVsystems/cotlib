@@ -16,6 +16,16 @@ static xmlSchemaPtr compileSchema(const char* buf, int size) {
     return schema;
 }
 
+static xmlSchemaPtr compileSchemaFile(const char* filename) {
+    xmlSchemaParserCtxtPtr ctxt = xmlSchemaNewParserCtxt(filename);
+    if (ctxt == NULL) {
+        return NULL;
+    }
+    xmlSchemaPtr schema = xmlSchemaParse(ctxt);
+    xmlSchemaFreeParserCtxt(ctxt);
+    return schema;
+}
+
 static int validateDoc(xmlSchemaPtr schema, const char* docbuf, int size) {
     int opts = XML_PARSE_NONET;
     xmlDocPtr doc = xmlReadMemory(docbuf, size, "noname.xml", NULL, opts);
@@ -51,6 +61,22 @@ func Compile(data []byte) (*Schema, error) {
 		return nil, errors.New("empty schema")
 	}
 	ptr := C.compileSchema((*C.char)(unsafe.Pointer(&data[0])), C.int(len(data)))
+	if ptr == nil {
+		return nil, errors.New("failed to compile schema")
+	}
+	s := &Schema{ptr: ptr}
+	runtime.SetFinalizer(s, func(sc *Schema) { sc.Free() })
+	return s, nil
+}
+
+// CompileFile compiles an XSD schema from a file path.
+func CompileFile(path string) (*Schema, error) {
+	if path == "" {
+		return nil, errors.New("empty path")
+	}
+	cpath := C.CString(path)
+	defer C.free(unsafe.Pointer(cpath))
+	ptr := C.compileSchemaFile(cpath)
 	if ptr == nil {
 		return nil, errors.New("failed to compile schema")
 	}

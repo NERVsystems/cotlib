@@ -956,6 +956,7 @@ func NewEvent(uid, typ string, lat, lon, hae float64) (*Event, error) {
 		},
 	}
 	if err := evt.ValidateAt(now); err != nil {
+		ReleaseEvent(evt)
 		return nil, err
 	}
 	return evt, nil

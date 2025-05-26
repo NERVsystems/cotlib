@@ -129,6 +129,31 @@ type UID struct {
 	Raw RawMessage
 }
 
+// Emergency represents the TAK emergency extension.
+type Emergency struct {
+	Raw RawMessage
+}
+
+// Height represents the TAK height extension.
+type Height struct {
+	Raw RawMessage
+}
+
+// HeightUnit represents the TAK height_unit extension.
+type HeightUnit struct {
+	Raw RawMessage
+}
+
+// Hierarchy represents the TAK hierarchy extension.
+type Hierarchy struct {
+	Raw RawMessage
+}
+
+// DetailLink represents the TAK link detail extension.
+type DetailLink struct {
+	Raw RawMessage
+}
+
 // Bullseye represents the TAK bullseye extension.
 type Bullseye struct {
 	Raw RawMessage
@@ -469,6 +494,71 @@ func (u *UID) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 
 func (u UID) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	return encodeRaw(enc, u.Raw)
+}
+
+func (e *Emergency) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	e.Raw = raw
+	return nil
+}
+
+func (e Emergency) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, e.Raw)
+}
+
+func (h *Height) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	h.Raw = raw
+	return nil
+}
+
+func (h Height) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, h.Raw)
+}
+
+func (hu *HeightUnit) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	hu.Raw = raw
+	return nil
+}
+
+func (hu HeightUnit) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, hu.Raw)
+}
+
+func (h *Hierarchy) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	h.Raw = raw
+	return nil
+}
+
+func (h Hierarchy) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, h.Raw)
+}
+
+func (dl *DetailLink) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	dl.Raw = raw
+	return nil
+}
+
+func (dl DetailLink) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	return encodeRaw(enc, dl.Raw)
 }
 
 func (b *Bullseye) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {

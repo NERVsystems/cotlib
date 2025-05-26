@@ -556,6 +556,22 @@ func TestRegisterCoTType(t *testing.T) {
 	}
 }
 
+func TestValidateTypeDotWildcard(t *testing.T) {
+	// Register a type that uses '.' as a wildcard for affiliation
+	wildcardType := "a-.-Z"
+	RegisterCoTType(wildcardType)
+
+	if err := ValidateType("a-f-Z"); err != nil {
+		t.Errorf("ValidateType failed wildcard resolution: %v", err)
+	}
+}
+
+func TestValidateTypeDotWildcardNegative(t *testing.T) {
+	if err := ValidateType("a-f-nonexistent"); err == nil {
+		t.Error("expected validation to fail for missing wildcard match")
+	}
+}
+
 func TestEmbeddedTypesValidation(t *testing.T) {
 	// Test common tactical types
 	tacticalTypes := []string{

@@ -1005,9 +1005,26 @@ func ValidateType(typ string) error {
 	}
 
 	// Use the catalog for validation of non-wildcard types
-	_, err := cottypes.GetCatalog().GetType(typ)
+	cat := cottypes.GetCatalog()
+	_, err := cat.GetType(typ)
 	if err != nil {
-		return fmt.Errorf("invalid type: %w", err)
+		invalidErr := fmt.Errorf("invalid type: %w", err)
+
+		// Attempt wildcard resolution by replacing f/h/n/u segments with '.'
+		parts := strings.Split(typ, "-")
+		for i, seg := range parts {
+			switch seg {
+			case "f", "h", "n", "u":
+				orig := parts[i]
+				parts[i] = "."
+				if _, err2 := cat.GetType(strings.Join(parts, "-")); err2 == nil {
+					return nil
+				}
+				parts[i] = orig
+			}
+		}
+
+		return invalidErr
 	}
 
 	return nil

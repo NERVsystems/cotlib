@@ -956,6 +956,7 @@ func NewEvent(uid, typ string, lat, lon, hae float64) (*Event, error) {
 		},
 	}
 	if err := evt.ValidateAt(now); err != nil {
+		ReleaseEvent(evt)
 		return nil, err
 	}
 	return evt, nil
@@ -1149,18 +1150,90 @@ func (e *Event) ValidateAt(now time.Time) error {
 		return err
 	}
 
-	// Validate chat extension if present
+	// Validate chat-related extensions if present
 	if e.Detail != nil {
 		if e.Detail.Chat != nil {
-			data, _ := xml.Marshal(e.Detail.Chat)
-			if err := validator.ValidateChat(data); err != nil {
+			data, err := xml.Marshal(e.Detail.Chat)
+			if err != nil {
+				return fmt.Errorf("marshal chat: %w", err)
+			}
+			if err := validator.ValidateAgainstSchema("chat", data); err != nil {
 				return fmt.Errorf("chat validation failed: %w", err)
 			}
 		}
 		if e.Detail.ChatReceipt != nil {
-			data, _ := xml.Marshal(e.Detail.ChatReceipt)
+			data, err := xml.Marshal(e.Detail.ChatReceipt)
+			if err != nil {
+				return fmt.Errorf("marshal chatReceipt: %w", err)
+			}
 			if err := validator.ValidateAgainstSchema("chatReceipt", data); err != nil {
-				return fmt.Errorf("invalid chat receipt: %w", err)
+				return fmt.Errorf("chatReceipt validation failed: %w", err)
+			}
+		}
+		if e.Detail.Contact != nil {
+			data, _ := xml.Marshal(e.Detail.Contact)
+			if err := validator.ValidateAgainstSchema("tak-details-contact", data); err != nil {
+				return fmt.Errorf("invalid contact: %w", err)
+			}
+		}
+		if e.Detail.Track != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-track", e.Detail.Track.Raw); err != nil {
+				return fmt.Errorf("invalid track: %w", err)
+			}
+		}
+		if e.Detail.Status != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-status", e.Detail.Status.Raw); err != nil {
+				return fmt.Errorf("invalid status: %w", err)
+			}
+		}
+		if e.Detail.Archive != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-archive", e.Detail.Archive.Raw); err != nil {
+				return fmt.Errorf("invalid archive: %w", err)
+			}
+		}
+		if e.Detail.Environment != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-environment", e.Detail.Environment.Raw); err != nil {
+				return fmt.Errorf("invalid environment: %w", err)
+			}
+		}
+		if e.Detail.FileShare != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-fileshare", e.Detail.FileShare.Raw); err != nil {
+				return fmt.Errorf("invalid fileshare: %w", err)
+			}
+		}
+		if e.Detail.PrecisionLocation != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-precisionlocation", e.Detail.PrecisionLocation.Raw); err != nil {
+				return fmt.Errorf("invalid precisionlocation: %w", err)
+			}
+		}
+		if e.Detail.Takv != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-takv", e.Detail.Takv.Raw); err != nil {
+				return fmt.Errorf("invalid takv: %w", err)
+			}
+		}
+		if e.Detail.Mission != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-mission", e.Detail.Mission.Raw); err != nil {
+				return fmt.Errorf("invalid mission: %w", err)
+			}
+		}
+		if e.Detail.Shape != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-shape", e.Detail.Shape.Raw); err != nil {
+				return fmt.Errorf("invalid shape: %w", err)
+			}
+		}
+		if e.Detail.ColorExtension != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-color", e.Detail.ColorExtension.Raw); err != nil {
+				return fmt.Errorf("invalid color: %w", err)
+			}
+		}
+		if e.Detail.UserIcon != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-usericon", e.Detail.UserIcon.Raw); err != nil {
+				return fmt.Errorf("invalid usericon: %w", err)
+			}
+		}
+		if e.Detail.Remarks != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-remarks", e.Detail.Remarks.Raw); err != nil {
+				return fmt.Errorf("invalid remarks: %w", err)
 			}
 		}
 		if e.Detail.Contact != nil {

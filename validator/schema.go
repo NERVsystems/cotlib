@@ -17,7 +17,8 @@ static xmlSchemaPtr compileSchema(const char* buf, int size) {
 }
 
 static int validateDoc(xmlSchemaPtr schema, const char* docbuf, int size) {
-    xmlDocPtr doc = xmlReadMemory(docbuf, size, "noname.xml", NULL, 0);
+    int opts = XML_PARSE_NONET;
+    xmlDocPtr doc = xmlReadMemory(docbuf, size, "noname.xml", NULL, opts);
     if (doc == NULL) {
         return -1;
     }

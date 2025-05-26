@@ -354,7 +354,7 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 	fileShareXML := []byte(`<fileshare url="http://example"></fileshare>`)
 	precisionXML := []byte(`<precisionlocation acc="5"></precisionlocation>`)
 	takvXML := []byte(`<takv version="4.0" platform="android"></takv>`)
-	trackXML := []byte(`<track course="90"></track>`)
+	trackXML := []byte(`<track course="90" speed="10"></track>`)
 	missionXML := []byte(`<mission name="op"><task></task></mission>`)
 	statusXML := []byte(`<status battery="80"></status>`)
 	shapeXML := []byte(`<shape><point lat="1" lon="2"></point></shape>`)
@@ -457,4 +457,61 @@ func TestUnmarshalInvalidChatExtensions(t *testing.T) {
 			t.Error("expected error for invalid chatReceipt")
 		}
 	})
+}
+
+func TestTAKDetailSchemaValidation(t *testing.T) {
+	t.Run("contact", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("C1", "t-x-d", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Contact: &cotlib.Contact{Callsign: "A"},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid contact rejected: %v", err)
+		}
+		evt.Detail.Contact.Callsign = ""
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for missing callsign")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("track", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("T1", "t-x-t", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Track: &cotlib.Track{Raw: []byte(`<track course="90" speed="10"/>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid track rejected: %v", err)
+		}
+		evt.Detail.Track.Raw = []byte(`<track speed="10"/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid track")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("status", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("S1", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Status: &cotlib.Status{Raw: []byte(`<status battery="80"/>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid status rejected: %v", err)
+		}
+		evt.Detail.Status.Raw = []byte(`<status battery="bad"/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid status")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
 }

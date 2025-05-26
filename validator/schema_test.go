@@ -17,3 +17,49 @@ func TestValidateAgainstSchemaNonet(t *testing.T) {
 		t.Fatal("expected error for external entity")
 	}
 }
+
+func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
+	tests := []struct {
+		name   string
+		schema string
+		good   []byte
+		bad    []byte
+	}{
+		{
+			name:   "contact",
+			schema: "tak-details-contact",
+			good:   []byte(`<contact callsign="A"/>`),
+			bad:    []byte(`<contact/>`),
+		},
+		{
+			name:   "track",
+			schema: "tak-details-track",
+			good:   []byte(`<track course="90" speed="10"/>`),
+			bad:    []byte(`<track speed="10"/>`),
+		},
+		{
+			name:   "status",
+			schema: "tak-details-status",
+			good:   []byte(`<status battery="80"/>`),
+			bad:    []byte(`<status battery="bad"/>`),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validator.ValidateAgainstSchema(tt.schema, tt.good); err != nil {
+				t.Fatalf("valid %s rejected: %v", tt.name, err)
+			}
+			if err := validator.ValidateAgainstSchema(tt.schema, tt.bad); err == nil {
+				t.Fatalf("expected error for invalid %s", tt.name)
+			}
+		})
+	}
+}
+
+func TestListAvailableSchemas(t *testing.T) {
+	schemas := validator.ListAvailableSchemas()
+	if len(schemas) == 0 {
+		t.Fatal("no schemas returned")
+	}
+}

@@ -7,6 +7,7 @@ import (
 )
 
 func TestValidateAgainstSchemaNonet(t *testing.T) {
+	validator.ResetForTest()
 	good := []byte(`<__chat sender="Alice" message="hi"/>`)
 	if err := validator.ValidateAgainstSchema("chat", good); err != nil {
 		t.Fatalf("valid chat rejected: %v", err)
@@ -19,6 +20,7 @@ func TestValidateAgainstSchemaNonet(t *testing.T) {
 }
 
 func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
+	validator.ResetForTest()
 	tests := []struct {
 		name   string
 		schema string
@@ -94,6 +96,7 @@ func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
 }
 
 func TestListAvailableSchemas(t *testing.T) {
+	validator.ResetForTest()
 	schemas := validator.ListAvailableSchemas()
 	if len(schemas) == 0 {
 		t.Fatal("no schemas returned")

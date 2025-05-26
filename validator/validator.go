@@ -16,6 +16,13 @@ var schemasFS embed.FS
 var (
 	schemas map[string]*Schema
 	once    sync.Once
+	initErr error
+)
+
+// test hooks
+var (
+	mkTemp         = os.MkdirTemp
+	writeSchemasFn = writeSchemas
 )
 
 func writeSchemas(dir string) error {
@@ -44,12 +51,15 @@ func writeSchemas(dir string) error {
 func initSchemas() {
 	schemas = make(map[string]*Schema)
 
-	tmpDir, err := os.MkdirTemp("", "cotlib-schemas")
+	tmpDir, err := mkTemp("", "cotlib-schemas")
 	if err != nil {
-		panic(fmt.Errorf("create temp dir: %w", err))
+		initErr = fmt.Errorf("create temp dir: %w", err)
+		return
 	}
-	if err := writeSchemas(tmpDir); err != nil {
-		panic(fmt.Errorf("write schemas: %w", err))
+	defer os.RemoveAll(tmpDir)
+	if err := writeSchemasFn(tmpDir); err != nil {
+		initErr = fmt.Errorf("write schemas: %w", err)
+		return
 	}
 
 	err = fs.WalkDir(schemasFS, ".", func(path string, d fs.DirEntry, err error) error {
@@ -75,13 +85,16 @@ func initSchemas() {
 		return nil
 	})
 	if err != nil {
-		panic(err)
+		initErr = err
 	}
 }
 
 // ValidateAgainstSchema validates XML against a named schema.
 func ValidateAgainstSchema(name string, xml []byte) error {
 	once.Do(initSchemas)
+	if initErr != nil {
+		return initErr
+	}
 	s, ok := schemas[name]
 	if !ok {
 		return fmt.Errorf("unknown schema %s", name)

@@ -886,6 +886,49 @@ func TestToXMLIncludesPointWithZeroCoordinates(t *testing.T) {
 	}
 }
 
+func TestToXMLEscapesControlChars(t *testing.T) {
+	evt, err := NewEvent("base", "a-f-G", 0, 0, 0)
+	if err != nil {
+		t.Fatalf("NewEvent returned error: %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		modify func(*Event)
+		expect string
+	}{
+		{
+			name:   "uid_newline",
+			modify: func(e *Event) { e.Uid = "id\nend" },
+			expect: "id&#xA;end",
+		},
+		{
+			name:   "uid_cr",
+			modify: func(e *Event) { e.Uid = "id\rend" },
+			expect: "id&#xD;end",
+		},
+		{
+			name:   "version_tab",
+			modify: func(e *Event) { e.Version = "2.0\tbeta" },
+			expect: "2.0&#x9;beta",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			e := *evt
+			tc.modify(&e)
+			xmlData, err := e.ToXML()
+			if err != nil {
+				t.Fatalf("ToXML returned error: %v", err)
+			}
+			if !strings.Contains(string(xmlData), tc.expect) {
+				t.Errorf("expected %q in output: %s", tc.expect, string(xmlData))
+			}
+		})
+	}
+}
+
 func TestValidateTypeWildcardResolution(t *testing.T) {
 	tests := []struct {
 		name    string

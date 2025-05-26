@@ -2,6 +2,7 @@ package cotlib
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"strings"
@@ -519,6 +520,9 @@ func TestValidateType(t *testing.T) {
 					t.Logf("Error: %v", err)
 				}
 			}
+			if err != nil && !errors.Is(err, ErrInvalidType) {
+				t.Errorf("error does not wrap ErrInvalidType: %v", err)
+			}
 		})
 	}
 }
@@ -923,7 +927,7 @@ func TestValidateTypeWildcardResolution(t *testing.T) {
 			name:    "invalid atomic wildcard should fail",
 			typ:     "b-.-G",
 			wantErr: true,
-			errMsg:  "unknown type",
+			errMsg:  "",
 		},
 	}
 
@@ -933,8 +937,8 @@ func TestValidateTypeWildcardResolution(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("ValidateType(%q) expected error but got none", tt.typ)
-				} else if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
-					t.Errorf("ValidateType(%q) error = %v, want error containing %q", tt.typ, err, tt.errMsg)
+				} else if !errors.Is(err, ErrInvalidType) {
+					t.Errorf("error does not wrap ErrInvalidType: %v", err)
 				}
 			} else {
 				if err != nil {

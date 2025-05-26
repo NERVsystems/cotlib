@@ -532,6 +532,12 @@ var (
 	ErrInvalidLatitude  = fmt.Errorf("invalid latitude")
 	ErrInvalidLongitude = fmt.Errorf("invalid longitude")
 	ErrInvalidUID       = fmt.Errorf("invalid UID")
+	// ErrInvalidType is returned when a CoT type fails validation.
+	ErrInvalidType = fmt.Errorf("invalid type")
+	// ErrInvalidHow is returned when a how value is not recognised.
+	ErrInvalidHow = fmt.Errorf("invalid how")
+	// ErrInvalidRelation is returned when a relation value is not recognised.
+	ErrInvalidRelation = fmt.Errorf("invalid relation")
 )
 
 // doctypePattern matches XML DOCTYPE declarations case-insensitively
@@ -961,31 +967,31 @@ func NewPresenceEvent(uid string, lat, lon, hae float64) (*Event, error) {
 // ValidateType checks if a CoT type is valid
 func ValidateType(typ string) error {
 	if typ == "" {
-		return fmt.Errorf("empty type")
+		return fmt.Errorf("empty type: %w", ErrInvalidType)
 	}
 	if len(typ) > 100 {
-		return fmt.Errorf("type too long")
+		return fmt.Errorf("type too long: %w", ErrInvalidType)
 	}
 
 	// Fast path for wildcard patterns that don't need catalog lookup
 	if strings.Contains(typ, "*") {
 		parts := strings.Split(typ, "-")
 		if len(parts) < 2 {
-			return fmt.Errorf("invalid type format")
+			return fmt.Errorf("invalid type format: %w", ErrInvalidType)
 		}
 
 		// Only allow a trailing segment consisting solely of '*'
 		for i, p := range parts {
 			if strings.Contains(p, "*") {
 				if p != "*" || i != len(parts)-1 {
-					return fmt.Errorf("wildcard only allowed at end of type")
+					return fmt.Errorf("wildcard only allowed at end of type: %w", ErrInvalidType)
 				}
 			}
 		}
 
 		// Validate the prefix
 		if parts[0] != "a" && parts[0] != "b" && parts[0] != "t" {
-			return fmt.Errorf("invalid type prefix")
+			return fmt.Errorf("invalid type prefix: %w", ErrInvalidType)
 		}
 		return nil
 	}
@@ -994,13 +1000,13 @@ func ValidateType(typ string) error {
 	if strings.HasPrefix(typ, "a-.") {
 		parts := strings.Split(typ, "-")
 		if len(parts) < 2 {
-			return fmt.Errorf("invalid type format")
+			return fmt.Errorf("invalid type format: %w", ErrInvalidType)
 		}
 		if parts[0] != "a" {
-			return fmt.Errorf("wildcard only allowed in atomic types")
+			return fmt.Errorf("wildcard only allowed in atomic types: %w", ErrInvalidType)
 		}
 		if parts[1] != "." {
-			return fmt.Errorf("invalid wildcard format")
+			return fmt.Errorf("invalid wildcard format: %w", ErrInvalidType)
 		}
 		return nil
 	}
@@ -1009,7 +1015,7 @@ func ValidateType(typ string) error {
 	cat := cottypes.GetCatalog()
 	_, err := cat.GetType(typ)
 	if err != nil {
-		invalidErr := fmt.Errorf("invalid type: %w", err)
+		invalidErr := fmt.Errorf("invalid type: %w", ErrInvalidType)
 
 		// Attempt wildcard resolution by replacing f/h/n/u segments with '.'
 		parts := strings.Split(typ, "-")
@@ -1046,20 +1052,20 @@ func ValidateHow(how string) error {
 		}
 	}
 
-	return fmt.Errorf("invalid how value: %s", how)
+	return fmt.Errorf("invalid how value %s: %w", how, ErrInvalidHow)
 }
 
 // ValidateRelation checks if a relation value is valid according to the CoT catalog.
 // Relation values indicate the relationship type in link elements.
 func ValidateRelation(relation string) error {
 	if relation == "" {
-		return fmt.Errorf("empty relation")
+		return fmt.Errorf("empty relation: %w", ErrInvalidRelation)
 	}
 
 	// Check if relation exists in catalog
 	_, err := cottypes.GetRelationDescription(relation)
 	if err != nil {
-		return fmt.Errorf("invalid relation value: %s", relation)
+		return fmt.Errorf("invalid relation value %s: %w", relation, ErrInvalidRelation)
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package cotlib_test
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/NERVsystems/cotlib"
@@ -51,11 +52,16 @@ func TestValidateHow(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := cotlib.ValidateHow(tc.how)
-			if tc.expectErr && err == nil {
-				t.Errorf("Expected error for how value %s, but got none", tc.how)
-			}
-			if !tc.expectErr && err != nil {
-				t.Errorf("Expected no error for how value %s, but got: %v", tc.how, err)
+			if tc.expectErr {
+				if err == nil {
+					t.Errorf("Expected error for how value %s, but got none", tc.how)
+				} else if !errors.Is(err, cotlib.ErrInvalidHow) {
+					t.Errorf("error does not wrap ErrInvalidHow: %v", err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error for how value %s, but got: %v", tc.how, err)
+				}
 			}
 		})
 	}
@@ -80,11 +86,16 @@ func TestValidateRelation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := cotlib.ValidateRelation(tc.relation)
-			if tc.expectErr && err == nil {
-				t.Errorf("Expected error for relation value %s, but got none", tc.relation)
-			}
-			if !tc.expectErr && err != nil {
-				t.Errorf("Expected no error for relation value %s, but got: %v", tc.relation, err)
+			if tc.expectErr {
+				if err == nil {
+					t.Errorf("Expected error for relation value %s, but got none", tc.relation)
+				} else if !errors.Is(err, cotlib.ErrInvalidRelation) {
+					t.Errorf("error does not wrap ErrInvalidRelation: %v", err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error for relation value %s, but got: %v", tc.relation, err)
+				}
 			}
 		})
 	}

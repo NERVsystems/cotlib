@@ -94,6 +94,7 @@ func main() {
 package main
 
 import (
+    "errors"
     "fmt"
     "github.com/NERVsystems/cotlib"
 )
@@ -189,6 +190,7 @@ The library provides comprehensive type validation and catalog management:
 package main
 
 import (
+    "errors"
     "fmt"
     "log"
     "github.com/NERVsystems/cotlib"
@@ -202,7 +204,9 @@ func main() {
 
     // Validate a CoT type
     if err := cotlib.ValidateType("a-f-G-U-C-F"); err != nil {
-        log.Fatal(err)
+        if errors.Is(err, cotlib.ErrInvalidType) {
+            log.Fatal(err)
+        }
     }
 
     // Look up type metadata
@@ -269,7 +273,9 @@ How values indicate the source or method of position determination:
 package main
 
 import (
+    "errors"
     "fmt"
+    "log"
     "github.com/NERVsystems/cotlib"
 )
 
@@ -289,7 +295,9 @@ func main() {
     
     // Validate how value
     if err := cotlib.ValidateHow(event.How); err != nil {
-        log.Fatal(err)
+        if errors.Is(err, cotlib.ErrInvalidHow) {
+            log.Fatal(err)
+        }
     }
     
     // Get human-readable description
@@ -306,7 +314,9 @@ Relation values specify the relationship type in link elements:
 // Add a validated link with parent-point relation
 err := event.AddValidatedLink("HQ-1", "a-f-G-U-C", "p-p")
 if err != nil {
-    log.Fatal(err)
+    if errors.Is(err, cotlib.ErrInvalidRelation) {
+        log.Fatal(err)
+    }
 }
 
 // Or add manually (validation happens during event.Validate())
@@ -315,6 +325,13 @@ event.AddLink(&cotlib.Link{
     Type:     "a-f-G",
     Relation: "p-c", // parent-child
 })
+
+// Validate relation value
+if err := cotlib.ValidateRelation("p-c"); err != nil {
+    if errors.Is(err, cotlib.ErrInvalidRelation) {
+        log.Fatal(err)
+    }
+}
 
 // Get relation description
 desc, _ := cotlib.GetRelationDescription("p-p")

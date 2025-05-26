@@ -55,4 +55,5 @@
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  <xs:element name="point" type="event_point"/>
 </xs:schema>

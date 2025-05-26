@@ -195,8 +195,10 @@ fmt.Println(string(out)) // prints the same XML
 
 The optional `validator` subpackage provides schema checks for common detail
 extensions. `validator.ValidateAgainstSchema` validates XML against embedded
-XSD files. `Event.Validate` automatically checks `__chat` and `__chatReceipt`
-extensions using these schemas.
+XSD files. `Event.Validate` automatically checks extensions such as
+`__chat`, `__chatReceipt`, `__group`, `__serverdestination`, `__video`,
+`attachment_list`, `usericon`, and the drawing-related details using these
+schemas.
 
 ### Type Validation and Catalog
 

@@ -331,6 +331,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination destinations="srv"/>`)},
 		Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
 		GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g" role="member"/>`)},
+
 		Unknown:           []cotlib.RawMessage{[]byte(`<extra foo="bar"/>`)},
 	}
 

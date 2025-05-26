@@ -28,12 +28,11 @@ Break down the remaining XSD work into manageable task groups:
 <!-- Completed -->
 
 ### 4. Media and Attachment Schemas
-- Embed `__video.xsd`, `attachment_list.xsd`, `fileshare.xsd`, `link.xsd`, and `archive.xsd`.
 - Test validation of video, file share, and link attachments.
 
 ### 5. Environment and Mission Schemas
-- Add `environment.xsd`, `mission.xsd`, `precisionlocation.xsd`, and `takv.xsd`.
-- Implement tests focusing on mission planning and environment details.
+- [x] Add `environment.xsd`, `mission.xsd`, `precisionlocation.xsd`, and `takv.xsd`.
+- [x] Implement tests focusing on mission planning and environment details.
 
 ### 6. Miscellaneous Schemas
 - Finalize `color.xsd` and `hierarchy.xsd` integration.

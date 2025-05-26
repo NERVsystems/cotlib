@@ -185,12 +185,17 @@ func SetMaxTokenLen(max int64) {
 }
 
 // attrEscaper escapes XML special characters in attribute values.
+// It also encodes carriage returns, newlines, and tabs using
+// their numeric character references.
 var attrEscaper = strings.NewReplacer(
 	"&", "&amp;",
 	"<", "&lt;",
 	">", "&gt;",
 	"\"", "&quot;",
 	"'", "&apos;",
+	"\r", "&#xD;",
+	"\n", "&#xA;",
+	"\t", "&#x9;",
 )
 
 // escapeAttr returns the escaped version of s for use in XML attributes.

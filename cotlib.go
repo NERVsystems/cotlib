@@ -1330,20 +1330,19 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("invalid remarks: %w", err)
 			}
 		}
-		if e.Detail.Contact != nil {
-			data, _ := xml.Marshal(e.Detail.Contact)
-			if err := validator.ValidateAgainstSchema("tak-details-contact", data); err != nil {
-				return fmt.Errorf("invalid contact: %w", err)
+		if e.Detail.Video != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__video", e.Detail.Video.Raw); err != nil {
+				return fmt.Errorf("invalid __video: %w", err)
 			}
 		}
-		if e.Detail.Track != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-track", e.Detail.Track.Raw); err != nil {
-				return fmt.Errorf("invalid track: %w", err)
+		if e.Detail.GroupExtension != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__group", e.Detail.GroupExtension.Raw); err != nil {
+				return fmt.Errorf("invalid __group: %w", err)
 			}
 		}
-		if e.Detail.Status != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-status", e.Detail.Status.Raw); err != nil {
-				return fmt.Errorf("invalid status: %w", err)
+		if e.Detail.AttachmentList != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-attachment_list", e.Detail.AttachmentList.Raw); err != nil {
+				return fmt.Errorf("invalid attachment_list: %w", err)
 			}
 		}
 		if e.Detail.Environment != nil {
@@ -1406,20 +1405,14 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("invalid color: %w", err)
 			}
 		}
-		if e.Detail.Contact != nil {
-			data, _ := xml.Marshal(e.Detail.Contact)
-			if err := validator.ValidateAgainstSchema("tak-details-contact", data); err != nil {
-				return fmt.Errorf("invalid contact: %w", err)
+		if e.Detail.UserIcon != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-usericon", e.Detail.UserIcon.Raw); err != nil {
+				return fmt.Errorf("invalid usericon: %w", err)
 			}
 		}
-		if e.Detail.Track != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-track", e.Detail.Track.Raw); err != nil {
-				return fmt.Errorf("invalid track: %w", err)
-			}
-		}
-		if e.Detail.Status != nil {
-			if err := validator.ValidateAgainstSchema("tak-details-status", e.Detail.Status.Raw); err != nil {
-				return fmt.Errorf("invalid status: %w", err)
+		if e.Detail.Remarks != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-remarks", e.Detail.Remarks.Raw); err != nil {
+				return fmt.Errorf("invalid remarks: %w", err)
 			}
 		}
 	}

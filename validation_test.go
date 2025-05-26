@@ -327,7 +327,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 	evt.Detail = &cotlib.Detail{
 		Chat:              &cotlib.Chat{ID: "", Message: "m", Sender: "s"},
 		ChatReceipt:       &cotlib.ChatReceipt{Ack: "y"},
-		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence radius="5"/>`)},
+		Geofence:          &cotlib.Geofence{Raw: []byte(`<__geofence elevationMonitored="false" minElevation="0" monitor="in" trigger="enter" tracking="true" maxElevation="1" boundingSphere="1"/>`)},
 		ServerDestination: &cotlib.ServerDestination{Raw: []byte(`<__serverdestination host="srv"/>`)},
 		Video:             &cotlib.Video{Raw: []byte(`<__video url="v"/>`)},
 		GroupExtension:    &cotlib.GroupExtension{Raw: []byte(`<__group name="g"/>`)},
@@ -519,6 +519,28 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		evt.Detail.Status.Raw = []byte(`<status battery="bad"/>`)
 		if err := evt.Validate(); err == nil {
 			t.Fatal("expected error for invalid status")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("geofence_and_drawing", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("G1", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Geofence:     &cotlib.Geofence{Raw: []byte(`<__geofence elevationMonitored="false" minElevation="0" monitor="in" trigger="enter" tracking="true" maxElevation="10" boundingSphere="1"/>`)},
+			StrokeColor:  &cotlib.StrokeColor{Raw: []byte(`<strokecolor value="1"/>`)},
+			StrokeWeight: &cotlib.StrokeWeight{Raw: []byte(`<strokeweight value="1"/>`)},
+			FillColor:    &cotlib.FillColor{Raw: []byte(`<fillcolor value="1"/>`)},
+			LabelsOn:     &cotlib.LabelsOn{Raw: []byte(`<labelson value="true"/>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid drawing extensions rejected: %v", err)
+		}
+		evt.Detail.StrokeColor.Raw = []byte(`<strokecolor/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid strokecolor")
 		}
 		cotlib.ReleaseEvent(evt)
 	})

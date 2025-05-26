@@ -4,7 +4,7 @@
 # Full Schema Coverage TODO
 <!-- Remaining detail schemas have been embedded and compiled -->
 - [x] Add validation hooks in Event.ValidateAt or during XML unmarshalling
-- [ ] Integrate remaining top-level schemas
+- [x] Integrate remaining top-level schemas
   - Drawing shape schemas (Circle, Free Form, Rectangle, Telestration)
   - [x] Geo Fence and Range & Bearing schemas
   - [x] Route schemas (Route.xsd, tak-route.xsd)

@@ -1,6 +1,6 @@
-- [ ] Tighten wildcard validation to reject embedded '*'
-- [ ] Use context-based logging throughout
-- [ ] Add tests for embedded wildcard rejection
+- [x] Tighten wildcard validation to reject embedded '*'
+- [x] Use context-based logging throughout
+- [x] Add tests for embedded wildcard rejection
 # Full Schema Coverage TODO
 - [ ] Embed and compile remaining detail schemas
   - __chat.xsd
@@ -43,9 +43,9 @@
 Break down the remaining XSD work into manageable task groups:
 
 ### 1. Chat and Messaging Schemas
-- Embed `__chat.xsd`, `__chatreceipt.xsd`, and `chatgrp.xsd` in `validator/schemas/details/`.
-- Update `validator.go` to compile and register these schemas.
-- Add validation tests covering chat message details.
+- [x] Embed `__chat.xsd`, `__chatreceipt.xsd`, and `chatgrp.xsd` in `validator/schemas/details/`.
+- [x] Update `validator.go` to compile and register these schemas.
+- [x] Add validation tests covering chat message details.
 
 ### 2. Geofence and Drawing Schemas
 - Integrate `__geofence.xsd`, `shape.xsd`, `strokeColor.xsd`, `strokeWeight.xsd`, `fillColor.xsd`, `height.xsd`, and `height_unit.xsd`.

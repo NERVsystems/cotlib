@@ -9,7 +9,7 @@
   <xs:include schemaLocation="details/strokeColor.xsd"/>
   <xs:include schemaLocation="details/strokeWeight.xsd"/>
   <xs:include schemaLocation="details/fillColor.xsd"/>
-  <xs:include schemaLocation="detail/__geofence.xsd"/>
+  <xs:include schemaLocation="details/__geofence.xsd"/>
   <xs:element name="event">
     <xs:complexType>
       <xs:sequence>

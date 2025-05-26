@@ -359,14 +359,12 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 
-	archiveXML := []byte(`<archive id="a"><item></item></archive>`)
-	attachmentXML := []byte(`<attachmentList><file id="f1"></file></attachmentList>`)
-	envXML := []byte(`<environment state="on"></environment>`)
-	fileShareXML := []byte(`<fileshare url="http://example"></fileshare>`)
-	precisionXML := []byte(`<precisionlocation acc="5"></precisionlocation>`)
-	takvXML := []byte(`<takv version="4.0" platform="android"></takv>`)
+	envXML := []byte(`<environment temperature="20" windDirection="10" windSpeed="5"></environment>`)
+	fileShareXML := []byte(`<fileshare filename="f" name="n" senderCallsign="A" senderUid="U" senderUrl="http://x" sha256="h" sizeInBytes="1"></fileshare>`)
+	precisionXML := []byte(`<precisionlocation altsrc="GPS"></precisionlocation>`)
+	takvXML := []byte(`<takv platform="Android" version="1"></takv>`)
 	trackXML := []byte(`<track course="90" speed="10"></track>`)
-	missionXML := []byte(`<mission name="op"><task></task></mission>`)
+	missionXML := []byte(`<mission name="op" tool="t" type="x"></mission>`)
 	statusXML := []byte(`<status battery="80"></status>`)
 	shapeXML := []byte(`<shape><polyline closed="true"><vertex hae="0" lat="1" lon="1"></vertex></polyline></shape>`)
 
@@ -524,6 +522,5 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		}
 		cotlib.ReleaseEvent(evt)
 	})
-
 
 }

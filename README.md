@@ -156,6 +156,10 @@ unchanged:
 - `status`
 - `shape`
 
+The `__chat` and `__chatReceipt` extensions are validated against embedded
+XML schemas when decoding and during event validation. Invalid chat XML will
+cause an error.
+
 Example: adding a `shape` extension with a `strokeColor` attribute:
 
 ```go

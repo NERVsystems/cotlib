@@ -658,6 +658,42 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		cotlib.ReleaseEvent(evt)
 	})
 
+	t.Run("fileshare", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("FS1", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			FileShare: &cotlib.FileShare{Raw: []byte(`<fileshare filename="f" name="n" senderCallsign="A" senderUid="U" senderUrl="http://x" sha256="h" sizeInBytes="1"/>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid fileshare rejected: %v", err)
+		}
+		evt.Detail.FileShare.Raw = []byte(`<fileshare filename="f"/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid fileshare")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("routeinfo", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("RI1", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			RouteInfo: &cotlib.RouteInfo{Raw: []byte(`<__routeinfo><__navcues/></__routeinfo>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid routeinfo rejected: %v", err)
+		}
+		evt.Detail.RouteInfo.Raw = []byte(`<__routeinfo foo="bar"/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid routeinfo")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
 	t.Run("uid_schema", func(t *testing.T) {
 		good := []byte(`<uid Droid="droid://123" nett="net"/>`)
 		if err := validator.ValidateAgainstSchema("tak-details-uid", good); err != nil {

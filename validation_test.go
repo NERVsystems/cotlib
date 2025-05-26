@@ -3,7 +3,9 @@ package cotlib_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/NERVsystems/cotlib"
 	"github.com/NERVsystems/cotlib/validator"
@@ -428,4 +430,33 @@ func TestChatSchemaValidation(t *testing.T) {
 	if err := validator.ValidateAgainstSchema("chatReceipt", receiptInvalid); err == nil {
 		t.Fatal("expected error for invalid chatReceipt")
 	}
+}
+
+func TestUnmarshalInvalidChatExtensions(t *testing.T) {
+	now := time.Now().UTC()
+	base := `<event version="2.0" uid="U" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s">` +
+		`<point lat="0" lon="0" hae="0" ce="1" le="1"/>` +
+		`<detail>%s</detail></event>`
+
+	t.Run("invalid_chat", func(t *testing.T) {
+		xmlData := fmt.Sprintf(base,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat),
+			`<__chat unknown="x"/>`,
+		)
+		if _, err := cotlib.UnmarshalXMLEvent([]byte(xmlData)); err == nil {
+			t.Error("expected error for invalid chat")
+		}
+	})
+
+	t.Run("invalid_chatReceipt", func(t *testing.T) {
+		xmlData := fmt.Sprintf(base,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat),
+			`<__chatReceipt/>`,
+		)
+		if _, err := cotlib.UnmarshalXMLEvent([]byte(xmlData)); err == nil {
+			t.Error("expected error for invalid chatReceipt")
+		}
+	})
 }

@@ -3,4 +3,5 @@
   <xs:complexType name="fillColor">
     <xs:attribute name="value" type="xs:int" use="required" />
   </xs:complexType>
+  <xs:element name="fillcolor" type="fillColor"/>
 </xs:schema>

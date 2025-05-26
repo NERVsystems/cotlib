@@ -27,7 +27,7 @@ func BenchmarkValidateAgainstSchemaTrack(b *testing.B) {
 }
 
 func BenchmarkValidateAgainstSchemaEnvironment(b *testing.B) {
-	xml := []byte(`<environment temperature="1" windDirection="2" windSpeed="3"/>`)
+	xml := []byte(`<environment temperature="20" windDirection="10" windSpeed="5"/>`)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		if err := validator.ValidateAgainstSchema("tak-details-environment", xml); err != nil {

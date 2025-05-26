@@ -1,3 +1,39 @@
 - [ ] Tighten wildcard validation to reject embedded '*'
 - [ ] Use context-based logging throughout
 - [ ] Add tests for embedded wildcard rejection
+# Full Schema Coverage TODO
+- [ ] Embed and compile remaining detail schemas
+  - __chat.xsd
+  - __chatreceipt.xsd
+  - __geofence.xsd
+  - __group.xsd
+  - __serverdestination.xsd
+  - __video.xsd
+  - archive.xsd
+  - attachment_list.xsd
+  - chatgrp.xsd
+  - color.xsd
+  - environment.xsd
+  - fileshare.xsd
+  - fillColor.xsd
+  - height.xsd
+  - height_unit.xsd
+  - hierarchy.xsd
+  - labels_on.xsd
+  - link.xsd
+  - mission.xsd
+  - precisionlocation.xsd
+  - shape.xsd
+  - strokeColor.xsd
+  - strokeWeight.xsd
+  - takv.xsd
+  - uid.xsd
+  - usericon.xsd
+- [ ] Add validation hooks in Event.ValidateAt or during XML unmarshalling
+- [ ] Integrate remaining top-level schemas
+  - Drawing shape schemas (Circle, Free Form, Rectangle, Telestration)
+  - Geo Fence and Range & Bearing schemas
+  - Route schemas (Route.xsd, tak-route.xsd)
+  - Marker schemas (2525, Icon Set, Spot)
+- [ ] Develop comprehensive tests for all new detail extensions
+- [ ] Expand benchmarks for representative schemas

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 
@@ -18,7 +17,8 @@ func main() {
 
 	// Register all CoT types
 	if err := cotlib.RegisterAllCoTTypes(); err != nil {
-		log.Fatalf("Failed to register types: %v", err)
+		logger.Error("Failed to register types", "err", err)
+		os.Exit(1)
 	}
 
 	logger.Info("=== CoT How and Relation Values Example ===")
@@ -29,12 +29,14 @@ func main() {
 	// Create a CoT event
 	event, err := cotlib.NewEvent("UNIT-GPS-001", "a-f-G-E-V", 37.4419, -122.1430, 100.0)
 	if err != nil {
-		log.Fatalf("Failed to create event: %v", err)
+		logger.Error("Failed to create event", "err", err)
+		os.Exit(1)
 	}
 
 	// Method 1: Set how value using descriptor (recommended)
 	if err := cotlib.SetEventHowFromDescriptor(event, "gps"); err != nil {
-		log.Fatalf("Failed to set how value: %v", err)
+		logger.Error("Failed to set how value", "err", err)
+		os.Exit(1)
 	}
 	fmt.Printf("Set how using descriptor 'gps': %s\n", event.How)
 
@@ -44,7 +46,8 @@ func main() {
 
 	// Validate how value
 	if err := cotlib.ValidateHow(event.How); err != nil {
-		log.Fatalf("How validation failed: %v", err)
+		logger.Error("How validation failed", "err", err)
+		os.Exit(1)
 	}
 	fmt.Printf("How value '%s' is valid\n", event.How)
 
@@ -82,7 +85,8 @@ func main() {
 
 	// Method 1: Add validated link (recommended)
 	if err := event.AddValidatedLink("HQ-COMMAND", "a-f-G-U-C", "p-p"); err != nil {
-		log.Fatalf("Failed to add validated link: %v", err)
+		logger.Error("Failed to add validated link", "err", err)
+		os.Exit(1)
 	}
 	fmt.Printf("Added validated parent-point link to HQ-COMMAND\n")
 
@@ -105,7 +109,8 @@ func main() {
 	// Validate all relations
 	for i, link := range event.Links {
 		if err := cotlib.ValidateRelation(link.Relation); err != nil {
-			log.Fatalf("Link %d relation validation failed: %v", i, err)
+			logger.Error("Link relation validation failed", "index", i, "err", err)
+			os.Exit(1)
 		}
 
 		// Get relation description
@@ -141,7 +146,8 @@ func main() {
 
 	// Validate the complete event (includes how and relation validation)
 	if err := event.Validate(); err != nil {
-		log.Fatalf("Event validation failed: %v", err)
+		logger.Error("Event validation failed", "err", err)
+		os.Exit(1)
 	}
 	fmt.Printf("✅ Event with how='%s' and %d links validated successfully\n", event.How, len(event.Links))
 
@@ -151,7 +157,8 @@ func main() {
 	// Convert to XML
 	xmlData, err := event.ToXML()
 	if err != nil {
-		log.Fatalf("Failed to generate XML: %v", err)
+		logger.Error("Failed to generate XML", "err", err)
+		os.Exit(1)
 	}
 
 	fmt.Println("Generated CoT XML:")

@@ -1294,6 +1294,22 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("invalid color: %w", err)
 			}
 		}
+		if e.Detail.Contact != nil {
+			data, _ := xml.Marshal(e.Detail.Contact)
+			if err := validator.ValidateAgainstSchema("tak-details-contact", data); err != nil {
+				return fmt.Errorf("invalid contact: %w", err)
+			}
+		}
+		if e.Detail.Track != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-track", e.Detail.Track.Raw); err != nil {
+				return fmt.Errorf("invalid track: %w", err)
+			}
+		}
+		if e.Detail.Status != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-status", e.Detail.Status.Raw); err != nil {
+				return fmt.Errorf("invalid status: %w", err)
+			}
+		}
 	}
 
 	return nil

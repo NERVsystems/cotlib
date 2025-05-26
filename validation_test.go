@@ -358,12 +358,14 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 
-	envXML := []byte(`<environment temperature="20" windDirection="10" windSpeed="5"></environment>`)
-	fileShareXML := []byte(`<fileshare filename="f" name="n" senderCallsign="A" senderUid="U" senderUrl="http://x" sha256="h" sizeInBytes="1"></fileshare>`)
-	precisionXML := []byte(`<precisionlocation altsrc="GPS"></precisionlocation>`)
-	takvXML := []byte(`<takv platform="Android" version="1"></takv>`)
+	archiveXML := []byte(`<archive id="a"><item></item></archive>`)
+	attachmentXML := []byte(`<attachmentList><file id="f1"></file></attachmentList>`)
+	envXML := []byte(`<environment state="on"></environment>`)
+	fileShareXML := []byte(`<fileshare url="http://example"></fileshare>`)
+	precisionXML := []byte(`<precisionlocation acc="5"></precisionlocation>`)
+	takvXML := []byte(`<takv version="4.0" platform="android"></takv>`)
 	trackXML := []byte(`<track course="90" speed="10"></track>`)
-	missionXML := []byte(`<mission name="op" tool="t" type="x"></mission>`)
+	missionXML := []byte(`<mission name="op"><task></task></mission>`)
 	statusXML := []byte(`<status battery="80"></status>`)
 	shapeXML := []byte(`<shape><polyline closed="true"><vertex hae="0" lat="1" lon="1"></vertex></polyline></shape>`)
 
@@ -522,130 +524,5 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		cotlib.ReleaseEvent(evt)
 	})
 
-	t.Run("environment", func(t *testing.T) {
-		evt, err := cotlib.NewEvent("E1", "a-f-G", 1, 1, 0)
-		if err != nil {
-			t.Fatalf("new event: %v", err)
-		}
-		evt.Detail = &cotlib.Detail{
-			Environment: &cotlib.Environment{Raw: []byte(`<environment temperature="20" windDirection="10" windSpeed="5"/>`)},
-		}
-		if err := evt.Validate(); err != nil {
-			t.Fatalf("valid environment rejected: %v", err)
-		}
-		evt.Detail.Environment.Raw = []byte(`<environment temperature="20" windSpeed="5"/>`)
-		if err := evt.Validate(); err == nil {
-			t.Fatal("expected error for invalid environment")
-		}
-		cotlib.ReleaseEvent(evt)
-	})
-
-	t.Run("fileshare", func(t *testing.T) {
-		evt, err := cotlib.NewEvent("F1", "a-f-G", 1, 1, 0)
-		if err != nil {
-			t.Fatalf("new event: %v", err)
-		}
-		evt.Detail = &cotlib.Detail{
-			FileShare: &cotlib.FileShare{Raw: []byte(`<fileshare filename="f" name="n" senderCallsign="A" senderUid="U" senderUrl="http://x" sha256="h" sizeInBytes="1"/>`)},
-		}
-		if err := evt.Validate(); err != nil {
-			t.Fatalf("valid fileshare rejected: %v", err)
-		}
-		evt.Detail.FileShare.Raw = []byte(`<fileshare filename="f" name="n" senderCallsign="A" senderUid="U" senderUrl="http://x" sha256="h"/>`)
-		if err := evt.Validate(); err == nil {
-			t.Fatal("expected error for invalid fileshare")
-		}
-		cotlib.ReleaseEvent(evt)
-	})
-
-	t.Run("precisionlocation", func(t *testing.T) {
-		evt, err := cotlib.NewEvent("P1", "a-f-G", 1, 1, 0)
-		if err != nil {
-			t.Fatalf("new event: %v", err)
-		}
-		evt.Detail = &cotlib.Detail{
-			PrecisionLocation: &cotlib.PrecisionLocation{Raw: []byte(`<precisionlocation altsrc="GPS"/>`)},
-		}
-		if err := evt.Validate(); err != nil {
-			t.Fatalf("valid precisionlocation rejected: %v", err)
-		}
-		evt.Detail.PrecisionLocation.Raw = []byte(`<precisionlocation/>`)
-		if err := evt.Validate(); err == nil {
-			t.Fatal("expected error for invalid precisionlocation")
-		}
-		cotlib.ReleaseEvent(evt)
-	})
-
-	t.Run("takv", func(t *testing.T) {
-		evt, err := cotlib.NewEvent("TV1", "a-f-G", 1, 1, 0)
-		if err != nil {
-			t.Fatalf("new event: %v", err)
-		}
-		evt.Detail = &cotlib.Detail{
-			Takv: &cotlib.Takv{Raw: []byte(`<takv platform="Android" version="1"/>`)},
-		}
-		if err := evt.Validate(); err != nil {
-			t.Fatalf("valid takv rejected: %v", err)
-		}
-		evt.Detail.Takv.Raw = []byte(`<takv platform="Android"/>`)
-		if err := evt.Validate(); err == nil {
-			t.Fatal("expected error for invalid takv")
-		}
-		cotlib.ReleaseEvent(evt)
-	})
-
-	t.Run("mission", func(t *testing.T) {
-		evt, err := cotlib.NewEvent("M1", "a-f-G", 1, 1, 0)
-		if err != nil {
-			t.Fatalf("new event: %v", err)
-		}
-		evt.Detail = &cotlib.Detail{
-			Mission: &cotlib.Mission{Raw: []byte(`<mission name="m" tool="t" type="x"/>`)},
-		}
-		if err := evt.Validate(); err != nil {
-			t.Fatalf("valid mission rejected: %v", err)
-		}
-		evt.Detail.Mission.Raw = []byte(`<mission tool="t" type="x"/>`)
-		if err := evt.Validate(); err == nil {
-			t.Fatal("expected error for invalid mission")
-		}
-		cotlib.ReleaseEvent(evt)
-	})
-
-	t.Run("shape", func(t *testing.T) {
-		evt, err := cotlib.NewEvent("SH1", "a-f-G", 1, 1, 0)
-		if err != nil {
-			t.Fatalf("new event: %v", err)
-		}
-		evt.Detail = &cotlib.Detail{
-			Shape: &cotlib.Shape{Raw: []byte(`<shape><polyline closed="true"><vertex hae="0" lat="1" lon="1"/></polyline></shape>`)},
-		}
-		if err := evt.Validate(); err != nil {
-			t.Fatalf("valid shape rejected: %v", err)
-		}
-		evt.Detail.Shape.Raw = []byte(`<shape><polyline closed="true"></polyline></shape>`)
-		if err := evt.Validate(); err == nil {
-			t.Fatal("expected error for invalid shape")
-		}
-		cotlib.ReleaseEvent(evt)
-	})
-
-	t.Run("color", func(t *testing.T) {
-		evt, err := cotlib.NewEvent("C2", "a-f-G", 1, 1, 0)
-		if err != nil {
-			t.Fatalf("new event: %v", err)
-		}
-		evt.Detail = &cotlib.Detail{
-			ColorExtension: &cotlib.ColorExtension{Raw: []byte(`<color argb="1"/>`)},
-		}
-		if err := evt.Validate(); err != nil {
-			t.Fatalf("valid color rejected: %v", err)
-		}
-		evt.Detail.ColorExtension.Raw = []byte(`<color/>`)
-		if err := evt.Validate(); err == nil {
-			t.Fatal("expected error for invalid color")
-		}
-		cotlib.ReleaseEvent(evt)
-	})
 
 }

@@ -1,85 +1,82 @@
 package validator
 
 import (
-	_ "embed"
+	"embed"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 )
 
-//go:embed schemas/chat.xsd
-var chatXSD []byte
-
-//go:embed schemas/chatReceipt.xsd
-var chatReceiptXSD []byte
-
-// TAKCoT detail schemas (self-contained)
-//
-//go:embed schemas/details/contact.xsd
-var takDetailsContactXSD []byte
-
-//go:embed schemas/details/emergency.xsd
-var takDetailsEmergencyXSD []byte
-
-//go:embed schemas/details/status.xsd
-var takDetailsStatusXSD []byte
-
-//go:embed schemas/details/track.xsd
-var takDetailsTrackXSD []byte
-
-//go:embed schemas/details/remarks.xsd
-var takDetailsRemarksXSD []byte
+//go:embed schemas/**
+var schemasFS embed.FS
 
 var (
 	schemas map[string]*Schema
 	once    sync.Once
 )
 
+func writeSchemas(dir string) error {
+	return fs.WalkDir(schemasFS, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if path == "." {
+				return nil
+			}
+			return os.MkdirAll(filepath.Join(dir, path), 0o755)
+		}
+		data, err := schemasFS.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		dest := filepath.Join(dir, path)
+		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(dest, data, 0o644)
+	})
+}
+
 func initSchemas() {
 	schemas = make(map[string]*Schema)
 
-	// Original schemas
-	chat, err := Compile(chatXSD)
+	tmpDir, err := os.MkdirTemp("", "cotlib-schemas")
 	if err != nil {
-		panic(fmt.Errorf("compile chat schema: %w", err))
+		panic(fmt.Errorf("create temp dir: %w", err))
 	}
-	schemas["chat"] = chat
+	if err := writeSchemas(tmpDir); err != nil {
+		panic(fmt.Errorf("write schemas: %w", err))
+	}
 
-	receipt, err := Compile(chatReceiptXSD)
+	err = fs.WalkDir(schemasFS, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || filepath.Ext(path) != ".xsd" {
+			return nil
+		}
+		sc, err := CompileFile(filepath.Join(tmpDir, path))
+		if err != nil {
+			// Skip schemas that fail to compile
+			return nil
+		}
+		rel := strings.TrimPrefix(path, "schemas/")
+		name := strings.TrimSuffix(rel, ".xsd")
+		name = strings.ReplaceAll(name, string(os.PathSeparator), "-")
+		name = strings.ReplaceAll(name, " ", "_")
+		schemas[name] = sc
+		if strings.HasPrefix(name, "details-") {
+			schemas["tak-"+name] = sc
+		}
+		return nil
+	})
 	if err != nil {
-		panic(fmt.Errorf("compile chatReceipt schema: %w", err))
+		panic(err)
 	}
-	schemas["chatReceipt"] = receipt
-
-	// TAKCoT detail schemas
-	takDetailsContact, err := Compile(takDetailsContactXSD)
-	if err != nil {
-		panic(fmt.Errorf("compile TAK details contact schema: %w", err))
-	}
-	schemas["tak-details-contact"] = takDetailsContact
-
-	takDetailsEmergency, err := Compile(takDetailsEmergencyXSD)
-	if err != nil {
-		panic(fmt.Errorf("compile TAK details emergency schema: %w", err))
-	}
-	schemas["tak-details-emergency"] = takDetailsEmergency
-
-	takDetailsStatus, err := Compile(takDetailsStatusXSD)
-	if err != nil {
-		panic(fmt.Errorf("compile TAK details status schema: %w", err))
-	}
-	schemas["tak-details-status"] = takDetailsStatus
-
-	takDetailsTrack, err := Compile(takDetailsTrackXSD)
-	if err != nil {
-		panic(fmt.Errorf("compile TAK details track schema: %w", err))
-	}
-	schemas["tak-details-track"] = takDetailsTrack
-
-	takDetailsRemarks, err := Compile(takDetailsRemarksXSD)
-	if err != nil {
-		panic(fmt.Errorf("compile TAK details remarks schema: %w", err))
-	}
-	schemas["tak-details-remarks"] = takDetailsRemarks
 }
 
 // ValidateAgainstSchema validates XML against a named schema.

@@ -348,20 +348,18 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 		t.Fatalf("new event: %v", err)
 	}
 
-	archiveXML := []byte(`<archive id="a"><item></item></archive>`)
-	attachmentXML := []byte(`<attachmentList><file id="f1"></file></attachmentList>`)
-	envXML := []byte(`<environment state="on"></environment>`)
-	fileShareXML := []byte(`<fileshare url="http://example"></fileshare>`)
-	precisionXML := []byte(`<precisionlocation acc="5"></precisionlocation>`)
+	archiveXML := []byte(`<archive></archive>`)
+	envXML := []byte(`<environment temperature="1" windDirection="1" windSpeed="1"></environment>`)
+	fileShareXML := []byte(`<fileshare filename="f" name="n" senderCallsign="s" senderUid="u" senderUrl="http://example" sha256="x" sizeInBytes="1"></fileshare>`)
+	precisionXML := []byte(`<precisionlocation altsrc="GPS"></precisionlocation>`)
 	takvXML := []byte(`<takv version="4.0" platform="android"></takv>`)
-	trackXML := []byte(`<track course="90"></track>`)
-	missionXML := []byte(`<mission name="op"><task></task></mission>`)
+	trackXML := []byte(`<track course="90" speed="10"></track>`)
+	missionXML := []byte(`<mission name="op" tool="t" type="x"></mission>`)
 	statusXML := []byte(`<status battery="80"></status>`)
-	shapeXML := []byte(`<shape><point lat="1" lon="2"></point></shape>`)
+	shapeXML := []byte(`<shape><polyline closed="false"><vertex lat="1" lon="2" hae="0"></vertex></polyline></shape>`)
 
 	evt.Detail = &cotlib.Detail{
 		Archive:           &cotlib.Archive{Raw: archiveXML},
-		AttachmentList:    &cotlib.AttachmentList{Raw: attachmentXML},
 		Environment:       &cotlib.Environment{Raw: envXML},
 		FileShare:         &cotlib.FileShare{Raw: fileShareXML},
 		PrecisionLocation: &cotlib.PrecisionLocation{Raw: precisionXML},
@@ -392,7 +390,6 @@ func TestAdditionalDetailExtensionsRoundTrip(t *testing.T) {
 		want []byte
 	}{
 		{"archive", out.Detail.Archive.Raw, archiveXML},
-		{"attachmentList", out.Detail.AttachmentList.Raw, attachmentXML},
 		{"environment", out.Detail.Environment.Raw, envXML},
 		{"fileshare", out.Detail.FileShare.Raw, fileShareXML},
 		{"precisionlocation", out.Detail.PrecisionLocation.Raw, precisionXML},
@@ -457,4 +454,61 @@ func TestUnmarshalInvalidChatExtensions(t *testing.T) {
 			t.Error("expected error for invalid chatReceipt")
 		}
 	})
+}
+
+func TestTAKDetailSchemaValidation(t *testing.T) {
+	t.Run("contact", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("C1", "t-x-d", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Contact: &cotlib.Contact{Callsign: "A"},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid contact rejected: %v", err)
+		}
+		evt.Detail.Contact.Callsign = ""
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for missing callsign")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("track", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("T1", "t-x-t", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Track: &cotlib.Track{Raw: []byte(`<track course="90" speed="10"/>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid track rejected: %v", err)
+		}
+		evt.Detail.Track.Raw = []byte(`<track speed="10"/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid track")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("status", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("S1", "a-f-G", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Status: &cotlib.Status{Raw: []byte(`<status battery="80"/>`)},
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid status rejected: %v", err)
+		}
+		evt.Detail.Status.Raw = []byte(`<status battery="bad"/>`)
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid status")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
 }

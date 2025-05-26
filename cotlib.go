@@ -1177,6 +1177,16 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("chatReceipt validation failed: %w", err)
 			}
 		}
+		if e.Detail.ServerDestination != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__serverdestination", e.Detail.ServerDestination.Raw); err != nil {
+				return fmt.Errorf("invalid __serverdestination: %w", err)
+			}
+		}
+		if e.Detail.GroupExtension != nil {
+			if err := validator.ValidateAgainstSchema("tak-details-__group", e.Detail.GroupExtension.Raw); err != nil {
+				return fmt.Errorf("invalid __group: %w", err)
+			}
+		}
 		if e.Detail.Contact != nil {
 			data, _ := xml.Marshal(e.Detail.Contact)
 			if err := validator.ValidateAgainstSchema("tak-details-contact", data); err != nil {

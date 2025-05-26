@@ -55,6 +55,12 @@ var takDetailsHeightXSD []byte
 //go:embed schemas/details/height_unit.xsd
 var takDetailsHeightUnitXSD []byte
 
+//go:embed schemas/details/bullseye.xsd
+var takDetailsBullseyeXSD []byte
+
+//go:embed schemas/details/routeinfo.xsd
+var takDetailsRouteInfoXSD []byte
+
 var (
 	schemas map[string]*Schema
 	once    sync.Once
@@ -213,6 +219,18 @@ func initSchemas() {
 		panic(fmt.Errorf("compile TAK details height_unit schema: %w", err))
 	}
 	schemas["tak-details-height_unit"] = takDetailsHeightUnit
+
+	takDetailsBullseye, err := Compile(takDetailsBullseyeXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile TAK details bullseye schema: %w", err))
+	}
+	schemas["tak-details-bullseye"] = takDetailsBullseye
+
+	takDetailsRouteInfo, err := Compile(takDetailsRouteInfoXSD)
+	if err != nil {
+		panic(fmt.Errorf("compile TAK details routeinfo schema: %w", err))
+	}
+	schemas["tak-details-routeinfo"] = takDetailsRouteInfo
 
 	eventPoint, err := Compile(eventPointXSD)
 	if err != nil {

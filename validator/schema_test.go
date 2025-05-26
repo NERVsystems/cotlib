@@ -62,6 +62,18 @@ func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
 			good:   []byte(`<attachment_list hashes="abc"/>`),
 			bad:    []byte(`<attachment_list/>`),
 		},
+		{
+			name:   "bullseye",
+			schema: "tak-details-bullseye",
+			good:   []byte(`<bullseye mils="true" distance="10" bearingRef="T" bullseyeUID="b" distanceUnits="u-r-b-bullseye" edgeToCenter="false" rangeRingVisible="true" title="t" hasRangeRings="false"/>`),
+			bad:    []byte(`<bullseye/>`),
+		},
+		{
+			name:   "routeinfo",
+			schema: "tak-details-routeinfo",
+			good:   []byte(`<__routeinfo><__navcues/></__routeinfo>`),
+			bad:    []byte(`<__routeinfo foo="bar"/>`),
+		},
 	}
 
 	for _, tt := range tests {

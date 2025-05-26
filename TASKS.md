@@ -3,10 +3,10 @@
 - [x] Add tests for embedded wildcard rejection
 # Full Schema Coverage TODO
 <!-- Remaining detail schemas have been embedded and compiled -->
-- [ ] Add validation hooks in Event.ValidateAt or during XML unmarshalling
+- [x] Add validation hooks in Event.ValidateAt or during XML unmarshalling
 - [ ] Integrate remaining top-level schemas
   - Drawing shape schemas (Circle, Free Form, Rectangle, Telestration)
-  - Geo Fence and Range & Bearing schemas
+  - [x] Geo Fence and Range & Bearing schemas
   - [x] Route schemas (Route.xsd, tak-route.xsd)
   - [x] Marker schemas (2525, Icon Set, Spot)
 - [ ] Develop comprehensive tests for all new detail extensions

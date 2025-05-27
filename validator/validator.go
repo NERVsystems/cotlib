@@ -138,103 +138,120 @@ func initSchemas() {
 
 	takDetailsEnvironment, err := Compile(takDetailsEnvironmentXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details environment schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details environment schema: %w", err)
+		return
 	}
 	schemas["tak-details-environment"] = takDetailsEnvironment
 
 	takDetailsFileshare, err := Compile(takDetailsFileshareXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details fileshare schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details fileshare schema: %w", err)
+		return
 	}
 	schemas["tak-details-fileshare"] = takDetailsFileshare
 
 	takDetailsPrecisionLocation, err := Compile(takDetailsPrecisionLocationXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details precisionlocation schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details precisionlocation schema: %w", err)
+		return
 	}
 	schemas["tak-details-precisionlocation"] = takDetailsPrecisionLocation
 
 	takDetailsTakv, err := Compile(takDetailsTakvXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details takv schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details takv schema: %w", err)
+		return
 	}
 	schemas["tak-details-takv"] = takDetailsTakv
 
 	takDetailsMission, err := Compile(takDetailsMissionXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details mission schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details mission schema: %w", err)
+		return
 	}
 	schemas["tak-details-mission"] = takDetailsMission
 
 	takDetailsShape, err := Compile(takDetailsShapeXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details shape schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details shape schema: %w", err)
+		return
 	}
 	schemas["tak-details-shape"] = takDetailsShape
 
 	takDetailsColor, err := Compile(takDetailsColorXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details color schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details color schema: %w", err)
+		return
 	}
 	schemas["tak-details-color"] = takDetailsColor
 
 	takDetailsHierarchy, err := Compile(takDetailsHierarchyXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details hierarchy schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details hierarchy schema: %w", err)
+		return
 	}
 	schemas["tak-details-hierarchy"] = takDetailsHierarchy
 
 	takDetailsGeofence, err := Compile(takDetailsGeofenceXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details __geofence schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details __geofence schema: %w", err)
+		return
 	}
 	schemas["tak-details-__geofence"] = takDetailsGeofence
 
 	takDetailsStrokeColor, err := Compile(takDetailsStrokeColorXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details strokecolor schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details strokecolor schema: %w", err)
+		return
 	}
 	schemas["tak-details-strokeColor"] = takDetailsStrokeColor
 
 	takDetailsStrokeWeight, err := Compile(takDetailsStrokeWeightXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details strokeweight schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details strokeweight schema: %w", err)
+		return
 	}
 	schemas["tak-details-strokeWeight"] = takDetailsStrokeWeight
 
 	takDetailsFillColor, err := Compile(takDetailsFillColorXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details fillcolor schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details fillcolor schema: %w", err)
+		return
 	}
 	schemas["tak-details-fillColor"] = takDetailsFillColor
 
 	takDetailsHeight, err := Compile(takDetailsHeightXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details height schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details height schema: %w", err)
+		return
 	}
 	schemas["tak-details-height"] = takDetailsHeight
 
 	takDetailsHeightUnit, err := Compile(takDetailsHeightUnitXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details height_unit schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details height_unit schema: %w", err)
+		return
 	}
 	schemas["tak-details-height_unit"] = takDetailsHeightUnit
 
 	takDetailsBullseye, err := Compile(takDetailsBullseyeXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details bullseye schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details bullseye schema: %w", err)
+		return
 	}
 	schemas["tak-details-bullseye"] = takDetailsBullseye
 
 	takDetailsRouteInfo, err := Compile(takDetailsRouteInfoXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile TAK details routeinfo schema: %w", err))
+		initErr = fmt.Errorf("compile TAK details routeinfo schema: %w", err)
+		return
 	}
 	schemas["tak-details-routeinfo"] = takDetailsRouteInfo
 
 	eventPoint, err := Compile(eventPointXSD)
 	if err != nil {
-		panic(fmt.Errorf("compile event point schema: %w", err))
+		initErr = fmt.Errorf("compile event point schema: %w", err)
+		return
 	}
 	schemas["event-point"] = eventPoint
 }

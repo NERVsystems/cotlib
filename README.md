@@ -198,7 +198,8 @@ extensions. `validator.ValidateAgainstSchema` validates XML against embedded
 XSD files. `Event.Validate` automatically checks extensions such as
 `__chat`, `__chatReceipt`, `__group`, `__serverdestination`, `__video`,
 `attachment_list`, `usericon`, and the drawing-related details using these
-schemas.
+schemas. All schemas in this repository's `takcot/xsd` directory are embedded
+and validated, including those like `Route.xsd` that reference other files.
 
 ### Type Validation and Catalog
 

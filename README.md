@@ -601,25 +601,37 @@ This library is optimized for high-performance CoT processing with minimal memor
 
 | Operation | Speed | Allocations | Memory | Throughput |
 |-----------|--------|-------------|---------|------------|
-| **Event Creation** | 156.7 ns/op | 1 alloc | 240 B | ~6.4M events/sec |
-| **XML Generation** | 558.9 ns/op | 4 allocs | 360 B | ~1.8M events/sec |
-| **XML Parsing** | 4.9 μs/op | 73 allocs | 3.4 KB | ~200K events/sec |
+| **Event Creation** | 157.4 ns/op | 1 alloc | 288 B | ~6.4M events/sec |
+| **XML Generation** | 583.2 ns/op | 4 allocs | 360 B | ~1.7M events/sec |
+| **XML Parsing** | 5.08 μs/op | 73 allocs | 3.48 KB | ~197K events/sec |
+| **XML Decode w/ Limits** | 2.31 μs/op | 49 allocs | 2.62 KB | ~433K events/sec |
 
 ### Type Validation
 
 | Type Pattern | Speed | Allocations | Throughput |
 |--------------|--------|-------------|------------|
-| **Simple Types** (`a-f-G`) | 22.6 ns/op | 0 allocs | ~44M validations/sec |
-| **Complex Types** (`a-f-G-E-X-N`) | 26.7 ns/op | 0 allocs | ~37M validations/sec |  
-| **Wildcards** (`a-f-G-*`) | 41.4 ns/op | 1 alloc | ~24M validations/sec |
+| **Simple Types** (`a-f-G`) | 21.9 ns/op | 0 allocs | ~45.7M validations/sec |
+| **Complex Types** (`a-f-G-E-X-N`) | 22.3 ns/op | 0 allocs | ~44.8M validations/sec |  
+| **Wildcards** (`a-f-G-*`) | 53.7 ns/op | 0 allocs | ~18.6M validations/sec |
+| **Atomic Wildcards** (`a-.-X`) | 32.3 ns/op | 0 allocs | ~31.0M validations/sec |
 
 ### Catalog Operations
 
 | Operation | Speed | Allocations | Throughput |
 |-----------|--------|-------------|------------|
-| **Type Lookup** | 17.3 ns/op | 0 allocs | ~57M lookups/sec |
-| **Search by Description** | 72.4 μs/op | 4 allocs | ~13K searches/sec |
-| **Search by Full Name** | 104.7 μs/op | 5 allocs | ~9K searches/sec |
+| **Type Lookup** | 18.9 ns/op | 0 allocs | ~52.9M lookups/sec |
+| **Search by Description** | 67.4 μs/op | 0 allocs | ~14.8K searches/sec |
+| **Search by Full Name** | 104.4 μs/op | 0 allocs | ~9.6K searches/sec |
+
+### XML Schema Validation
+
+| Metric | Performance | Allocations | Throughput Range |
+|--------|-------------|-------------|------------------|
+| **Average** | 2.89 μs/op | 0 allocs | ~346K validations/sec |
+| **Fastest** | 2.25 μs/op | 0 allocs | ~444K validations/sec |
+| **Slowest** | 5.25 μs/op | 0 allocs | ~190K validations/sec |
+
+*Validation performance across 13 schema types (Contact, Track, Color, Environment, Precision Location, Shape, Event Point, Status, Video, Mission, TAK Version, Bullseye, Route Info)*
 
 ### Key Performance Features
 

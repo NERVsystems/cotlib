@@ -62,10 +62,10 @@ The repository includes the complete set of TAKCoT schemas:
 
 ## Limitations
 
-Currently, only self-contained detail schemas are actively used in the validator. Complex schemas with dependencies (like the main Route.xsd) require additional work to resolve their includes and dependencies.
+All TAKCoT schemas from the upstream repository are embedded in the validator. This includes larger schemas such as `Route.xsd` that reference other files. These cross-file dependencies are resolved automatically during validation.
 
 ## Future Enhancements
 
-- Add support for complex schemas with dependencies
-- Include more TAKCoT schemas in the validator as needed
-- Add schema validation examples and test cases 
+- Provide additional schema validation examples and test cases.
+- Monitor the upstream ATAK repository for new TAKCoT schemas and
+  integrate them as they appear.

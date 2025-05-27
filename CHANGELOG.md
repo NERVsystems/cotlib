@@ -52,23 +52,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Type predicate checking
 - Event linking capabilities
 
-## [Unreleased]
+## [v0.3.2] - 2025-05-27
 
 ### Added
-- Detail extensions with round-trip preservation in `Detail.Unknown`
-- Validator package with schema checks for `__chat` extensions
+- Comprehensive TAKCoT schema validation, including complex schemas such as `Route.xsd`
+- Benchmarks and tests covering the expanded schema set
 
 ### Changed
-- Allowed `HAE` sentinel value `9999999.0` and expanded valid range to -12000..40000000
-
-### Deprecated
--
-
-### Removed
--
+- Secure XML decoding enforced across the library
+- Type catalog lookup now supports wildcard entries
 
 ### Fixed
--
-
-### Security
-- 
+- XML escape handling for newline and tab characters

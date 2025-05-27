@@ -441,9 +441,36 @@ func LoadCoTTypesFromFile(ctx context.Context, path string) error {
 }
 
 // LookupType returns the Type for the given name if it exists
+// LookupType returns the Type for the given name if it exists.
+// If the exact type is not found, the function attempts wildcard resolution
+// by substituting affiliation segments (f/h/n/u) with '.' and retrying the
+// lookup. This mirrors ValidateType's wildcard handling to ensure lookups
+// succeed for types that only exist in their wildcard form in the catalog.
 func LookupType(name string) (cottypes.Type, bool) {
-	t, err := cottypes.GetCatalog().GetType(context.Background(), name)
-	return t, err == nil
+	cat := cottypes.GetCatalog()
+	if cat == nil {
+		return cottypes.Type{}, false
+	}
+
+	t, err := cat.GetType(context.Background(), name)
+	if err == nil {
+		return t, true
+	}
+
+	parts := strings.Split(name, "-")
+	for i, seg := range parts {
+		switch seg {
+		case "f", "h", "n", "u":
+			orig := parts[i]
+			parts[i] = "."
+			if t2, err2 := cat.GetType(context.Background(), strings.Join(parts, "-")); err2 == nil {
+				return t2, true
+			}
+			parts[i] = orig
+		}
+	}
+
+	return cottypes.Type{}, false
 }
 
 // FindTypes returns all types matching the given query

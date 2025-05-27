@@ -991,3 +991,17 @@ func TestValidateTypeWildcardResolution(t *testing.T) {
 		})
 	}
 }
+
+func TestLookupTypeWildcardResolution(t *testing.T) {
+	typ, ok := LookupType("b-g-f-G-G-A-P")
+	if !ok {
+		t.Fatal("LookupType failed to resolve wildcard variation")
+	}
+	if typ.Description != "PICKUP ZONE (PZ)" {
+		t.Errorf("unexpected description: %s", typ.Description)
+	}
+
+	if _, ok := LookupType("b-g-f-G-G-A-Q"); ok {
+		t.Error("unexpected success for non-existent type")
+	}
+}

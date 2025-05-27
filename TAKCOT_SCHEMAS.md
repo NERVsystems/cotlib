@@ -35,14 +35,16 @@ fmt.Printf("Available schemas: %v\n", schemas)
 
 ## Schema Sources
 
-All TAKCoT XSD schemas are included in the repository at `validator/schemas/` and embedded at build time using Go's `go:embed` directive. This ensures:
+All TAKCoT XSD schemas found under the repository's `takcot/` directory are embedded at build time using Go's `go:embed` directive. This ensures:
 
 - ✅ **Airgapped builds work** - No external dependencies required
 - ✅ **Container builds work** - All files are self-contained
 - ✅ **No network access needed** - Everything is embedded at compile time
 - ✅ **Reproducible builds** - Schema versions are locked to the committed files
 
-The schemas were sourced from: `../AndroidTacticalAssaultKit-CIV/takcot/xsd/`
+The schemas were sourced from: `../AndroidTacticalAssaultKit-CIV/takcot/xsd/`.
+For convenience the upstream structure is mirrored under `takcot/` in this repository,
+and every schema in that directory is part of the embedded data.
 
 ## Available Schema Files
 
@@ -66,6 +68,6 @@ All TAKCoT schemas from the upstream repository are embedded in the validator. T
 
 ## Future Enhancements
 
-- Provide additional schema validation examples and test cases.
-- Monitor the upstream ATAK repository for new TAKCoT schemas and
-  integrate them as they appear.
+New schemas will be added only if the upstream repository releases them. This
+keeps the library synchronized with official ATAK updates while avoiding
+divergent schema definitions.

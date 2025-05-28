@@ -584,7 +584,14 @@ defer cotlib.ReleaseEvent(evt)
 ```
 ## Build Tags
 
-The optional `novalidator` build tag disables XML schema validation. When used, `ValidateAgainstSchema` becomes a no-op and always returns `nil`.
+The optional `novalidator` build tag disables XML schema validation. When this
+tag is provided, `ValidateAgainstSchema` becomes a no-op and always returns
+`nil`, so *any* XML is parsed without verification, including malformed or
+malicious content.
+
+Only use this tag when performance is critical and the input XML is already
+trusted. Do **not** use it when processing untrusted or potentially invalid CoT,
+as skipping schema validation may expose your application to malformed data.
 
 ```bash
 go build -tags novalidator

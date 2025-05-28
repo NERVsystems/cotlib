@@ -54,9 +54,11 @@ func TestValidationBaseline(t *testing.T) {
 
 	t.Run("point_validation_mutation", func(t *testing.T) {
 		// Test Point validation mutation
-		p := cotlib.Point{Lat: 45.0, Lon: -120.0, Hae: 100.0}
+		p := cotlib.Point{Lat: 45.0, Lon: -120.0, Hae: 100.0, Ce: 10.0, Le: 10.0}
 		original := p
-		p.Validate()
+		if err := p.Validate(); err != nil {
+			t.Fatalf("Point.Validate() failed: %v", err)
+		}
 		if p.Ce != original.Ce || p.Le != original.Le {
 			t.Error("Point.Validate should not modify the receiver")
 		}

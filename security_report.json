@@ -1,0 +1,60 @@
+{
+	"Golang errors": {},
+	"Issues": [
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e uint64",
+			"file": "/Users/pdfinn/Library/Caches/go-build/4b/4b6b8bee35ce12f0d90c494d484c097c0ee1a5166a12390e8adc142c4249b3fa-d",
+			"code": "68: \t}\n69: \tp := _cgo_cmalloc(uint64(len(s)+1))\n70: \tsliceHeader := struct {\n",
+			"line": "69",
+			"column": "26",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e int32",
+			"file": "/Users/pdfinn/Library/Caches/go-build/77/77710797822a26350b328f63de88d114f0f2e93ce8ad97c990e00bd3a1fda2b4-d",
+			"code": "105: \t}\n106: \tif len(xml) \u003e math.MaxInt32 {\n107: \t\treturn errors.New(\"xml input too large\")\n",
+			"line": "106",
+			"column": "71",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e int32",
+			"file": "/Users/pdfinn/Library/Caches/go-build/77/77710797822a26350b328f63de88d114f0f2e93ce8ad97c990e00bd3a1fda2b4-d",
+			"code": "66: \t}\n67: \tif len(data) \u003e math.MaxInt32 {\n68: \t\treturn nil, errors.New(\"schema too large\")\n",
+			"line": "67",
+			"column": "67",
+			"nosec": false,
+			"suppressions": null
+		}
+	],
+	"Stats": {
+		"files": 27,
+		"lines": 12822,
+		"nosec": 0,
+		"found": 3
+	},
+	"GosecVersion": "dev"
+}

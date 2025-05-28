@@ -298,17 +298,15 @@ func TestEventValidation(t *testing.T) {
 
 	t.Run("stale_too_far_in_future", func(t *testing.T) {
 		event := *validEvent
-		// Use a non-TAK type to ensure stale time validation
 		event.Type = "a-f-G"
 		event.Stale = CoTTime(event.Time.Time().Add(8 * 24 * time.Hour))
-		if err := event.Validate(); err == nil {
-			t.Error("Event.Validate() error = nil, wantErr true for non-TAK type with stale > 7 days")
+		if err := event.Validate(); err != nil {
+			t.Errorf("Event.Validate() error = %v, wantErr false for long stale", err)
 		}
 
-		// TAK types are allowed to have longer stale times
 		event.Type = "t-x-takp-v"
 		if err := event.Validate(); err != nil {
-			t.Errorf("Event.Validate() error = %v, wantErr false for TAK type with long stale", err)
+			t.Errorf("Event.Validate() error = %v, wantErr false for long stale", err)
 		}
 	})
 

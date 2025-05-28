@@ -82,17 +82,17 @@ func writeSchemas(dir string) error {
 			if path == "." {
 				return nil
 			}
-			return os.MkdirAll(filepath.Join(dir, path), 0o755)
+			return os.MkdirAll(filepath.Join(dir, path), 0o750)
 		}
 		data, err := schemasFS.ReadFile(path)
 		if err != nil {
 			return err
 		}
 		dest := filepath.Join(dir, path)
-		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(dest), 0o750); err != nil {
 			return err
 		}
-		return os.WriteFile(dest, data, 0o644)
+		return os.WriteFile(dest, data, 0o600)
 	})
 }
 

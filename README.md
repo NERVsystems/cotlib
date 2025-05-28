@@ -442,6 +442,9 @@ go generate ./cottypes
 Add your custom type entries to `cottypes/CoTtypes.xml` (or `cot-types/CoTtypes.xml`) before running the
 generator to embed them into the resulting Go code.
 
+The test suite ensures `generated_types.go` is up to date. If it fails,
+regenerate the file with `go generate ./cottypes` and commit the result.
+
 ## TAK Types and Extensions
 
 The library supports both canonical MITRE CoT types and TAK-specific extensions. TAK types are maintained separately to ensure clear namespace separation and avoid conflicts with official MITRE specifications.

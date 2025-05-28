@@ -1292,14 +1292,7 @@ func (e *Event) ValidateAt(now time.Time) error {
 	if staleDiff < minStaleOffset {
 		return fmt.Errorf("stale time too close to event time")
 	}
-	// Allow longer stale times for TAK types
-	maxStale := maxStaleOffset
-	if strings.HasPrefix(e.Type, "t-x-") {
-		maxStale = 30 * 24 * time.Hour // 30 days for TAK types
-	}
-	if staleDiff > maxStale {
-		return fmt.Errorf("stale time too far from event time")
-	}
+	// Skip maximum stale offset checks to allow extended validity
 
 	// Validate point
 	if err := e.Point.Validate(); err != nil {

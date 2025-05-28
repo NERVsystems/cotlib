@@ -137,8 +137,7 @@ func main() {
 #### Handling Detail Extensions
 
 CoT events often include TAK-specific extensions inside the `<detail>` element.
-`cotlib` now preserves several common extensions and round-trips them
-unchanged:
+`cotlib` preserves many of these extensions and validates them using embedded TAKCoT schemas. These extensions go beyond canonical CoT and include elements such as:
 
 - `__chat`
 - `__chatReceipt`
@@ -160,10 +159,19 @@ unchanged:
 - `strokeweight`
 - `fillcolor`
 - `labelson`
+- `uid`
+- `bullseye`
+- `routeInfo`
+- `color`
+- `hierarchy`
+- `link`
+- `usericon`
+- `emergency`
+- `height`
+- `height_unit`
+- `remarks`
 
-The `__chat` and `__chatReceipt` extensions are validated against embedded
-XML schemas when decoding and during event validation. Invalid chat XML will
-cause an error.
+All of these known TAK extensions are validated against embedded schemas when decoding and during event validation. Invalid XML will result in an error.
 
 Example: adding a `shape` extension with a `strokeColor` attribute:
 
@@ -175,6 +183,7 @@ event.Detail = &cotlib.Detail{
 
 Any unknown elements are stored in `Detail.Unknown` and serialized back
 verbatim.
+Unknown extensions are not validated. Although cotlib enforces XML size and depth limits, the data may still contain unexpected or malicious content. Treat these elements as untrusted and validate them separately if needed.
 
 ```go
 xmlData := `<?xml version="1.0"?>

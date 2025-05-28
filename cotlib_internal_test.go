@@ -42,3 +42,40 @@ func TestLoggerFromContextWithNilLogger(t *testing.T) {
 
 	l.Info("test message")
 }
+
+func TestLoggerRace(t *testing.T) {
+	prev := logger.Load()
+	defer SetLogger(prev)
+
+	var wg sync.WaitGroup
+	iterations := 1000
+	goroutines := 10
+	ctx := context.Background()
+
+	// Goroutines repeatedly calling SetLogger(nil)
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < iterations; j++ {
+				SetLogger(nil)
+			}
+		}()
+	}
+
+	// Goroutines repeatedly calling LoggerFromContext
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < iterations; j++ {
+				l := LoggerFromContext(ctx)
+				if l == nil {
+					t.Error("LoggerFromContext returned nil")
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+}

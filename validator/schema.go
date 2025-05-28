@@ -46,6 +46,7 @@ static void freeSchema(xmlSchemaPtr schema) {
 import "C"
 import (
 	"errors"
+	"math"
 	"runtime"
 	"unsafe"
 )
@@ -59,6 +60,9 @@ type Schema struct {
 func Compile(data []byte) (*Schema, error) {
 	if len(data) == 0 {
 		return nil, errors.New("empty schema")
+	}
+	if len(data) > math.MaxInt32 {
+		return nil, errors.New("schema too large")
 	}
 	ptr := C.compileSchema((*C.char)(unsafe.Pointer(&data[0])), C.int(len(data)))
 	if ptr == nil {
@@ -92,6 +96,9 @@ func (s *Schema) Validate(xml []byte) error {
 	}
 	if len(xml) == 0 {
 		return errors.New("empty xml")
+	}
+	if len(xml) > math.MaxInt32 {
+		return errors.New("xml too large")
 	}
 	ret := C.validateDoc(s.ptr, (*C.char)(unsafe.Pointer(&xml[0])), C.int(len(xml)))
 	if ret != 0 {

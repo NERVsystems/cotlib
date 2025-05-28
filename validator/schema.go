@@ -78,6 +78,9 @@ func CompileFile(path string) (*Schema, error) {
 	if path == "" {
 		return nil, errors.New("empty path")
 	}
+	if len(path) > math.MaxInt32 {
+		return nil, errors.New("path too long")
+	}
 	cpath := C.CString(path)
 	defer C.free(unsafe.Pointer(cpath))
 	ptr := C.compileSchemaFile(cpath)
@@ -98,7 +101,7 @@ func (s *Schema) Validate(xml []byte) error {
 		return errors.New("empty xml")
 	}
 	if len(xml) > math.MaxInt32 {
-		return errors.New("xml too large")
+		return errors.New("xml input too large")
 	}
 	ret := C.validateDoc(s.ptr, (*C.char)(unsafe.Pointer(&xml[0])), C.int(len(xml)))
 	if ret != 0 {

@@ -91,7 +91,13 @@ func main() {
 	for _, xmlFile := range xmlFiles {
 		logger.Debug("Processing XML file", "file", xmlFile)
 
-		data, err := os.ReadFile(xmlFile)
+		clean := filepath.Clean(xmlFile)
+		if strings.Contains(clean, "..") {
+			logger.Error("Invalid path", "file", xmlFile)
+			continue
+		}
+
+		data, err := os.ReadFile(clean)
 		if err != nil {
 			logger.Error("Failed to read XML file", "file", xmlFile, "error", err)
 			continue
@@ -217,7 +223,7 @@ func main() {
 		outputPath = "generated_types.go"
 	}
 
-	if err := os.WriteFile(outputPath, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(outputPath, buf.Bytes(), 0o600); err != nil {
 		logger.Error("Failed to write generated code", "output", outputPath, "error", err)
 		os.Exit(1)
 	}

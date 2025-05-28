@@ -79,6 +79,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -213,7 +214,11 @@ func RegisterCoTType(name string) {
 		return
 	}
 	cat := cottypes.GetCatalog()
-	cat.Upsert(context.Background(), name, cottypes.Type{Name: name})
+	if err := cat.Upsert(context.Background(), name, cottypes.Type{Name: name}); err != nil {
+		slog.Error("failed to register CoT type",
+			"name", name,
+			"error", err)
+	}
 }
 
 // basicSyntaxOK performs basic syntax validation on a CoT type
@@ -253,7 +258,13 @@ func basicSyntaxOK(name string) bool {
 func RegisterCoTTypesFromFile(ctx context.Context, filename string) error {
 	logger := LoggerFromContext(ctx)
 
-	data, err := os.ReadFile(filename)
+	clean := filepath.Clean(filename)
+	if strings.Contains(clean, "..") {
+		logger.Error("invalid path", "path", filename)
+		return ErrInvalidInput
+	}
+
+	data, err := os.ReadFile(clean)
 	if err != nil {
 		logger.Error("failed to read file",
 			"path", filename,
@@ -401,7 +412,13 @@ func RegisterAllCoTTypes() error {
 func LoadCoTTypesFromFile(ctx context.Context, path string) error {
 	logger := LoggerFromContext(ctx)
 
-	data, err := os.ReadFile(path)
+	clean := filepath.Clean(path)
+	if strings.Contains(clean, "..") {
+		logger.Error("invalid path", "path", path)
+		return ErrInvalidInput
+	}
+
+	data, err := os.ReadFile(clean)
 	if err != nil {
 		logger.Error("failed to read file",
 			"path", path,

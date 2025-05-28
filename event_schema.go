@@ -5,6 +5,7 @@ package cotlib
 import (
 	"encoding/xml"
 	"fmt"
+	"log/slog"
 
 	"github.com/NERVsystems/cotlib/validator"
 )
@@ -12,16 +13,23 @@ import (
 // eventPointSchema holds the compiled schema for CoT event points.
 var eventPointSchema *validator.Schema
 
+// initErr stores any error encountered during schema compilation.
+var initErr error
+
 func init() {
 	var err error
 	eventPointSchema, err = validator.Compile(validator.EventPointXSD())
 	if err != nil {
-		panic(fmt.Errorf("compile event point schema: %w", err))
+		initErr = fmt.Errorf("compile event point schema: %w", err)
+		slog.Error("failed to compile event point schema", "error", err)
 	}
 }
 
 // ValidateAgainstSchema validates the given CoT event XML against the point schema.
 func ValidateAgainstSchema(data []byte) error {
+	if initErr != nil {
+		return initErr
+	}
 	var p struct {
 		Point Point `xml:"point"`
 	}

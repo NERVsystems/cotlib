@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.5] - 2025-01-27
+
+### Added
+- Added remarks element schema validation and comprehensive tests
+- Enhanced TAK chat fallback test coverage for improved validation reliability
+
+### Bug Fixes
+- Fixed schema initialization error handling to properly return initialization errors
+- Improved error propagation in validator initialization
+
+### Improvements
+- Strengthened validation test suite with additional TAK chat fallback scenarios
+- Enhanced schema validation coverage for remarks elements
+
 ## [v0.3.4] - 2025-05-29
 
 ### Improvements

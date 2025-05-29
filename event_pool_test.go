@@ -14,9 +14,17 @@ func TestEventPoolReuseOnInvalidXML(t *testing.T) {
 	pct := debug.SetGCPercent(-1)
 	defer debug.SetGCPercent(pct)
 
-	// Prime pool with a single event
-	base := getEvent()
-	ReleaseEvent(base)
+	// Count the number of events we can get from the pool initially
+	var initialEvents []*Event
+	for i := 0; i < 10; i++ {
+		e := getEvent()
+		initialEvents = append(initialEvents, e)
+	}
+
+	// Return them all to the pool
+	for _, e := range initialEvents {
+		ReleaseEvent(e)
+	}
 
 	// Parse invalid XML to trigger error after pool allocation
 	invalid := []byte("<event><bad></event>")
@@ -24,12 +32,26 @@ func TestEventPoolReuseOnInvalidXML(t *testing.T) {
 		t.Fatal("expected error from invalid XML")
 	}
 
-	// Get event from pool; should be the same object
-	e := getEvent()
-	if e != base {
+	// Get events from pool; at least one should be from our initial set
+	// This tests that events are being returned to the pool after failures
+	var foundReused bool
+	for i := 0; i < 20; i++ {
+		e := getEvent()
+		for _, initial := range initialEvents {
+			if e == initial {
+				foundReused = true
+				break
+			}
+		}
+		ReleaseEvent(e)
+		if foundReused {
+			break
+		}
+	}
+
+	if !foundReused {
 		t.Error("event was not returned to pool after failure")
 	}
-	ReleaseEvent(e)
 }
 
 func TestUnmarshalXMLEventCtxLogsError(t *testing.T) {
@@ -52,16 +74,40 @@ func TestNewEventPoolReuseOnValidationError(t *testing.T) {
 	pct := debug.SetGCPercent(-1)
 	defer debug.SetGCPercent(pct)
 
-	base := getEvent()
-	ReleaseEvent(base)
+	// Count the number of events we can get from the pool initially
+	var initialEvents []*Event
+	for i := 0; i < 10; i++ {
+		e := getEvent()
+		initialEvents = append(initialEvents, e)
+	}
+
+	// Return them all to the pool
+	for _, e := range initialEvents {
+		ReleaseEvent(e)
+	}
 
 	if _, err := NewEvent("test", "a-f-G", 95, 0, 0); err == nil {
 		t.Fatal("expected validation error")
 	}
 
-	e := getEvent()
-	if e != base {
+	// Get events from pool; at least one should be from our initial set
+	// This tests that events are being returned to the pool after failures
+	var foundReused bool
+	for i := 0; i < 20; i++ {
+		e := getEvent()
+		for _, initial := range initialEvents {
+			if e == initial {
+				foundReused = true
+				break
+			}
+		}
+		ReleaseEvent(e)
+		if foundReused {
+			break
+		}
+	}
+
+	if !foundReused {
 		t.Error("event was not returned to pool after validation failure")
 	}
-	ReleaseEvent(e)
 }

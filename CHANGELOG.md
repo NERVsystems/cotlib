@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.4] - 2025-05-29
+
+### Improvements
+- Enhanced chat validation with comprehensive schema support for both simple and TAK-specific chat messages
+- Improved event pool tests to be more resilient to parallel execution and race conditions
+- Added better test coverage for event pool reuse scenarios after XML parsing failures
+- Strengthened validation for chat extensions with dual schema support (simple chat and TAK chat)
+
+### Bug Fixes
+- Fixed race condition in event pool tests that caused failures when running with race detection
+- Resolved test interference issues when running multiple tests in parallel
+- Improved event pool test reliability by using multiple baseline events instead of single object identity checks
+
+### Security
+- Maintained secure event pool management with proper cleanup on validation failures
+- Ensured no resource leaks in concurrent event processing scenarios
+
 ## [v0.2.3] - 2025-05-11
 
 ### Breaking Changes

@@ -141,6 +141,7 @@ CoT events often include TAK-specific extensions inside the `<detail>` element.
 
 - `__chat`
 - `__chatReceipt`
+- `__chatreceipt`
 - `__geofence`
 - `__serverdestination`
 - `__video`

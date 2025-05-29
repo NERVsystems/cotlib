@@ -206,6 +206,7 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 	if err != nil {
 		return err
 	}
+	c.Raw = raw
 	if err := validator.ValidateAgainstSchema("chat", raw); err != nil {
 		if err2 := validator.ValidateAgainstSchema("tak-details-__chat", raw); err2 != nil {
 			return err

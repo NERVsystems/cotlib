@@ -1307,7 +1307,9 @@ func (e *Event) ValidateAt(now time.Time) error {
 				return fmt.Errorf("marshal chat: %w", err)
 			}
 			if err := validator.ValidateAgainstSchema("chat", data); err != nil {
-				return fmt.Errorf("chat validation failed: %w", err)
+				if err2 := validator.ValidateAgainstSchema("tak-details-__chat", data); err2 != nil {
+					return fmt.Errorf("chat validation failed: %w", err)
+				}
 			}
 		}
 		if e.Detail.ChatReceipt != nil {

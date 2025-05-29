@@ -705,4 +705,22 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		}
 	})
 
+	t.Run("tak_chat_with_chatgrp", func(t *testing.T) {
+		now := time.Now().UTC()
+		xmlData := fmt.Sprintf(`<event version="2.0" uid="U" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s">`+
+			`<point lat="0" lon="0" hae="0" ce="1" le="1"/>`+
+			`<detail><__chat chatroom="c" groupOwner="false" id="1" senderCallsign="A"><chatgrp id="g" uid0="u0"/></__chat></detail>`+
+			`</event>`,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+		evt, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
+		if err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("validate: %v", err)
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
 }

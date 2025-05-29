@@ -12,10 +12,11 @@ type RawMessage []byte
 
 // Chat represents the TAK __chat extension with ID, Message, and Sender attributes.
 type Chat struct {
-	XMLName xml.Name `xml:"__chat"`
-	ID      string   `xml:"id,attr,omitempty"`
-	Message string   `xml:"message,attr,omitempty"`
-	Sender  string   `xml:"sender,attr,omitempty"`
+	XMLName xml.Name   `xml:"__chat"`
+	ID      string     `xml:"id,attr,omitempty"`
+	Message string     `xml:"message,attr,omitempty"`
+	Sender  string     `xml:"sender,attr,omitempty"`
+	Raw     RawMessage `xml:"-"`
 }
 
 // ChatReceipt represents the TAK __chatReceipt extension acknowledging chat messages.
@@ -208,7 +209,19 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 		return err
 	}
 	type alias Chat
-	return xml.Unmarshal(raw, (*alias)(c))
+	if err := xml.Unmarshal(raw, (*alias)(c)); err != nil {
+		return err
+	}
+	c.Raw = raw
+	return nil
+}
+
+func (c Chat) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	if len(c.Raw) > 0 {
+		return encodeRaw(enc, c.Raw)
+	}
+	type alias Chat
+	return enc.EncodeElement(alias(c), start)
 }
 
 func (c *ChatReceipt) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {

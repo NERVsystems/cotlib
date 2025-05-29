@@ -22,6 +22,7 @@ type Chat struct {
 type ChatReceipt struct {
 	XMLName xml.Name `xml:"__chatReceipt"`
 	Ack     string   `xml:"ack,attr"`
+	Raw     RawMessage
 }
 
 // Geofence represents the TAK __geofence extension.
@@ -216,11 +217,24 @@ func (c *ChatReceipt) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) err
 	if err != nil {
 		return err
 	}
+	c.Raw = raw
 	if err := validator.ValidateAgainstSchema("chatReceipt", raw); err != nil {
-		return err
+		if err := validator.ValidateAgainstSchema("tak-details-__chatreceipt", raw); err != nil {
+			return err
+		}
+		c.XMLName = start.Name
+		return nil
 	}
 	type alias ChatReceipt
 	return xml.Unmarshal(raw, (*alias)(c))
+}
+
+func (c ChatReceipt) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	if len(c.Raw) > 0 && c.Ack == "" {
+		return encodeRaw(enc, c.Raw)
+	}
+	type alias ChatReceipt
+	return enc.EncodeElement(alias(c), start)
 }
 
 func (g *Geofence) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {

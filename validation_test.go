@@ -3,6 +3,7 @@ package cotlib_test
 import (
 	"bytes"
 	"context"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"testing"
@@ -467,6 +468,38 @@ func TestUnmarshalInvalidChatExtensions(t *testing.T) {
 			t.Error("expected error for invalid chatReceipt")
 		}
 	})
+}
+
+func TestChatReceiptTwoSchemas(t *testing.T) {
+	ack := []byte(`<__chatReceipt ack="y"/>`)
+	var r1 cotlib.ChatReceipt
+	if err := xml.Unmarshal(ack, &r1); err != nil {
+		t.Fatalf("unmarshal ack: %v", err)
+	}
+
+	detail := []byte(`<__chatreceipt chatroom="c" groupOwner="false" id="1" senderCallsign="A"><chatgrp id="g" uid0="u0"/></__chatreceipt>`)
+	var r2 cotlib.ChatReceipt
+	if err := xml.Unmarshal(detail, &r2); err != nil {
+		t.Fatalf("unmarshal detail: %v", err)
+	}
+	if len(r2.Raw) == 0 {
+		t.Error("expected raw preserved for detail chatreceipt")
+	}
+
+	now := time.Now().UTC()
+	evt1, _ := cotlib.NewEvent("CR1", "a-f-G", 0, 0, 1)
+	evt1.Detail = &cotlib.Detail{ChatReceipt: &r1}
+	if err := evt1.ValidateAt(now); err != nil {
+		t.Fatalf("validate ack: %v", err)
+	}
+	cotlib.ReleaseEvent(evt1)
+
+	evt2, _ := cotlib.NewEvent("CR2", "a-f-G", 0, 0, 1)
+	evt2.Detail = &cotlib.Detail{ChatReceipt: &r2}
+	if err := evt2.ValidateAt(now); err != nil {
+		t.Fatalf("validate detail: %v", err)
+	}
+	cotlib.ReleaseEvent(evt2)
 }
 
 func TestTAKDetailSchemaValidation(t *testing.T) {

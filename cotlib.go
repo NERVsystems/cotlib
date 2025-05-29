@@ -710,7 +710,7 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 					return err
 				}
 				d.Chat = &c
-			case "__chatReceipt":
+			case "__chatReceipt", "__chatreceipt":
 				var c ChatReceipt
 				if err := dec.DecodeElement(&c, &t); err != nil {
 					return err
@@ -1311,12 +1311,20 @@ func (e *Event) ValidateAt(now time.Time) error {
 			}
 		}
 		if e.Detail.ChatReceipt != nil {
-			data, err := xml.Marshal(e.Detail.ChatReceipt)
-			if err != nil {
-				return fmt.Errorf("marshal chatReceipt: %w", err)
+			var data []byte
+			if len(e.Detail.ChatReceipt.Raw) > 0 {
+				data = e.Detail.ChatReceipt.Raw
+			} else {
+				var err error
+				data, err = xml.Marshal(e.Detail.ChatReceipt)
+				if err != nil {
+					return fmt.Errorf("marshal chatReceipt: %w", err)
+				}
 			}
 			if err := validator.ValidateAgainstSchema("chatReceipt", data); err != nil {
-				return fmt.Errorf("chatReceipt validation failed: %w", err)
+				if err := validator.ValidateAgainstSchema("tak-details-__chatreceipt", data); err != nil {
+					return fmt.Errorf("chatReceipt validation failed: %w", err)
+				}
 			}
 		}
 
@@ -1991,13 +1999,19 @@ func (e *Event) ToXML() ([]byte, error) {
 			buf.WriteString("/>\n")
 		}
 		if e.Detail.ChatReceipt != nil {
-			buf.WriteString("    <__chatReceipt")
-			if e.Detail.ChatReceipt.Ack != "" {
-				buf.WriteString(` ack="`)
-				buf.WriteString(escapeAttr(e.Detail.ChatReceipt.Ack))
-				buf.WriteByte('"')
+			if len(e.Detail.ChatReceipt.Raw) > 0 && e.Detail.ChatReceipt.Ack == "" {
+				buf.WriteString("    ")
+				buf.Write(e.Detail.ChatReceipt.Raw)
+				buf.WriteByte('\n')
+			} else {
+				buf.WriteString("    <__chatReceipt")
+				if e.Detail.ChatReceipt.Ack != "" {
+					buf.WriteString(` ack="`)
+					buf.WriteString(escapeAttr(e.Detail.ChatReceipt.Ack))
+					buf.WriteByte('"')
+				}
+				buf.WriteString("/>\n")
 			}
-			buf.WriteString("/>\n")
 		}
 		if e.Detail.Geofence != nil {
 			buf.WriteString("    ")

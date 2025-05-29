@@ -741,6 +741,17 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		}
 	})
 
+	t.Run("remarks_schema", func(t *testing.T) {
+		good := []byte(`<remarks source="src" sourceID="id" time="2023-01-02T15:04:05Z" to="dest">hi</remarks>`)
+		if err := validator.ValidateAgainstSchema("tak-details-remarks", good); err != nil {
+			t.Fatalf("valid remarks rejected: %v", err)
+		}
+		bad := []byte(`<remarks foo="bar"/>`)
+		if err := validator.ValidateAgainstSchema("tak-details-remarks", bad); err == nil {
+			t.Fatal("expected error for invalid remarks")
+		}
+	})
+
 	t.Run("tak_chat_with_chatgrp", func(t *testing.T) {
 		now := time.Now().UTC()
 		xmlData := fmt.Sprintf(`<event version="2.0" uid="U" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s">`+

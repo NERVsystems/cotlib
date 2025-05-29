@@ -444,6 +444,33 @@ func TestChatSchemaValidation(t *testing.T) {
 	}
 }
 
+func TestTAKChatFallback(t *testing.T) {
+	now := time.Now().UTC()
+	chatRaw := `<__chat chatroom="room" groupOwner="false" id="1" senderCallsign="A"><chatgrp id="room" uid0="u"/></__chat>`
+	expectedRaw := `<__chat chatroom="room" groupOwner="false" id="1" senderCallsign="A"><chatgrp id="room" uid0="u"></chatgrp></__chat>`
+	xmlData := fmt.Sprintf(`<event version="2.0" uid="U" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s">`+
+		`<point lat="0" lon="0" hae="0" ce="1" le="1"/>`+
+		`<detail>%s</detail></event>`,
+		now.Format(cotlib.CotTimeFormat),
+		now.Add(10*time.Second).Format(cotlib.CotTimeFormat),
+		chatRaw)
+
+	evt, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
+	if err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if err := evt.Validate(); err != nil {
+		t.Fatalf("validate: %v", err)
+	}
+	if evt.Detail == nil || evt.Detail.Chat == nil {
+		t.Fatalf("chat detail missing")
+	}
+	if !bytes.Equal(evt.Detail.Chat.Raw, []byte(expectedRaw)) {
+		t.Errorf("chat raw mismatch: got %s want %s", string(evt.Detail.Chat.Raw), expectedRaw)
+	}
+	cotlib.ReleaseEvent(evt)
+}
+
 func TestUnmarshalInvalidChatExtensions(t *testing.T) {
 	now := time.Now().UTC()
 	base := `<event version="2.0" uid="U" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s">` +

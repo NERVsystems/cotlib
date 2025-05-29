@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved event pool tests to be more resilient to parallel execution and race conditions
 - Added better test coverage for event pool reuse scenarios after XML parsing failures
 - Strengthened validation for chat extensions with dual schema support (simple chat and TAK chat)
+- Added `remarks` element schema derived from the MITRE CoT release, allowing validation via `tak-details-remarks`
+- Added regression test ensuring chat messages with `<chatgrp>` fall back to the TAK-specific schema
 
 ### Bug Fixes
 - Fixed race condition in event pool tests that caused failures when running with race detection

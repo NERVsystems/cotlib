@@ -172,6 +172,10 @@ CoT events often include TAK-specific extensions inside the `<detail>` element.
 - `height_unit`
 - `remarks`
 
+The `remarks` extension now follows the MITRE *CoT Remarks Schema* and includes
+a `<remarks>` root element, enabling validation through the
+`tak-details-remarks` schema.
+
 All of these known TAK extensions are validated against embedded schemas when decoding and during event validation. Invalid XML will result in an error. Chat messages produced by TAK clients often include a `<chatgrp>` element inside `<__chat>`. `cotlib` first validates against the standard `chat` schema and automatically falls back to the TAK-specific `tak-details-__chat` schema so these messages are accepted.
 
 Example: adding a `shape` extension with a `strokeColor` attribute:

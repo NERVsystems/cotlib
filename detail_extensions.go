@@ -206,22 +206,28 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 		return err
 	}
 	if err := validator.ValidateAgainstSchema("chat", raw); err != nil {
-		return err
+		if err2 := validator.ValidateAgainstSchema("tak-details-__chat", raw); err2 != nil {
+			return err
+		}
 	}
-	type alias Chat
-	if err := xml.Unmarshal(raw, (*alias)(c)); err != nil {
-		return err
-	}
-	c.Raw = raw
-	return nil
-}
 
-func (c Chat) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
-	if len(c.Raw) > 0 {
-		return encodeRaw(enc, c.Raw)
+	var helper struct {
+		XMLName xml.Name `xml:"__chat"`
+		ID      string   `xml:"id,attr,omitempty"`
+		Message string   `xml:"message,attr,omitempty"`
+		Sender  string   `xml:"sender,attr,omitempty"`
+		_       string   `xml:",innerxml"`
 	}
-	type alias Chat
-	return enc.EncodeElement(alias(c), start)
+
+	if err := xml.Unmarshal(raw, &helper); err != nil {
+		return err
+	}
+
+	c.XMLName = helper.XMLName
+	c.ID = helper.ID
+	c.Message = helper.Message
+	c.Sender = helper.Sender
+	return nil
 }
 
 func (c *ChatReceipt) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {

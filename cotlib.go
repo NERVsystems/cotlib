@@ -1974,23 +1974,29 @@ func (e *Event) ToXML() ([]byte, error) {
 			buf.WriteString("/>\n")
 		}
 		if e.Detail.Chat != nil {
-			buf.WriteString("    <__chat")
-			if e.Detail.Chat.ID != "" {
-				buf.WriteString(` id="`)
-				buf.WriteString(escapeAttr(e.Detail.Chat.ID))
-				buf.WriteByte('"')
+			if len(e.Detail.Chat.Raw) > 0 {
+				buf.WriteString("    ")
+				buf.Write(e.Detail.Chat.Raw)
+				buf.WriteByte('\n')
+			} else {
+				buf.WriteString("    <__chat")
+				if e.Detail.Chat.ID != "" {
+					buf.WriteString(` id="`)
+					buf.WriteString(escapeAttr(e.Detail.Chat.ID))
+					buf.WriteByte('"')
+				}
+				if e.Detail.Chat.Message != "" {
+					buf.WriteString(` message="`)
+					buf.WriteString(escapeAttr(e.Detail.Chat.Message))
+					buf.WriteByte('"')
+				}
+				if e.Detail.Chat.Sender != "" {
+					buf.WriteString(` sender="`)
+					buf.WriteString(escapeAttr(e.Detail.Chat.Sender))
+					buf.WriteByte('"')
+				}
+				buf.WriteString("/>\n")
 			}
-			if e.Detail.Chat.Message != "" {
-				buf.WriteString(` message="`)
-				buf.WriteString(escapeAttr(e.Detail.Chat.Message))
-				buf.WriteByte('"')
-			}
-			if e.Detail.Chat.Sender != "" {
-				buf.WriteString(` sender="`)
-				buf.WriteString(escapeAttr(e.Detail.Chat.Sender))
-				buf.WriteByte('"')
-			}
-			buf.WriteString("/>\n")
 		}
 		if e.Detail.ChatReceipt != nil {
 			buf.WriteString("    <__chatReceipt")

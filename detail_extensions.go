@@ -12,10 +12,11 @@ type RawMessage []byte
 
 // Chat represents the TAK __chat extension with ID, Message, and Sender attributes.
 type Chat struct {
-	XMLName xml.Name `xml:"__chat"`
-	ID      string   `xml:"id,attr,omitempty"`
-	Message string   `xml:"message,attr,omitempty"`
-	Sender  string   `xml:"sender,attr,omitempty"`
+	XMLName xml.Name   `xml:"__chat"`
+	ID      string     `xml:"id,attr,omitempty"`
+	Message string     `xml:"message,attr,omitempty"`
+	Sender  string     `xml:"sender,attr,omitempty"`
+	Raw     RawMessage `xml:"-"`
 }
 
 // ChatReceipt represents the TAK __chatReceipt extension acknowledging chat messages.

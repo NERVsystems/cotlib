@@ -348,6 +348,9 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 	if out.Detail == nil || out.Detail.Chat == nil || out.Detail.Chat.Message == "" {
 		t.Errorf("chat extension lost")
 	}
+	if want := []byte(`<__chat message="m" sender="s"></__chat>`); !bytes.Equal(out.Detail.Chat.Raw, want) {
+		t.Errorf("chat raw mismatch: got %s want %s", string(out.Detail.Chat.Raw), string(want))
+	}
 	if len(out.Detail.Unknown) != 1 {
 		t.Errorf("expected 1 unknown element, got %d", len(out.Detail.Unknown))
 	}

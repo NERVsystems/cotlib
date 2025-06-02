@@ -210,8 +210,44 @@ type Marti struct {
 }
 
 // Remarks represents the TAK remarks extension.
+// Remarks represents the TAK remarks extension.
+// It preserves the original XML while also allowing
+// convenient access to common attributes and the text
+// payload.
 type Remarks struct {
-	Raw RawMessage
+	XMLName  xml.Name   `xml:"remarks"`
+	Source   string     `xml:"source,attr,omitempty"`
+	SourceID string     `xml:"sourceID,attr,omitempty"`
+	To       string     `xml:"to,attr,omitempty"`
+	Time     CoTTime    `xml:"time,attr,omitempty"`
+	Text     string     `xml:",chardata"`
+	Raw      RawMessage `xml:"-"`
+}
+
+// Parse fills the Remarks fields from Raw if present.
+// It is safe to call multiple times.
+func (r *Remarks) Parse() error {
+	if len(r.Raw) == 0 {
+		return nil
+	}
+	var helper struct {
+		XMLName  xml.Name `xml:"remarks"`
+		Source   string   `xml:"source,attr,omitempty"`
+		SourceID string   `xml:"sourceID,attr,omitempty"`
+		To       string   `xml:"to,attr,omitempty"`
+		Time     CoTTime  `xml:"time,attr,omitempty"`
+		Text     string   `xml:",chardata"`
+	}
+	if err := xml.Unmarshal(r.Raw, &helper); err != nil {
+		return err
+	}
+	r.XMLName = helper.XMLName
+	r.Source = helper.Source
+	r.SourceID = helper.SourceID
+	r.To = helper.To
+	r.Time = helper.Time
+	r.Text = helper.Text
+	return nil
 }
 
 // captureRaw reads an element starting from start and returns its raw XML
@@ -726,11 +762,19 @@ func (r *Remarks) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 		return err
 	}
 	r.Raw = raw
+	if err := r.Parse(); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (r Remarks) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
-	return encodeRaw(enc, r.Raw)
+	if len(r.Raw) > 0 && r.Source == "" && r.SourceID == "" &&
+		r.To == "" && r.Time.Time().IsZero() && r.Text == "" {
+		return encodeRaw(enc, r.Raw)
+	}
+	type alias Remarks
+	return enc.EncodeElement(alias(r), start)
 }
 
 // encodeRaw writes pre-encoded XML directly to the encoder.

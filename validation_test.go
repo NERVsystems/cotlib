@@ -838,6 +838,43 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		if !bytes.Contains(out, []byte(`chatroom="c"`)) {
 			t.Errorf("expected chatroom attribute in output")
 		}
+		if !bytes.Contains(out, []byte(`groupOwner="false"`)) {
+			t.Errorf("expected groupOwner attribute in output")
+		}
+		if !bytes.Contains(out, []byte(`senderCallsign="A"`)) {
+			t.Errorf("expected senderCallsign attribute in output")
+		}
+		if !bytes.Contains(out, []byte(`<chatgrp`)) {
+			t.Errorf("expected chatgrp element in output")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("tak_chat_parent_messageid", func(t *testing.T) {
+		now := time.Now().UTC()
+		xmlData := fmt.Sprintf(`<event version="2.0" uid="U" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s">`+
+			`<point lat="0" lon="0" hae="0" ce="1" le="1"/>`+
+			`<detail><__chat chatroom="c" groupOwner="false" id="1" senderCallsign="A" parent="p" messageId="m"><chatgrp id="g" uid0="u0"/></__chat></detail>`+
+			`</event>`,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+		evt, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
+		if err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if evt.Detail.Chat.Parent != "p" || evt.Detail.Chat.MessageID != "m" {
+			t.Errorf("chat parent/messageId parsed incorrectly: %+v", evt.Detail.Chat)
+		}
+		out, err := evt.ToXML()
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		if !bytes.Contains(out, []byte(`parent="p"`)) {
+			t.Errorf("expected parent attribute in output")
+		}
+		if !bytes.Contains(out, []byte(`messageId="m"`)) {
+			t.Errorf("expected messageId attribute in output")
+		}
 		cotlib.ReleaseEvent(evt)
 	})
 

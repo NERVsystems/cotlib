@@ -199,12 +199,28 @@ var attrEscaper = strings.NewReplacer(
 	"\t", "&#x9;",
 )
 
+// textEscaper escapes XML special characters in element text.
+var textEscaper = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	"\r", "&#xD;",
+)
+
 // escapeAttr returns the escaped version of s for use in XML attributes.
 func escapeAttr(s string) string {
 	if s == "" {
 		return s
 	}
 	return attrEscaper.Replace(s)
+}
+
+// escapeText writes the escaped version of s to the buffer.
+func escapeText(buf *bytes.Buffer, s string) {
+	if s == "" {
+		return
+	}
+	buf.WriteString(textEscaper.Replace(s))
 }
 
 // RegisterCoTType adds a specific CoT type to the valid types registry
@@ -598,6 +614,8 @@ type Event struct {
 	Point   Point    `xml:"point"`
 	Detail  *Detail  `xml:"detail,omitempty"`
 	Links   []Link   `xml:"link,omitempty"`
+	// Message is populated for GeoChat events from the <remarks> element.
+	Message string `xml:"-"`
 	// StrokeColor is an ARGB hex color used for drawing events.
 	StrokeColor string `xml:"strokeColor,attr,omitempty"`
 	// UserIcon specifies a custom icon URL or resource for the event.
@@ -1072,8 +1090,16 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 		}
 	}
 	if d.Remarks != nil {
-		if err := encodeRaw(enc, d.Remarks.Raw); err != nil {
-			return err
+		if len(d.Remarks.Raw) > 0 && d.Remarks.Text == "" &&
+			d.Remarks.Source == "" && d.Remarks.SourceID == "" &&
+			d.Remarks.To == "" && d.Remarks.Time.Time().IsZero() {
+			if err := encodeRaw(enc, d.Remarks.Raw); err != nil {
+				return err
+			}
+		} else {
+			if err := enc.Encode(d.Remarks); err != nil {
+				return err
+			}
 		}
 	}
 	for _, raw := range d.Unknown {
@@ -1648,7 +1674,13 @@ func (e *Event) validateDetailSchemas() error {
 				if e.Detail.Remarks == nil {
 					return nil, false, nil
 				}
-				return e.Detail.Remarks.Raw, true, nil
+				if len(e.Detail.Remarks.Raw) > 0 && e.Detail.Remarks.Text == "" &&
+					e.Detail.Remarks.Source == "" && e.Detail.Remarks.SourceID == "" &&
+					e.Detail.Remarks.To == "" && e.Detail.Remarks.Time.Time().IsZero() {
+					return e.Detail.Remarks.Raw, true, nil
+				}
+				data, err := xml.Marshal(e.Detail.Remarks)
+				return data, true, err
 			},
 		},
 	}
@@ -1820,6 +1852,13 @@ func UnmarshalXMLEvent(ctx context.Context, data []byte) (*Event, error) {
 		ReleaseEvent(evt)
 		logger.Error("failed to decode XML", "error", err)
 		return nil, fmt.Errorf("failed to decode XML: %w", err)
+	}
+
+	if evt.Type == "b-t-f" && evt.Detail != nil && evt.Detail.Remarks != nil {
+		if evt.Detail.Remarks.Text == "" {
+			_ = evt.Detail.Remarks.Parse()
+		}
+		evt.Message = evt.Detail.Remarks.Text
 	}
 
 	if err := evt.ValidateAt(time.Now().UTC()); err != nil {
@@ -2090,6 +2129,44 @@ func (e *Event) ToXML() ([]byte, error) {
 			buf.WriteString("    ")
 			buf.Write(e.Detail.Shape.Raw)
 			buf.WriteByte('\n')
+		}
+		if e.Detail.Remarks != nil {
+			r := e.Detail.Remarks
+			if len(r.Raw) > 0 && r.Text == "" && r.Source == "" && r.SourceID == "" && r.To == "" && r.Time.Time().IsZero() {
+				buf.WriteString("    ")
+				buf.Write(r.Raw)
+				buf.WriteByte('\n')
+			} else {
+				buf.WriteString("    <remarks")
+				if r.Source != "" {
+					buf.WriteString(` source="`)
+					buf.WriteString(escapeAttr(r.Source))
+					buf.WriteByte('"')
+				}
+				if r.SourceID != "" {
+					buf.WriteString(` sourceID="`)
+					buf.WriteString(escapeAttr(r.SourceID))
+					buf.WriteByte('"')
+				}
+				if r.To != "" {
+					buf.WriteString(` to="`)
+					buf.WriteString(escapeAttr(r.To))
+					buf.WriteByte('"')
+				}
+				if !r.Time.Time().IsZero() {
+					buf.WriteString(` time="`)
+					buf.WriteString(r.Time.Time().UTC().Format(CotTimeFormat))
+					buf.WriteByte('"')
+				}
+				if r.Text == "" {
+					buf.WriteString("/>")
+					buf.WriteByte('\n')
+				} else {
+					buf.WriteString(">")
+					escapeText(buf, r.Text)
+					buf.WriteString("</remarks>\n")
+				}
+			}
 		}
 		for _, raw := range e.Detail.Unknown {
 			buf.WriteString("    ")

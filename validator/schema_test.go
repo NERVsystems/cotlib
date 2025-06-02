@@ -90,6 +90,12 @@ func TestValidateAgainstTAKDetailSchemas(t *testing.T) {
 			good:   []byte(`<__routeinfo><__navcues/></__routeinfo>`),
 			bad:    []byte(`<__routeinfo foo="bar"/>`),
 		},
+		{
+			name:   "marti",
+			schema: "tak-details-marti",
+			good:   []byte(`<marti><dest callsign="A"/><dest callsign="B"/></marti>`),
+			bad:    []byte(`<marti><dest/></marti>`),
+		},
 	}
 
 	for _, tt := range tests {

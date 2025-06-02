@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:complexType name="martiDest">
+    <xs:attribute name="callsign" use="required"/>
+  </xs:complexType>
+  <xs:complexType name="marti">
+    <xs:sequence>
+      <xs:element name="dest" type="martiDest" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="marti" type="marti"/>
+</xs:schema>

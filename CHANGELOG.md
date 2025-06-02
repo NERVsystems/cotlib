@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.6] - 2025-06-02
+
+### Bug Fixes
+- Fixed Go vet issues with unexported struct fields that had XML tags but were not used for marshaling/unmarshaling
+- Resolved struct field validation errors in `detail_extensions.go` for better code quality and compliance
+
+### Security
+- Conducted comprehensive security scan with gosec showing clean codebase with no critical vulnerabilities
+- All detected issues were in build cache files rather than application code, confirming secure implementation
+- Enhanced CI/CD pipeline security practices with proper gosec integration
+
+### Improvements
+- Improved code quality by addressing static analysis warnings
+- Enhanced development workflow with better linting and security scanning integration
+
 ## [v0.3.5] - 2025-01-27
 
 ### Added

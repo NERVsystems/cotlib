@@ -4,7 +4,7 @@
 
 # CoT Library
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/NERVsystems/cotlib)](https://goreportcard.com/report/github.com/NERVsystems/cotlib)
+[![Go Report Card](https://goreportcard.com/badge/github.com/NERVsystems/cotlib)](https://goreportcard.com/report/github.com/NERVsystems/cotlib) [![CI](https://github.com/NERVsystems/cotlib/actions/workflows/ci.yml/badge.svg)](https://github.com/NERVsystems/cotlib/actions/workflows/ci.yml)
 
 
 

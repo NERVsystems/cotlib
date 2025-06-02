@@ -679,6 +679,7 @@ type Detail struct {
 	UID               *UID               `xml:"uid,omitempty"`
 	Bullseye          *Bullseye          `xml:"bullseye,omitempty"`
 	RouteInfo         *RouteInfo         `xml:"routeInfo,omitempty"`
+	Marti             *Marti             `xml:"marti,omitempty"`
 	Remarks           *Remarks           `xml:"remarks,omitempty"`
 	Unknown           []RawMessage       `xml:"-"`
 }
@@ -902,6 +903,12 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 					return err
 				}
 				d.RouteInfo = &ri
+			case "marti":
+				var m Marti
+				if err := dec.DecodeElement(&m, &t); err != nil {
+					return err
+				}
+				d.Marti = &m
 			case "remarks":
 				var r Remarks
 				if err := dec.DecodeElement(&r, &t); err != nil {
@@ -1086,6 +1093,11 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	}
 	if d.RouteInfo != nil {
 		if err := encodeRaw(enc, d.RouteInfo.Raw); err != nil {
+			return err
+		}
+	}
+	if d.Marti != nil {
+		if err := enc.Encode(d.Marti); err != nil {
 			return err
 		}
 	}
@@ -1495,6 +1507,17 @@ func (e *Event) validateDetailSchemas() error {
 					return nil, false, nil
 				}
 				return e.Detail.RouteInfo.Raw, true, nil
+			},
+		},
+		{
+			name:   "marti",
+			schema: "tak-details-marti",
+			data: func() ([]byte, bool, error) {
+				if e.Detail.Marti == nil {
+					return nil, false, nil
+				}
+				b, err := xml.Marshal(e.Detail.Marti)
+				return b, true, err
 			},
 		},
 		{

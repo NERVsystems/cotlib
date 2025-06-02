@@ -166,6 +166,17 @@ type RouteInfo struct {
 	Raw RawMessage
 }
 
+// MartiDest represents a destination callsign within a Marti extension.
+type MartiDest struct {
+	Callsign string `xml:"callsign,attr,omitempty"`
+}
+
+// Marti represents the TAK marti extension containing destination callsigns.
+type Marti struct {
+	XMLName xml.Name    `xml:"marti"`
+	Dest    []MartiDest `xml:"dest"`
+}
+
 // Remarks represents the TAK remarks extension.
 // Remarks represents the TAK remarks extension.
 // It preserves the original XML while also allowing

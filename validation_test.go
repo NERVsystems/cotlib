@@ -757,6 +757,22 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		cotlib.ReleaseEvent(evt)
 	})
 
+	t.Run("marti", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("M2", "b-t-f", 1, 1, 0)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{Marti: &cotlib.Marti{Dest: []cotlib.MartiDest{{Callsign: "A"}}}}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("valid marti rejected: %v", err)
+		}
+		evt.Detail.Marti.Dest = []cotlib.MartiDest{{}}
+		if err := evt.Validate(); err == nil {
+			t.Fatal("expected error for invalid marti")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
 	t.Run("uid_schema", func(t *testing.T) {
 		good := []byte(`<uid Droid="droid://123" nett="net"/>`)
 		if err := validator.ValidateAgainstSchema("tak-details-uid", good); err != nil {
@@ -795,6 +811,36 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 			t.Fatalf("validate: %v", err)
 		}
 		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("marti_geochat_roundtrip", func(t *testing.T) {
+		evt, err := cotlib.NewEvent("M1", "b-t-f", 1, 2, 3)
+		if err != nil {
+			t.Fatalf("new event: %v", err)
+		}
+		evt.Detail = &cotlib.Detail{
+			Marti: &cotlib.Marti{Dest: []cotlib.MartiDest{{Callsign: "A"}, {Callsign: "B"}}},
+		}
+		xmlData, err := evt.ToXML()
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		cotlib.ReleaseEvent(evt)
+
+		out, err := cotlib.UnmarshalXMLEvent(context.Background(), xmlData)
+		if err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if err := out.Validate(); err != nil {
+			t.Fatalf("validate: %v", err)
+		}
+		if out.Detail == nil || out.Detail.Marti == nil {
+			t.Fatalf("marti detail missing")
+		}
+		if len(out.Detail.Marti.Dest) != 2 || out.Detail.Marti.Dest[0].Callsign != "A" || out.Detail.Marti.Dest[1].Callsign != "B" {
+			t.Errorf("marti dest round trip mismatch: %#v", out.Detail.Marti.Dest)
+		}
+		cotlib.ReleaseEvent(out)
 	})
 
 }

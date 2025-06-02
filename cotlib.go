@@ -1348,6 +1348,10 @@ func (e *Event) ValidateAt(now time.Time) error {
 				if err2 := validator.ValidateAgainstSchema("tak-details-__chat", data); err2 != nil {
 					return fmt.Errorf("chat validation failed: %w", err)
 				}
+			} else {
+				if err := validator.ValidateChat(data); err != nil {
+					return fmt.Errorf("chat validation failed: %w", err)
+				}
 			}
 		}
 		if e.Detail.ChatReceipt != nil {
@@ -2088,6 +2092,11 @@ func (e *Event) ToXML() ([]byte, error) {
 				if e.Detail.Chat.MessageID != "" {
 					buf.WriteString(` messageId="`)
 					buf.WriteString(escapeAttr(e.Detail.Chat.MessageID))
+					buf.WriteByte('"')
+				}
+				if e.Detail.Chat.DeleteChild != "" {
+					buf.WriteString(` deleteChild="`)
+					buf.WriteString(escapeAttr(e.Detail.Chat.DeleteChild))
 					buf.WriteByte('"')
 				}
 				if len(e.Detail.Chat.ChatGrps) == 0 && e.Detail.Chat.Hierarchy == nil {

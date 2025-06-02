@@ -320,6 +320,26 @@ func TestHowRelationDescriptors(t *testing.T) {
 	})
 }
 
+func TestChatValidationMissingFields(t *testing.T) {
+	evt, err := cotlib.NewEvent("C1", "t-x-c", 0, 0, 0)
+	if err != nil {
+		t.Fatalf("new event: %v", err)
+	}
+	evt.Detail = &cotlib.Detail{Chat: &cotlib.Chat{Message: "", Sender: ""}}
+	if err := evt.Validate(); err == nil {
+		t.Fatal("expected error for empty chat sender and message")
+	}
+	evt.Detail.Chat.Message = "hi"
+	if err := evt.Validate(); err == nil {
+		t.Fatal("expected error for empty chat sender")
+	}
+	evt.Detail.Chat.Sender = "A"
+	if err := evt.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	cotlib.ReleaseEvent(evt)
+}
+
 func TestDetailExtensionsRoundTrip(t *testing.T) {
 	evt, err := cotlib.NewEvent("X1", "a-f-G", 1, 2, 3)
 	if err != nil {
@@ -874,6 +894,31 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		}
 		if !bytes.Contains(out, []byte(`messageId="m"`)) {
 			t.Errorf("expected messageId attribute in output")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("tak_chat_deletechild", func(t *testing.T) {
+		now := time.Now().UTC()
+		xmlData := fmt.Sprintf(`<event version="2.0" uid="U" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s">`+
+			`<point lat="0" lon="0" hae="0" ce="1" le="1"/>`+
+			`<detail><__chat chatroom="c" groupOwner="false" id="1" senderCallsign="A" deleteChild="child"><chatgrp id="g" uid0="u0"/></__chat></detail>`+
+			`</event>`,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+		evt, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
+		if err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if evt.Detail.Chat.DeleteChild != "child" {
+			t.Errorf("deleteChild parsed incorrectly: %s", evt.Detail.Chat.DeleteChild)
+		}
+		out, err := evt.ToXML()
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		if !bytes.Contains(out, []byte(`deleteChild="child"`)) {
+			t.Errorf("expected deleteChild attribute in output")
 		}
 		cotlib.ReleaseEvent(evt)
 	})

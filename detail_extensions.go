@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"github.com/NERVsystems/cotlib/validator"
 	"io"
+
+	"github.com/NERVsystems/cotlib/validator"
 )
 
 // RawMessage represents raw XML data preserved during decoding.
@@ -302,7 +303,7 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 		DeleteChild    string     `xml:"deleteChild,attr,omitempty"`
 		ChatGrps       []ChatGrp  `xml:"chatgrp"`
 		Hierarchy      *Hierarchy `xml:"hierarchy"`
-		_              string     `xml:",innerxml"`
+		_              string
 	}
 
 	if err := xml.Unmarshal(raw, &helper); err != nil {
@@ -360,7 +361,7 @@ func (c *ChatReceipt) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) err
 			MessageID      string   `xml:"messageId,attr,omitempty"`
 			Parent         string   `xml:"parent,attr,omitempty"`
 			ChatGrp        *ChatGrp `xml:"chatgrp,omitempty"`
-			_              string   `xml:",innerxml"`
+			_              string
 		}
 		if err := xml.Unmarshal(raw, &helper); err != nil {
 			return err

@@ -31,6 +31,7 @@ type Chat struct {
 	SenderCallsign string     `xml:"senderCallsign,attr,omitempty"`
 	Parent         string     `xml:"parent,attr,omitempty"`
 	MessageID      string     `xml:"messageId,attr,omitempty"`
+	DeleteChild    string     `xml:"deleteChild,attr,omitempty"`
 	ChatGrps       []ChatGrp  `xml:"chatgrp,omitempty"`
 	Hierarchy      *Hierarchy `xml:"hierarchy,omitempty"`
 	Raw            RawMessage `xml:"-"`
@@ -282,6 +283,10 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 		if err2 := validator.ValidateAgainstSchema("tak-details-__chat", raw); err2 != nil {
 			return err
 		}
+	} else {
+		if err := validator.ValidateChat(raw); err != nil {
+			return err
+		}
 	}
 
 	var helper struct {
@@ -294,6 +299,7 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 		SenderCallsign string     `xml:"senderCallsign,attr,omitempty"`
 		Parent         string     `xml:"parent,attr,omitempty"`
 		MessageID      string     `xml:"messageId,attr,omitempty"`
+		DeleteChild    string     `xml:"deleteChild,attr,omitempty"`
 		ChatGrps       []ChatGrp  `xml:"chatgrp"`
 		Hierarchy      *Hierarchy `xml:"hierarchy"`
 		_              string     `xml:",innerxml"`
@@ -312,6 +318,7 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 	c.SenderCallsign = helper.SenderCallsign
 	c.Parent = helper.Parent
 	c.MessageID = helper.MessageID
+	c.DeleteChild = helper.DeleteChild
 	c.ChatGrps = helper.ChatGrps
 	c.Hierarchy = helper.Hierarchy
 	return nil

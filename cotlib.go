@@ -2065,7 +2065,67 @@ func (e *Event) ToXML() ([]byte, error) {
 					buf.WriteString(escapeAttr(e.Detail.Chat.Sender))
 					buf.WriteByte('"')
 				}
-				buf.WriteString("/>\n")
+				if e.Detail.Chat.Chatroom != "" {
+					buf.WriteString(` chatroom="`)
+					buf.WriteString(escapeAttr(e.Detail.Chat.Chatroom))
+					buf.WriteByte('"')
+				}
+				if e.Detail.Chat.GroupOwner != "" {
+					buf.WriteString(` groupOwner="`)
+					buf.WriteString(escapeAttr(e.Detail.Chat.GroupOwner))
+					buf.WriteByte('"')
+				}
+				if e.Detail.Chat.SenderCallsign != "" {
+					buf.WriteString(` senderCallsign="`)
+					buf.WriteString(escapeAttr(e.Detail.Chat.SenderCallsign))
+					buf.WriteByte('"')
+				}
+				if e.Detail.Chat.Parent != "" {
+					buf.WriteString(` parent="`)
+					buf.WriteString(escapeAttr(e.Detail.Chat.Parent))
+					buf.WriteByte('"')
+				}
+				if e.Detail.Chat.MessageID != "" {
+					buf.WriteString(` messageId="`)
+					buf.WriteString(escapeAttr(e.Detail.Chat.MessageID))
+					buf.WriteByte('"')
+				}
+				if len(e.Detail.Chat.ChatGrps) == 0 && e.Detail.Chat.Hierarchy == nil {
+					buf.WriteString("/>\n")
+				} else {
+					buf.WriteString(">\n")
+					for _, g := range e.Detail.Chat.ChatGrps {
+						buf.WriteString("      <chatgrp")
+						if g.ID != "" {
+							buf.WriteString(` id="`)
+							buf.WriteString(escapeAttr(g.ID))
+							buf.WriteByte('"')
+						}
+						if g.UID0 != "" {
+							buf.WriteString(` uid0="`)
+							buf.WriteString(escapeAttr(g.UID0))
+							buf.WriteByte('"')
+						}
+						if g.UID1 != "" {
+							buf.WriteString(` uid1="`)
+							buf.WriteString(escapeAttr(g.UID1))
+							buf.WriteByte('"')
+						}
+						if g.UID2 != "" {
+							buf.WriteString(` uid2="`)
+							buf.WriteString(escapeAttr(g.UID2))
+							buf.WriteByte('"')
+						}
+						buf.WriteString("/>")
+						buf.WriteByte('\n')
+					}
+					if e.Detail.Chat.Hierarchy != nil {
+						buf.WriteString("      ")
+						buf.Write(e.Detail.Chat.Hierarchy.Raw)
+						buf.WriteByte('\n')
+					}
+					buf.WriteString("    </__chat>\n")
+				}
 			}
 		}
 		if e.Detail.ChatReceipt != nil {
@@ -2144,6 +2204,25 @@ func (e *Event) ToXML() ([]byte, error) {
 					buf.WriteString("/>\n")
 				}
 			}
+		}
+		if e.Detail.RouteInfo != nil {
+			buf.WriteString("    ")
+			buf.Write(e.Detail.RouteInfo.Raw)
+			buf.WriteByte('\n')
+		}
+		if e.Detail.Marti != nil {
+			buf.WriteString("    <marti>\n")
+			for _, d := range e.Detail.Marti.Dest {
+				buf.WriteString("      <dest")
+				if d.Callsign != "" {
+					buf.WriteString(` callsign="`)
+					buf.WriteString(escapeAttr(d.Callsign))
+					buf.WriteByte('"')
+				}
+				buf.WriteString("/>")
+				buf.WriteByte('\n')
+			}
+			buf.WriteString("    </marti>\n")
 		}
 		if e.Detail.Geofence != nil {
 			buf.WriteString("    ")

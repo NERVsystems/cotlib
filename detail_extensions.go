@@ -36,14 +36,6 @@ type Chat struct {
 	Raw            RawMessage `xml:"-"`
 }
 
-// ChatGrp represents the chatgrp element used in chat receipts.
-type ChatGrp struct {
-	ID   string `xml:"id,attr,omitempty"`
-	UID0 string `xml:"uid0,attr,omitempty"`
-	UID1 string `xml:"uid1,attr,omitempty"`
-	UID2 string `xml:"uid2,attr,omitempty"`
-}
-
 // ChatReceipt represents the TAK chat receipt extensions.
 type ChatReceipt struct {
 	XMLName        xml.Name   `xml:""`

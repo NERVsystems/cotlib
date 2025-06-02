@@ -794,6 +794,22 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		if err := evt.Validate(); err != nil {
 			t.Fatalf("validate: %v", err)
 		}
+		if evt.Detail == nil || evt.Detail.Chat == nil {
+			t.Fatalf("chat detail missing")
+		}
+		if evt.Detail.Chat.Chatroom != "c" {
+			t.Errorf("chatroom parsed incorrectly: %s", evt.Detail.Chat.Chatroom)
+		}
+		if len(evt.Detail.Chat.ChatGrps) != 1 || evt.Detail.Chat.ChatGrps[0].ID != "g" {
+			t.Errorf("chatgrp parsed incorrectly: %+v", evt.Detail.Chat.ChatGrps)
+		}
+		out, err := evt.ToXML()
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		if !bytes.Contains(out, []byte(`chatroom="c"`)) {
+			t.Errorf("expected chatroom attribute in output")
+		}
 		cotlib.ReleaseEvent(evt)
 	})
 

@@ -11,13 +11,29 @@ import (
 // RawMessage represents raw XML data preserved during decoding.
 type RawMessage []byte
 
-// Chat represents the TAK __chat extension with ID, Message, and Sender attributes.
+// ChatGrp represents a chat group entry within a chat message.
+type ChatGrp struct {
+	XMLName xml.Name `xml:"chatgrp"`
+	ID      string   `xml:"id,attr,omitempty"`
+	UID0    string   `xml:"uid0,attr,omitempty"`
+	UID1    string   `xml:"uid1,attr,omitempty"`
+	UID2    string   `xml:"uid2,attr,omitempty"`
+}
+
+// Chat represents the TAK __chat extension including group information.
 type Chat struct {
-	XMLName xml.Name   `xml:"__chat"`
-	ID      string     `xml:"id,attr,omitempty"`
-	Message string     `xml:"message,attr,omitempty"`
-	Sender  string     `xml:"sender,attr,omitempty"`
-	Raw     RawMessage `xml:"-"`
+	XMLName        xml.Name   `xml:"__chat"`
+	ID             string     `xml:"id,attr,omitempty"`
+	Message        string     `xml:"message,attr,omitempty"`
+	Sender         string     `xml:"sender,attr,omitempty"`
+	Chatroom       string     `xml:"chatroom,attr,omitempty"`
+	GroupOwner     string     `xml:"groupOwner,attr,omitempty"`
+	SenderCallsign string     `xml:"senderCallsign,attr,omitempty"`
+	Parent         string     `xml:"parent,attr,omitempty"`
+	MessageID      string     `xml:"messageId,attr,omitempty"`
+	ChatGrps       []ChatGrp  `xml:"chatgrp,omitempty"`
+	Hierarchy      *Hierarchy `xml:"hierarchy,omitempty"`
+	Raw            RawMessage `xml:"-"`
 }
 
 // ChatGrp represents the chatgrp element used in chat receipts.
@@ -241,11 +257,18 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 	}
 
 	var helper struct {
-		XMLName xml.Name `xml:"__chat"`
-		ID      string   `xml:"id,attr,omitempty"`
-		Message string   `xml:"message,attr,omitempty"`
-		Sender  string   `xml:"sender,attr,omitempty"`
-		_       string   `xml:",innerxml"`
+		XMLName        xml.Name   `xml:"__chat"`
+		ID             string     `xml:"id,attr,omitempty"`
+		Message        string     `xml:"message,attr,omitempty"`
+		Sender         string     `xml:"sender,attr,omitempty"`
+		Chatroom       string     `xml:"chatroom,attr,omitempty"`
+		GroupOwner     string     `xml:"groupOwner,attr,omitempty"`
+		SenderCallsign string     `xml:"senderCallsign,attr,omitempty"`
+		Parent         string     `xml:"parent,attr,omitempty"`
+		MessageID      string     `xml:"messageId,attr,omitempty"`
+		ChatGrps       []ChatGrp  `xml:"chatgrp"`
+		Hierarchy      *Hierarchy `xml:"hierarchy"`
+		_              string     `xml:",innerxml"`
 	}
 
 	if err := xml.Unmarshal(raw, &helper); err != nil {
@@ -256,7 +279,23 @@ func (c *Chat) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 	c.ID = helper.ID
 	c.Message = helper.Message
 	c.Sender = helper.Sender
+	c.Chatroom = helper.Chatroom
+	c.GroupOwner = helper.GroupOwner
+	c.SenderCallsign = helper.SenderCallsign
+	c.Parent = helper.Parent
+	c.MessageID = helper.MessageID
+	c.ChatGrps = helper.ChatGrps
+	c.Hierarchy = helper.Hierarchy
 	return nil
+}
+
+func (c Chat) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	if len(c.Raw) > 0 && c.Message == "" {
+		return encodeRaw(enc, c.Raw)
+	}
+	type alias Chat
+	start.Name.Local = "__chat"
+	return enc.EncodeElement(alias(c), start)
 }
 
 func (c *ChatReceipt) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {

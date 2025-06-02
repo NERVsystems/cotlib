@@ -3,6 +3,7 @@ package cotlib
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"github.com/NERVsystems/cotlib/validator"
 	"io"
 )
@@ -19,11 +20,26 @@ type Chat struct {
 	Raw     RawMessage `xml:"-"`
 }
 
-// ChatReceipt represents the TAK __chatReceipt extension acknowledging chat messages.
+// ChatGrp represents the chatgrp element used in chat receipts.
+type ChatGrp struct {
+	ID   string `xml:"id,attr,omitempty"`
+	UID0 string `xml:"uid0,attr,omitempty"`
+	UID1 string `xml:"uid1,attr,omitempty"`
+	UID2 string `xml:"uid2,attr,omitempty"`
+}
+
+// ChatReceipt represents the TAK chat receipt extensions.
 type ChatReceipt struct {
-	XMLName xml.Name `xml:"__chatReceipt"`
-	Ack     string   `xml:"ack,attr"`
-	Raw     RawMessage
+	XMLName        xml.Name   `xml:""`
+	Ack            string     `xml:"ack,attr,omitempty"`
+	ID             string     `xml:"id,attr,omitempty"`
+	Chatroom       string     `xml:"chatroom,attr,omitempty"`
+	GroupOwner     string     `xml:"groupOwner,attr,omitempty"`
+	SenderCallsign string     `xml:"senderCallsign,attr,omitempty"`
+	MessageID      string     `xml:"messageId,attr,omitempty"`
+	Parent         string     `xml:"parent,attr,omitempty"`
+	ChatGrp        *ChatGrp   `xml:"chatgrp,omitempty"`
+	Raw            RawMessage `xml:"-"`
 }
 
 // Geofence represents the TAK __geofence extension.
@@ -249,20 +265,53 @@ func (c *ChatReceipt) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) err
 		return err
 	}
 	c.Raw = raw
-	if err := validator.ValidateAgainstSchema("chatReceipt", raw); err != nil {
+	switch start.Name.Local {
+	case "__chatReceipt":
+		if err := validator.ValidateAgainstSchema("chatReceipt", raw); err != nil {
+			return err
+		}
+		type alias ChatReceipt
+		return xml.Unmarshal(raw, (*alias)(c))
+	case "__chatreceipt":
 		if err := validator.ValidateAgainstSchema("tak-details-__chatreceipt", raw); err != nil {
 			return err
 		}
-		c.XMLName = start.Name
+		var helper struct {
+			XMLName        xml.Name `xml:"__chatreceipt"`
+			Ack            string   `xml:"ack,attr,omitempty"`
+			ID             string   `xml:"id,attr,omitempty"`
+			Chatroom       string   `xml:"chatroom,attr,omitempty"`
+			GroupOwner     string   `xml:"groupOwner,attr,omitempty"`
+			SenderCallsign string   `xml:"senderCallsign,attr,omitempty"`
+			MessageID      string   `xml:"messageId,attr,omitempty"`
+			Parent         string   `xml:"parent,attr,omitempty"`
+			ChatGrp        *ChatGrp `xml:"chatgrp,omitempty"`
+			_              string   `xml:",innerxml"`
+		}
+		if err := xml.Unmarshal(raw, &helper); err != nil {
+			return err
+		}
+		c.XMLName = helper.XMLName
+		c.Ack = helper.Ack
+		c.ID = helper.ID
+		c.Chatroom = helper.Chatroom
+		c.GroupOwner = helper.GroupOwner
+		c.SenderCallsign = helper.SenderCallsign
+		c.MessageID = helper.MessageID
+		c.Parent = helper.Parent
+		c.ChatGrp = helper.ChatGrp
 		return nil
+	default:
+		return fmt.Errorf("unknown element %s", start.Name.Local)
 	}
-	type alias ChatReceipt
-	return xml.Unmarshal(raw, (*alias)(c))
 }
 
 func (c ChatReceipt) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
-	if len(c.Raw) > 0 && c.Ack == "" {
+	if len(c.Raw) > 0 && c.Ack == "" && c.ID == "" && c.Chatroom == "" && c.GroupOwner == "" && c.SenderCallsign == "" && c.MessageID == "" && c.Parent == "" && c.ChatGrp == nil {
 		return encodeRaw(enc, c.Raw)
+	}
+	if c.XMLName.Local != "" {
+		start.Name = c.XMLName
 	}
 	type alias ChatReceipt
 	return enc.EncodeElement(alias(c), start)

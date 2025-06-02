@@ -515,6 +515,18 @@ func TestChatReceiptTwoSchemas(t *testing.T) {
 	if len(r2.Raw) == 0 {
 		t.Error("expected raw preserved for detail chatreceipt")
 	}
+	if r2.ID != "1" || r2.Chatroom != "c" || r2.GroupOwner != "false" || r2.SenderCallsign != "A" {
+		t.Errorf("unexpected parsed chatreceipt: %+v", r2)
+	}
+	if r2.ChatGrp == nil || r2.ChatGrp.ID != "g" || r2.ChatGrp.UID0 != "u0" {
+		t.Errorf("unexpected chatgrp: %+v", r2.ChatGrp)
+	}
+	expectedRaw := `<__chatreceipt id="1" chatroom="c" groupOwner="false" senderCallsign="A"><chatgrp id="g" uid0="u0"></chatgrp></__chatreceipt>`
+	if b, err := xml.Marshal(&r2); err != nil {
+		t.Fatalf("marshal detail: %v", err)
+	} else if string(b) != expectedRaw {
+		t.Errorf("marshal mismatch: got %s want %s", string(b), expectedRaw)
+	}
 
 	now := time.Now().UTC()
 	evt1, _ := cotlib.NewEvent("CR1", "a-f-G", 0, 0, 1)

@@ -24,6 +24,7 @@ A comprehensive Go library for creating, validating, and working with Cursor-on-
 - Secure logging with slog
 - Thread-safe operations
 - Detail extensions with round-trip preservation
+- GeoChat message and receipt support
 - Predicate-based event classification
 - Security-first design
 - Wildcard pattern support for types
@@ -210,6 +211,46 @@ fmt.Println(string(out)) // prints the same XML
 `Chat` now exposes additional fields such as `Chatroom`, `GroupOwner`,
 `SenderCallsign`, `Parent`, `MessageID` and a slice of `ChatGrp` entries
 representing group membership.
+
+### GeoChat Messaging
+
+`cotlib` provides full support for GeoChat messages and receipts. The `Chat`
+structure models the `__chat` extension including optional `<chatgrp>` elements
+and any embedded hierarchy. Incoming chat events automatically populate
+`Event.Message` from the `<remarks>` element. The `Marti` type holds destination
+callsigns and `Remarks` exposes the message text along with the `source`, `to`,
+and `time` attributes.
+
+Chat receipts are represented by the `ChatReceipt` structure which handles both
+`__chatReceipt` and TAK-specific `__chatreceipt` forms. Parsing falls back to the
+TAK schemas when required so messages from ATAK and WinTAK are accepted without
+extra handling.
+
+Example of constructing and serializing a chat message:
+
+```go
+evt, _ := cotlib.NewEvent("GeoChat.UID.Room.example", "b-t-f", 0, 0, 0)
+evt.Detail = &cotlib.Detail{
+    Chat: &cotlib.Chat{
+        ID:             "Room",
+        Chatroom:       "Room",
+        SenderCallsign: "Alpha",
+        ChatGrps: []cotlib.ChatGrp{
+            {ID: "Room", UID0: "AlphaUID", UID1: "BravoUID"},
+        },
+    },
+    Marti: &cotlib.Marti{Dest: []cotlib.MartiDest{{Callsign: "Bravo"}}},
+    Remarks: &cotlib.Remarks{
+        Source: "Example.Alpha",
+        To:     "Room",
+        Text:   "Hello team",
+    },
+}
+out, _ := evt.ToXML()
+```
+
+Delivery or read receipts can be sent by populating `Detail.ChatReceipt` with
+the appropriate `Ack`, `ID`, and `MessageID` fields.
 
 ### Validator Package
 

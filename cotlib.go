@@ -2007,18 +2007,80 @@ func (e *Event) ToXML() ([]byte, error) {
 			}
 		}
 		if e.Detail.ChatReceipt != nil {
-			if len(e.Detail.ChatReceipt.Raw) > 0 && e.Detail.ChatReceipt.Ack == "" {
+			cr := e.Detail.ChatReceipt
+			if len(cr.Raw) > 0 && cr.Ack == "" && cr.ID == "" && cr.Chatroom == "" && cr.GroupOwner == "" && cr.SenderCallsign == "" && cr.MessageID == "" && cr.Parent == "" && cr.ChatGrp == nil {
 				buf.WriteString("    ")
-				buf.Write(e.Detail.ChatReceipt.Raw)
+				buf.Write(cr.Raw)
 				buf.WriteByte('\n')
 			} else {
-				buf.WriteString("    <__chatReceipt")
-				if e.Detail.ChatReceipt.Ack != "" {
+				name := cr.XMLName.Local
+				if name == "" {
+					name = "__chatReceipt"
+				}
+				buf.WriteString("    <" + name)
+				if cr.Ack != "" {
 					buf.WriteString(` ack="`)
-					buf.WriteString(escapeAttr(e.Detail.ChatReceipt.Ack))
+					buf.WriteString(escapeAttr(cr.Ack))
 					buf.WriteByte('"')
 				}
-				buf.WriteString("/>\n")
+				if cr.ID != "" {
+					buf.WriteString(` id="`)
+					buf.WriteString(escapeAttr(cr.ID))
+					buf.WriteByte('"')
+				}
+				if cr.Chatroom != "" {
+					buf.WriteString(` chatroom="`)
+					buf.WriteString(escapeAttr(cr.Chatroom))
+					buf.WriteByte('"')
+				}
+				if cr.GroupOwner != "" {
+					buf.WriteString(` groupOwner="`)
+					buf.WriteString(escapeAttr(cr.GroupOwner))
+					buf.WriteByte('"')
+				}
+				if cr.SenderCallsign != "" {
+					buf.WriteString(` senderCallsign="`)
+					buf.WriteString(escapeAttr(cr.SenderCallsign))
+					buf.WriteByte('"')
+				}
+				if cr.MessageID != "" {
+					buf.WriteString(` messageId="`)
+					buf.WriteString(escapeAttr(cr.MessageID))
+					buf.WriteByte('"')
+				}
+				if cr.Parent != "" {
+					buf.WriteString(` parent="`)
+					buf.WriteString(escapeAttr(cr.Parent))
+					buf.WriteByte('"')
+				}
+				if cr.ChatGrp != nil {
+					buf.WriteString(">\n")
+					buf.WriteString("      <chatgrp")
+					if cr.ChatGrp.ID != "" {
+						buf.WriteString(` id="`)
+						buf.WriteString(escapeAttr(cr.ChatGrp.ID))
+						buf.WriteByte('"')
+					}
+					if cr.ChatGrp.UID0 != "" {
+						buf.WriteString(` uid0="`)
+						buf.WriteString(escapeAttr(cr.ChatGrp.UID0))
+						buf.WriteByte('"')
+					}
+					if cr.ChatGrp.UID1 != "" {
+						buf.WriteString(` uid1="`)
+						buf.WriteString(escapeAttr(cr.ChatGrp.UID1))
+						buf.WriteByte('"')
+					}
+					if cr.ChatGrp.UID2 != "" {
+						buf.WriteString(` uid2="`)
+						buf.WriteString(escapeAttr(cr.ChatGrp.UID2))
+						buf.WriteByte('"')
+					}
+					buf.WriteString("/>")
+					buf.WriteString("\n    </" + name + ">\n")
+				} else {
+					buf.WriteString("/>\n")
+				}
 			}
 		}
 		if e.Detail.Geofence != nil {

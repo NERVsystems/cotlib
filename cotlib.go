@@ -1814,6 +1814,29 @@ func GetTypeDescription(name string) (string, error) {
 	return cottypes.GetCatalog().GetDescription(context.Background(), name)
 }
 
+// GetTypeInfo returns the metadata for a CoT type.
+// It includes the type code, full hierarchical name, and description.
+//
+// Returns an error if the type is not registered in the catalog.
+func GetTypeInfo(name string) (cottypes.Type, error) {
+	return cottypes.GetCatalog().GetType(context.Background(), name)
+}
+
+// GetTypeInfoBatch returns metadata for all provided type names.
+// If any lookup fails, the function returns an error.
+func GetTypeInfoBatch(names []string) ([]cottypes.Type, error) {
+	cat := cottypes.GetCatalog()
+	results := make([]cottypes.Type, 0, len(names))
+	for _, n := range names {
+		t, err := cat.GetType(context.Background(), n)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, t)
+	}
+	return results, nil
+}
+
 // FindTypesByDescription searches for types matching the given description.
 // The search is case-insensitive and matches partial descriptions.
 //

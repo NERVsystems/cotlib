@@ -564,6 +564,37 @@ func TestChatReceiptTwoSchemas(t *testing.T) {
 	cotlib.ReleaseEvent(evt2)
 }
 
+func TestChatIsGroupChat(t *testing.T) {
+	cases := []struct {
+		name    string
+		xmlData string
+		want    bool
+	}{
+		{
+			name:    "direct",
+			xmlData: `<__chat sender="A" message="hi"/>`,
+			want:    false,
+		},
+		{
+			name:    "group",
+			xmlData: `<__chat chatroom="c" groupOwner="false" id="1" senderCallsign="A"><chatgrp id="c" uid0="u0"/></__chat>`,
+			want:    true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var c cotlib.Chat
+			if err := xml.Unmarshal([]byte(tc.xmlData), &c); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			if got := c.IsGroupChat(); got != tc.want {
+				t.Errorf("IsGroupChat()=%v want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestTAKDetailSchemaValidation(t *testing.T) {
 	t.Run("contact", func(t *testing.T) {
 		evt, err := cotlib.NewEvent("C1", "t-x-d", 1, 1, 0)

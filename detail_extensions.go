@@ -38,6 +38,16 @@ type Chat struct {
 	Raw            RawMessage `xml:"-"`
 }
 
+// IsGroupChat reports whether the chat message targets a group.
+// A chat is considered a group chat when the Chatroom or GroupOwner
+// fields are non-empty or when any ChatGrp elements are present.
+func (c *Chat) IsGroupChat() bool {
+	if c == nil {
+		return false
+	}
+	return c.Chatroom != "" || c.GroupOwner != "" || len(c.ChatGrps) > 0
+}
+
 // ChatReceipt represents the TAK chat receipt extensions.
 type ChatReceipt struct {
 	XMLName        xml.Name   `xml:""`

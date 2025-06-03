@@ -305,6 +305,21 @@ func main() {
     fmt.Printf("Description: %s\n", desc)
     // Output: Description: NBC EQUIPMENT
 
+    // Retrieve full type information
+    info, err := cotlib.GetTypeInfo("a-f-G-E-X-N")
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("%s - %s\n", info.FullName, info.Description)
+    // Output: Gnd/Equip/Nbc Equipment - NBC EQUIPMENT
+
+    // Batch lookup for multiple types
+    infos, err := cotlib.GetTypeInfoBatch([]string{"a-f-G-E-X-N", "a-f-G-U-C"})
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("Batch size: %d\n", len(infos))
+
     // Search for types by description
     types := cotlib.FindTypesByDescription("NBC")
     for _, t := range types {

@@ -1003,3 +1003,42 @@ func TestLookupTypeWildcardResolution(t *testing.T) {
 		t.Error("unexpected success for non-existent type")
 	}
 }
+
+func TestGetTypeInfo(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		info, err := GetTypeInfo("a-f-G-E-X-N")
+		if err != nil {
+			t.Fatalf("GetTypeInfo returned error: %v", err)
+		}
+		if info.Name != "a-f-G-E-X-N" {
+			t.Errorf("unexpected name: %s", info.Name)
+		}
+		if info.FullName == "" || info.Description == "" {
+			t.Error("missing metadata in Type")
+		}
+	})
+
+	t.Run("unknown", func(t *testing.T) {
+		if _, err := GetTypeInfo("bad-type"); err == nil {
+			t.Error("expected error for unknown type")
+		}
+	})
+}
+
+func TestGetTypeInfoBatch(t *testing.T) {
+	names := []string{"a-f-G-E-X-N", "a-f-G-U-C"}
+	infos, err := GetTypeInfoBatch(names)
+	if err != nil {
+		t.Fatalf("GetTypeInfoBatch returned error: %v", err)
+	}
+	if len(infos) != len(names) {
+		t.Fatalf("expected %d results, got %d", len(names), len(infos))
+	}
+	if infos[0].Name != names[0] || infos[1].Name != names[1] {
+		t.Error("batch results out of order or incorrect")
+	}
+
+	if _, err := GetTypeInfoBatch([]string{"a-f-G-E-X-N", "bad"}); err == nil {
+		t.Error("expected error when any lookup fails")
+	}
+}

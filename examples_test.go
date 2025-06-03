@@ -240,3 +240,14 @@ func Example_roundTripStrokeColorUsericon() {
 	// usericon: icon.png
 	// round-trip equal: true
 }
+
+func ExampleChat_IsGroupChat() {
+	direct := &cotlib.Chat{Message: "hi", Sender: "A"}
+	fmt.Println(direct.IsGroupChat())
+
+	group := &cotlib.Chat{Chatroom: "room", SenderCallsign: "A"}
+	fmt.Println(group.IsGroupChat())
+	// Output:
+	// false
+	// true
+}

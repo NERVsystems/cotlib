@@ -1003,3 +1003,35 @@ func TestLookupTypeWildcardResolution(t *testing.T) {
 		t.Error("unexpected success for non-existent type")
 	}
 }
+
+func TestEventBuilder(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	evt, err := NewEventBuilder("B1", "a-f-G", 10.0, -20.0, 0).
+		WithContact(&Contact{Callsign: "ALPHA"}).
+		WithGroup(&Group{Name: "Blue", Role: "Inf"}).
+		WithStaleTime(now.Add(10 * time.Second)).
+		Build()
+	if err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+	if evt.Detail == nil || evt.Detail.Contact == nil || evt.Detail.Contact.Callsign != "ALPHA" {
+		t.Error("contact not set correctly")
+	}
+	if evt.Detail.Group == nil || evt.Detail.Group.Name != "Blue" {
+		t.Error("group not set correctly")
+	}
+	if !evt.Stale.Time().Equal(now.Add(10 * time.Second)) {
+		t.Error("stale time not set")
+	}
+	ReleaseEvent(evt)
+}
+
+func TestEventBuilderInvalid(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	_, err := NewEventBuilder("B2", "a-f-G", 10.0, -20.0, 0).
+		WithStaleTime(now).
+		Build()
+	if err == nil {
+		t.Error("expected error for stale time too close to event time")
+	}
+}

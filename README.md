@@ -89,7 +89,19 @@ func main() {
     fmt.Println(string(xmlData))
 }
 ```
+### Building Events with EventBuilder
 
+```go
+builder := cotlib.NewEventBuilder("B1", "a-f-G", 34.0, -117.0, 0).
+    WithContact(&cotlib.Contact{Callsign: "ALPHA"}).
+    WithGroup(&cotlib.Group{Name: "Team Blue", Role: "Infantry"}).
+    WithStaleTime(time.Now().Add(10 * time.Second))
+event, err := builder.Build()
+if err != nil {
+    log.Fatal(err)
+}
+_ = event
+```
 ### Parsing CoT XML
 
 ```go

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.7] - 2025-06-02
+
+### Fixed
+- Fixed GitHub Actions CI build failure by explicitly updating Go version to 1.21
+- Resolved `log/slog` package compatibility issues in CI environment
+- Updated GitHub Actions to latest versions for better reliability
+
+### Improvements
+- Enhanced CI/CD pipeline with explicit Go version specification
+- Updated `actions/checkout` to v4 and `actions/setup-go` to v5
+- Added Go version verification step in CI workflow
+- Improved gosec integration with `-no-fail` flag for better CI flow
+
+### Security
+- Maintained comprehensive security scanning with gosec in CI pipeline
+- Ensured proper Go version requirements for security-related packages
+
 ## [v0.3.6] - 2025-06-02
 
 ### Bug Fixes

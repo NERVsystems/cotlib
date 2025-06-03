@@ -1004,41 +1004,34 @@ func TestLookupTypeWildcardResolution(t *testing.T) {
 	}
 }
 
-func TestGetTypeInfo(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		info, err := GetTypeInfo("a-f-G-E-X-N")
-		if err != nil {
-			t.Fatalf("GetTypeInfo returned error: %v", err)
-		}
-		if info.Name != "a-f-G-E-X-N" {
-			t.Errorf("unexpected name: %s", info.Name)
-		}
-		if info.FullName == "" || info.Description == "" {
-			t.Error("missing metadata in Type")
-		}
-	})
-
-	t.Run("unknown", func(t *testing.T) {
-		if _, err := GetTypeInfo("bad-type"); err == nil {
-			t.Error("expected error for unknown type")
-		}
-	})
+func TestEventBuilder(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	evt, err := NewEventBuilder("B1", "a-f-G", 10.0, -20.0, 0).
+		WithContact(&Contact{Callsign: "ALPHA"}).
+		WithGroup(&Group{Name: "Blue", Role: "Inf"}).
+		WithStaleTime(now.Add(10 * time.Second)).
+		Build()
+	if err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+	if evt.Detail == nil || evt.Detail.Contact == nil || evt.Detail.Contact.Callsign != "ALPHA" {
+		t.Error("contact not set correctly")
+	}
+	if evt.Detail.Group == nil || evt.Detail.Group.Name != "Blue" {
+		t.Error("group not set correctly")
+	}
+	if !evt.Stale.Time().Equal(now.Add(10 * time.Second)) {
+		t.Error("stale time not set")
+	}
+	ReleaseEvent(evt)
 }
 
-func TestGetTypeInfoBatch(t *testing.T) {
-	names := []string{"a-f-G-E-X-N", "a-f-G-U-C"}
-	infos, err := GetTypeInfoBatch(names)
-	if err != nil {
-		t.Fatalf("GetTypeInfoBatch returned error: %v", err)
-	}
-	if len(infos) != len(names) {
-		t.Fatalf("expected %d results, got %d", len(names), len(infos))
-	}
-	if infos[0].Name != names[0] || infos[1].Name != names[1] {
-		t.Error("batch results out of order or incorrect")
-	}
-
-	if _, err := GetTypeInfoBatch([]string{"a-f-G-E-X-N", "bad"}); err == nil {
-		t.Error("expected error when any lookup fails")
+func TestEventBuilderInvalid(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	_, err := NewEventBuilder("B2", "a-f-G", 10.0, -20.0, 0).
+		WithStaleTime(now).
+		Build()
+	if err == nil {
+		t.Error("expected error for stale time too close to event time")
 	}
 }

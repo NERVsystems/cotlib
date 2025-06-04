@@ -1,0 +1,11 @@
+<event version="2.0" uid="GeoChat.ANDROID-52d06a0ef81e4204.All Chat Rooms.6f2b32b7-e090-4c8e-9609-dfcaf28bc3ea" type="b-t-f" time="2025-06-03T17:31:12.013Z" start="2025-06-03T17:31:12.013Z" stale="2025-06-04T17:31:12.013Z" how="h-g-i-g-o">
+    <point lat="0.0" lon="0.0" hae="0.0" ce="999999.0" le="999999.0"/>
+    <detail>
+        <__chat parent="RootContactGroup" groupOwner="false" messageId="6f2b32b7-e090-4c8e-9609-dfcaf28bc3ea" chatroom="All Chat Rooms" id="All Chat Rooms" senderCallsign="PHARAOH">
+            <chatgrp uid0="ANDROID-52d06a0ef81e4204" uid1="AllChatRooms" id="All Chat Rooms"/>
+        </__chat>
+        <link uid="ANDROID-52d06a0ef81e4204" type="a-f-G-U-C" relation="p-p"/>
+        <__serverdestination destinations="192.168.1.166:4242:tcp:ANDROID-52d06a0ef81e4204"/>
+        <_flow-tags_ TAK-Server-25bc5c1bfd3e44abab0780b82810ab1a="2025-06-03T17:31:12Z"/>
+    </detail>
+</event>

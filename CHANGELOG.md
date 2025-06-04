@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.8] - 2025-06-02
+
+### Improvements
+- Enhanced release process automation and version management
+- Improved CI/CD pipeline reliability and consistency
+- Optimized development workflow for faster iterations
+
+### Maintenance
+- Updated project documentation and changelog maintenance
+- Ensured compatibility with latest Go toolchain requirements
+- Streamlined release procedures for better maintainability
+
+### Security
+- Continued comprehensive security scanning with all checks passing
+- Maintained secure coding practices throughout the codebase
+- Ensured no security regressions in the release process
+
 ## [v0.3.7] - 2025-06-02
 
 ### Fixed

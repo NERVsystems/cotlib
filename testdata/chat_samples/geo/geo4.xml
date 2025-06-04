@@ -1,12 +1,12 @@
 <event version="2.0" uid="GeoChat.S-1-5-21-599715041-1329191335-1601080367-1001.aeaea7cd-6bf0-237d-d857-fc157934726c.d1e01e35-5c70-487a-b1dc-45be96c67125" type="b-t-f" time="2025-06-03T13:07:22.59Z" start="2025-06-03T13:07:22.59Z" stale="2025-06-04T13:07:22.59Z" how="h-g-i-g-o">
     <point lat="0.0" lon="0.0" hae="0.0" ce="999999.0" le="999999.0"/>
     <detail>
-        <__chat id="aeaea7cd-6bf0-237d-d857-fc157934726c" chatroom="ALMIGHTY" senderCallsign="WinTAK" groupOwner="false" messageId="d1e01e35-5c70-487a-b1dc-45be96c67125">
+        <__chat id="aeaea7cd-6bf0-237d-d857-fc157934726c" chatroom="CHARLIE" senderCallsign="BRAVO" groupOwner="false" messageId="d1e01e35-5c70-487a-b1dc-45be96c67125">
             <chatgrp id="aeaea7cd-6bf0-237d-d857-fc157934726c" uid0="S-1-5-21-599715041-1329191335-1601080367-1001" uid1="aeaea7cd-6bf0-237d-d857-fc157934726c"/>
         </__chat>
         <link uid="S-1-5-21-599715041-1329191335-1601080367-1001" type="a-f-G-U-C-I" relation="p-p"/>
         <marti>
-            <dest callsign="ALMIGHTY"/>
+            <dest callsign="CHARLIE"/>
         </marti>
         <_flow-tags_ TAK-Server-25bc5c1bfd3e44abab0780b82810ab1a="2025-06-03T17:29:28Z"/>
     </detail>

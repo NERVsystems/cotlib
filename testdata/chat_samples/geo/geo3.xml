@@ -1,0 +1,10 @@
+<event version="2.0" uid="GeoChat.aeaea7cd-6bf0-237d-d857-fc157934726c.6f904f4c-686d-8a13-1fb7-03c40744a4e5" type="b-t-f" time="2025-06-03T17:30:00Z" start="2025-06-03T17:30:00Z" stale="2025-06-04T17:30:00Z" how="h-g-i-g-o">
+    <point lat="0.0" lon="0.0" hae="0.0" ce="999999.0" le="999999.0"/>
+    <detail>
+        <__chat chatroom="All Chat Rooms" senderCallsign="CHARLIE" parent="RootContactGroup" groupOwner="false" id="All Chat Rooms">
+            <chatgrp id="All Chat Rooms" uid0="aeaea7cd-6bf0-237d-d857-fc157934726c" uid1="AllChatRooms"/>
+        </__chat>
+        <link relation="p-p" type="a-f-G-U-C-I" uid="aeaea7cd-6bf0-237d-d857-fc157934726c"/>
+        <_flow-tags_ TAK-Server-25bc5c1bfd3e44abab0780b82810ab1a="2025-06-03T17:30:00Z"/>
+    </detail>
+</event>

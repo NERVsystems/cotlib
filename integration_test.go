@@ -3,6 +3,7 @@ package cotlib_test
 import (
 	"bytes"
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -29,16 +30,23 @@ func updateTimes(data []byte) []byte {
 }
 
 func TestChatSamples(t *testing.T) {
-	entries, err := os.ReadDir("testdata/chat_samples")
-	if err != nil {
-		t.Fatalf("read samples: %v", err)
-	}
-	for _, e := range entries {
-		if e.IsDir() || filepath.Ext(e.Name()) != ".xml" {
-			continue
+	var files []string
+	err := filepath.WalkDir("testdata/chat_samples", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
-		t.Run(e.Name(), func(t *testing.T) {
-			raw, err := os.ReadFile(filepath.Join("testdata/chat_samples", e.Name()))
+		if d.IsDir() || filepath.Ext(d.Name()) != ".xml" {
+			return nil
+		}
+		files = append(files, path)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk samples: %v", err)
+	}
+	for _, path := range files {
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			raw, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("read file: %v", err)
 			}

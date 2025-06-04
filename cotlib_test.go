@@ -2,7 +2,9 @@ package cotlib
 
 import (
 	"context"
+	"encoding/xml"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -1034,4 +1036,68 @@ func TestEventBuilderInvalid(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for stale time too close to event time")
 	}
+}
+
+func TestCoTTimeRFC3339NanoRoundTrip(t *testing.T) {
+	const ts = "2025-06-03T17:31:12.013Z"
+	want, err := time.Parse(time.RFC3339Nano, ts)
+	if err != nil {
+		t.Fatalf("parse ref time: %v", err)
+	}
+
+	t.Run("attr", func(t *testing.T) {
+		input := fmt.Sprintf(`<t time="%s"/>`, ts)
+		var out struct {
+			XMLName xml.Name `xml:"t"`
+			Time    CoTTime  `xml:"time,attr"`
+		}
+		if err := xml.Unmarshal([]byte(input), &out); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if !out.Time.Time().Equal(want) {
+			t.Errorf("parsed: got %v want %v", out.Time.Time(), want)
+		}
+		data, err := xml.Marshal(&out)
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		var r struct {
+			XMLName xml.Name `xml:"t"`
+			Time    CoTTime  `xml:"time,attr"`
+		}
+		if err := xml.Unmarshal(data, &r); err != nil {
+			t.Fatalf("re-unmarshal: %v", err)
+		}
+		if !r.Time.Time().Equal(want.Truncate(time.Second)) {
+			t.Errorf("round-trip: got %v want %v", r.Time.Time(), want.Truncate(time.Second))
+		}
+	})
+
+	t.Run("element", func(t *testing.T) {
+		input := fmt.Sprintf(`<t><time>%s</time></t>`, ts)
+		var out struct {
+			XMLName xml.Name `xml:"t"`
+			Time    CoTTime  `xml:"time"`
+		}
+		if err := xml.Unmarshal([]byte(input), &out); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if !out.Time.Time().Equal(want) {
+			t.Errorf("parsed: got %v want %v", out.Time.Time(), want)
+		}
+		data, err := xml.Marshal(&out)
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		var r struct {
+			XMLName xml.Name `xml:"t"`
+			Time    CoTTime  `xml:"time"`
+		}
+		if err := xml.Unmarshal(data, &r); err != nil {
+			t.Fatalf("re-unmarshal: %v", err)
+		}
+		if !r.Time.Time().Equal(want.Truncate(time.Second)) {
+			t.Errorf("round-trip: got %v want %v", r.Time.Time(), want.Truncate(time.Second))
+		}
+	})
 }

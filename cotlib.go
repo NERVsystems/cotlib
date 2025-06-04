@@ -517,6 +517,20 @@ func isRegisteredType(typ string) bool {
 	return ok
 }
 
+// parseCoTTime parses a time string in either CotTimeFormat or RFC3339Nano.
+// It returns the parsed time in UTC.
+func parseCoTTime(value string) (time.Time, error) {
+	if value == "" {
+		return time.Time{}, fmt.Errorf("empty time value")
+	}
+
+	if t, err := time.Parse(CotTimeFormat, value); err == nil {
+		return t, nil
+	}
+
+	return time.Parse(time.RFC3339Nano, value)
+}
+
 // CoTTime represents a time in CoT format (UTC without timezone offset)
 type CoTTime time.Time
 
@@ -536,7 +550,7 @@ func (t *CoTTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	if err := d.DecodeElement(&s, &start); err != nil {
 		return err
 	}
-	parsed, err := time.Parse(CotTimeFormat, s)
+	parsed, err := parseCoTTime(s)
 	if err != nil {
 		return fmt.Errorf("invalid time format: %w", err)
 	}
@@ -554,7 +568,7 @@ func (t CoTTime) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 
 // UnmarshalXMLAttr implements xml.UnmarshalerAttr
 func (t *CoTTime) UnmarshalXMLAttr(attr xml.Attr) error {
-	parsed, err := time.Parse(CotTimeFormat, attr.Value)
+	parsed, err := parseCoTTime(attr.Value)
 	if err != nil {
 		return fmt.Errorf("invalid time format: %w", err)
 	}

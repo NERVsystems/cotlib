@@ -1,0 +1,7 @@
+<event version="2.0" uid="CHAT-1" type="b-t-f" time="2020-01-01T00:00:00Z" start="2020-01-01T00:00:00Z" stale="2020-01-01T01:00:00Z">
+  <point lat="0" lon="0" hae="0" ce="1" le="1"/>
+  <detail>
+    <__chat sender="Alpha" message="Hello"/>
+    <_flow-tags_ adocs="2020-01-01T00:00:00Z"/>
+  </detail>
+</event>

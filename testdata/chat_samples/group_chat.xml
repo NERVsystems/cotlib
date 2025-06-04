@@ -1,0 +1,9 @@
+<event version="2.0" uid="CHAT-2" type="b-t-f" time="2020-01-01T00:00:00Z" start="2020-01-01T00:00:00Z" stale="2020-01-01T01:00:00Z">
+  <point lat="10" lon="20" hae="0" ce="1" le="1"/>
+  <detail>
+    <__chat chatroom="room" groupOwner="false" id="1" senderCallsign="Bravo">
+      <chatgrp id="room" uid0="Bravo"/>
+    </__chat>
+    <_flow-tags_ fbcb2="2020-01-01T00:00:00Z"/>
+  </detail>
+</event>

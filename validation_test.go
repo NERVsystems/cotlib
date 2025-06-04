@@ -984,4 +984,33 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		cotlib.ReleaseEvent(out)
 	})
 
+	t.Run("event_unknown_attr_roundtrip", func(t *testing.T) {
+		now := time.Now().UTC()
+		xmlData := fmt.Sprintf(`<event version="2.0" uid="U" type="a-f-G" access="Undefined" time="%[1]s" start="%[1]s" stale="%[2]s">`+
+			`<point lat="0" lon="0" ce="1" le="1"/>`+
+			`</event>`,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+
+		evt, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
+		if err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if len(evt.UnknownAttrs) != 1 {
+			t.Fatalf("expected 1 unknown attr, got %d", len(evt.UnknownAttrs))
+		}
+		ua := evt.UnknownAttrs[0]
+		if ua.Name.Local != "access" || ua.Value != "Undefined" {
+			t.Errorf("unexpected unknown attr: %+v", ua)
+		}
+		out, err := evt.ToXML()
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		if !bytes.Contains(out, []byte(`access="Undefined"`)) {
+			t.Errorf("access attribute lost in output")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
 }

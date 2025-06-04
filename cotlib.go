@@ -625,9 +625,12 @@ type Event struct {
 	Time    CoTTime  `xml:"time,attr"`
 	Start   CoTTime  `xml:"start,attr"`
 	Stale   CoTTime  `xml:"stale,attr"`
-	Point   Point    `xml:"point"`
-	Detail  *Detail  `xml:"detail,omitempty"`
-	Links   []Link   `xml:"link,omitempty"`
+	// UnknownAttrs captures attributes that are not explicitly mapped to
+	// struct fields when unmarshalling.
+	UnknownAttrs []xml.Attr `xml:"-"`
+	Point        Point      `xml:"point"`
+	Detail       *Detail    `xml:"detail,omitempty"`
+	Links        []Link     `xml:"link,omitempty"`
 	// Message is populated for GeoChat events from the <remarks> element.
 	Message string `xml:"-"`
 	// StrokeColor is an ARGB hex color used for drawing events.
@@ -709,6 +712,84 @@ type Link struct {
 	Uid      string `xml:"uid,attr"`
 	Type     string `xml:"type,attr"`
 	Relation string `xml:"relation,attr"`
+}
+
+// UnmarshalXML implements xml.Unmarshaler for Event. It preserves any
+// attributes that are not recognised by storing them in UnknownAttrs.
+func (e *Event) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	*e = Event{}
+
+	for _, a := range start.Attr {
+		switch a.Name.Local {
+		case "version":
+			e.Version = a.Value
+		case "uid":
+			e.Uid = a.Value
+		case "type":
+			e.Type = a.Value
+		case "how":
+			e.How = a.Value
+		case "time":
+			if err := e.Time.UnmarshalXMLAttr(a); err != nil {
+				return err
+			}
+		case "start":
+			if err := e.Start.UnmarshalXMLAttr(a); err != nil {
+				return err
+			}
+		case "stale":
+			if err := e.Stale.UnmarshalXMLAttr(a); err != nil {
+				return err
+			}
+		case "strokeColor":
+			e.StrokeColor = a.Value
+		case "usericon":
+			e.UserIcon = a.Value
+		default:
+			e.UnknownAttrs = append(e.UnknownAttrs, a)
+		}
+	}
+
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			switch t.Name.Local {
+			case "point":
+				if err := dec.DecodeElement(&e.Point, &t); err != nil {
+					return err
+				}
+			case "detail":
+				var d Detail
+				if err := dec.DecodeElement(&d, &t); err != nil {
+					return err
+				}
+				e.Detail = &d
+			case "link":
+				var l Link
+				if err := dec.DecodeElement(&l, &t); err != nil {
+					return err
+				}
+				e.Links = append(e.Links, l)
+			default:
+				if err := dec.Skip(); err != nil {
+					return err
+				}
+			}
+		case xml.EndElement:
+			if t.Name == start.Name {
+				return nil
+			}
+		}
+	}
+
+	return nil
 }
 
 // UnmarshalXML implements xml.Unmarshaler for Detail.
@@ -2030,6 +2111,17 @@ func (e *Event) ToXML() ([]byte, error) {
 	if e.UserIcon != "" {
 		buf.WriteString(` usericon="`)
 		buf.WriteString(escapeAttr(e.UserIcon))
+		buf.WriteByte('"')
+	}
+	for _, a := range e.UnknownAttrs {
+		buf.WriteByte(' ')
+		if a.Name.Space != "" {
+			buf.WriteString(a.Name.Space)
+			buf.WriteByte(':')
+		}
+		buf.WriteString(a.Name.Local)
+		buf.WriteString(`="`)
+		buf.WriteString(escapeAttr(a.Value))
 		buf.WriteByte('"')
 	}
 	buf.WriteString(">\n")

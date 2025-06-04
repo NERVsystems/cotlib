@@ -1,7 +1,7 @@
 <event version="2.0" uid="GeoChat.S-1-5-21-599715041-1329191335-1601080367-1001.All Chat Rooms.4a8fa7ea-2633-431f-b9ce-cfb621ca7d7c" type="b-t-f" time="2025-06-03T13:08:34.94Z" start="2025-06-03T13:08:34.94Z" stale="2025-06-04T13:08:34.94Z" how="h-g-i-g-o">
     <point lat="0.0" lon="0.0" hae="0.0" ce="999999.0" le="999999.0"/>
     <detail>
-        <__chat id="All Chat Rooms" chatroom="All Chat Rooms" senderCallsign="WinTAK" groupOwner="false" messageId="4a8fa7ea-2633-431f-b9ce-cfb621ca7d7c">
+        <__chat id="All Chat Rooms" chatroom="All Chat Rooms" senderCallsign="BRAVO" groupOwner="false" messageId="4a8fa7ea-2633-431f-b9ce-cfb621ca7d7c">
             <chatgrp id="All Chat Rooms" uid0="S-1-5-21-599715041-1329191335-1601080367-1001" uid1="AllChatRooms"/>
         </__chat>
         <link uid="S-1-5-21-599715041-1329191335-1601080367-1001" type="a-f-G-U-C-I" relation="p-p"/>

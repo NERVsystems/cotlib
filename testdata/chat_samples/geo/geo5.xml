@@ -1,13 +1,13 @@
 <event version="2.0" uid="GeoChat.ANDROID-52d06a0ef81e4204.aeaea7cd-6bf0-237d-d857-fc157934726c.f590064a-72db-4553-8f95-37202eb57127" type="b-t-f" time="2025-06-03T17:21:18.617Z" start="2025-06-03T17:21:18.617Z" stale="2025-06-04T17:21:18.617Z" how="h-g-i-g-o">
     <point lat="0.0" lon="0.0" hae="0.0" ce="999999.0" le="999999.0"/>
     <detail>
-        <__chat parent="RootContactGroup" groupOwner="false" messageId="f590064a-72db-4553-8f95-37202eb57127" chatroom="ALMIGHTY" id="aeaea7cd-6bf0-237d-d857-fc157934726c" senderCallsign="PHARAOH">
+        <__chat parent="RootContactGroup" groupOwner="false" messageId="f590064a-72db-4553-8f95-37202eb57127" chatroom="CHARLIE" id="aeaea7cd-6bf0-237d-d857-fc157934726c" senderCallsign="ALPHA">
             <chatgrp uid0="ANDROID-52d06a0ef81e4204" uid1="aeaea7cd-6bf0-237d-d857-fc157934726c" id="aeaea7cd-6bf0-237d-d857-fc157934726c"/>
         </__chat>
         <link uid="ANDROID-52d06a0ef81e4204" type="a-f-G-U-C" relation="p-p"/>
         <__serverdestination destinations="192.168.1.166:4242:tcp:ANDROID-52d06a0ef81e4204"/>
         <marti>
-            <dest callsign="ALMIGHTY"/>
+            <dest callsign="CHARLIE"/>
         </marti>
         <_flow-tags_ TAK-Server-25bc5c1bfd3e44abab0780b82810ab1a="2025-06-03T17:21:19Z"/>
     </detail>

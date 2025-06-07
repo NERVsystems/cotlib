@@ -209,7 +209,7 @@ xmlData := `<?xml version="1.0"?>
 <event version="2.0" uid="EXT-1" type="t-x-c" time="2023-05-15T18:30:22Z" start="2023-05-15T18:30:22Z" stale="2023-05-15T18:30:32Z">
   <point lat="0" lon="0" ce="9999999.0" le="9999999.0"/>
   <detail>
-    <__chat chatroom="room" groupOwner="false" id="1" senderCallsign="Alpha">
+    <__chat chatroom="room" groupOwner="false" senderCallsign="Alpha">
       <chatgrp id="room" uid0="u0"/>
     </__chat>
     <__video url="http://example/video"/>
@@ -220,6 +220,8 @@ evt, _ := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
 out, _ := evt.ToXML()
 fmt.Println(string(out)) // prints the same XML
 ```
+
+The `id` attribute on `__chat` and `__chatreceipt` elements is optional.
 
 `Chat` now exposes additional fields such as `Chatroom`, `GroupOwner`,
 `SenderCallsign`, `Parent`, `MessageID` and a slice of `ChatGrp` entries

@@ -249,6 +249,7 @@ evt.Detail = &cotlib.Detail{
     Chat: &cotlib.Chat{
         ID:             "Room",
         Chatroom:       "Room",
+        GroupOwner:     "false",
         SenderCallsign: "Alpha",
         ChatGrps: []cotlib.ChatGrp{
             {ID: "Room", UID0: "AlphaUID", UID1: "BravoUID"},
@@ -263,6 +264,9 @@ evt.Detail = &cotlib.Detail{
 }
 out, _ := evt.ToXML()
 ```
+
+Note: the `groupOwner` attribute is mandatory for TAK chat messages. It must be
+present for schema validation to succeed when using the TAK chat format.
 
 Delivery or read receipts can be sent by populating `Detail.ChatReceipt` with
 the appropriate `Ack`, `ID`, and `MessageID` fields.

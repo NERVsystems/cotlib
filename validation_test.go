@@ -562,6 +562,22 @@ func TestChatReceiptTwoSchemas(t *testing.T) {
 		t.Fatalf("validate detail: %v", err)
 	}
 	cotlib.ReleaseEvent(evt2)
+
+	// receipt without id should still be valid
+	noID := []byte(`<__chatreceipt chatroom="c" groupOwner="false" senderCallsign="A"><chatgrp id="g" uid0="u0"/></__chatreceipt>`)
+	var r3 cotlib.ChatReceipt
+	if err := xml.Unmarshal(noID, &r3); err != nil {
+		t.Fatalf("unmarshal no id: %v", err)
+	}
+	if r3.ID != "" {
+		t.Errorf("expected empty ID, got %q", r3.ID)
+	}
+	evt3, _ := cotlib.NewEvent("CR3", "a-f-G", 0, 0, 1)
+	evt3.Detail = &cotlib.Detail{ChatReceipt: &r3}
+	if err := evt3.ValidateAt(now); err != nil {
+		t.Fatalf("validate no id: %v", err)
+	}
+	cotlib.ReleaseEvent(evt3)
 }
 
 func TestChatIsGroupChat(t *testing.T) {
@@ -950,6 +966,30 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		}
 		if !bytes.Contains(out, []byte(`deleteChild="child"`)) {
 			t.Errorf("expected deleteChild attribute in output")
+		}
+		cotlib.ReleaseEvent(evt)
+	})
+
+	t.Run("tak_chat_no_id", func(t *testing.T) {
+		now := time.Now().UTC()
+		xmlData := fmt.Sprintf(`<event version="2.0" uid="U" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s">`+
+			`<point lat="0" lon="0" hae="0" ce="1" le="1"/>`+
+			`<detail><__chat chatroom="c" groupOwner="false" senderCallsign="A"><chatgrp id="g" uid0="u0"/></__chat></detail>`+
+			`</event>`,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+		evt, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
+		if err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if err := evt.Validate(); err != nil {
+			t.Fatalf("validate: %v", err)
+		}
+		if evt.Detail == nil || evt.Detail.Chat == nil {
+			t.Fatalf("chat detail missing")
+		}
+		if evt.Detail.Chat.ID != "" {
+			t.Errorf("expected empty ID, got %q", evt.Detail.Chat.ID)
 		}
 		cotlib.ReleaseEvent(evt)
 	})

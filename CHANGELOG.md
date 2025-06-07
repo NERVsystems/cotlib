@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.10] - 2025-01-29
+
+### Fixed
+- Updated GitHub Actions workflow to use Go 1.21 instead of 1.20
+- Resolved build failures caused by missing log/slog package
+- Updated actions/setup-go from v4 to v5 for consistency
+
+### Tests
+- All tests passing successfully
+- Automated version increment after successful test suite
+
 ## [v0.3.9] - 2025-01-29
 
 ### Maintenance

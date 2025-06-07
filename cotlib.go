@@ -1012,6 +1012,9 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 				}
 				d.Remarks = &r
 			default:
+				if strings.EqualFold(t.Name.Local, "remarks") {
+					return fmt.Errorf("unexpected element %s", t.Name.Local)
+				}
 				raw, err := captureRaw(dec, t)
 				if err != nil {
 					return err

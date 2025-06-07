@@ -75,6 +75,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -1441,7 +1442,7 @@ func (e *Event) ValidateAt(now time.Time) error {
 			}
 			if err := validator.ValidateAgainstSchema("chat", data); err != nil {
 				if err2 := validator.ValidateAgainstSchema("tak-details-__chat", data); err2 != nil {
-					return fmt.Errorf("chat validation failed: %w", err)
+					return fmt.Errorf("chat validation failed: %w", errors.Join(err, err2))
 				}
 			} else {
 				if err := validator.ValidateChat(data); err != nil {

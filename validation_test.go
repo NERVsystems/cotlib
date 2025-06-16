@@ -375,6 +375,7 @@ func TestDetailExtensionsRoundTrip(t *testing.T) {
 	if len(out.Detail.Unknown) != 1 {
 		t.Errorf("expected 1 unknown element, got %d", len(out.Detail.Unknown))
 	}
+
 	cotlib.ReleaseEvent(out)
 }
 
@@ -1038,7 +1039,7 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 
 	t.Run("event_unknown_attr_roundtrip", func(t *testing.T) {
 		now := time.Now().UTC()
-		xmlData := fmt.Sprintf(`<event version="2.0" uid="U" type="a-f-G" access="Undefined" time="%[1]s" start="%[1]s" stale="%[2]s">`+
+		xmlData := fmt.Sprintf(`<event version="2.0" uid="U" type="a-f-G" access="U" extra="Undefined" time="%[1]s" start="%[1]s" stale="%[2]s">`+
 			`<point lat="0" lon="0" ce="1" le="1"/>`+
 			`</event>`,
 			now.Format(cotlib.CotTimeFormat),
@@ -1048,19 +1049,22 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unmarshal: %v", err)
 		}
+		if evt.Access != "U" {
+			t.Fatalf("expected access with value \"U\", but got %q", evt.Access)
+		}
 		if len(evt.UnknownAttrs) != 1 {
 			t.Fatalf("expected 1 unknown attr, got %d", len(evt.UnknownAttrs))
 		}
 		ua := evt.UnknownAttrs[0]
-		if ua.Name.Local != "access" || ua.Value != "Undefined" {
+		if ua.Name.Local != "extra" || ua.Value != "Undefined" {
 			t.Errorf("unexpected unknown attr: %+v", ua)
 		}
 		out, err := evt.ToXML()
 		if err != nil {
 			t.Fatalf("marshal: %v", err)
 		}
-		if !bytes.Contains(out, []byte(`access="Undefined"`)) {
-			t.Errorf("access attribute lost in output")
+		if !bytes.Contains(out, []byte(`extra="Undefined"`)) {
+			t.Errorf("extra attribute lost in output")
 		}
 		cotlib.ReleaseEvent(evt)
 	})

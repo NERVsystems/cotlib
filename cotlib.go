@@ -626,6 +626,7 @@ type Event struct {
 	Time    CoTTime  `xml:"time,attr"`
 	Start   CoTTime  `xml:"start,attr"`
 	Stale   CoTTime  `xml:"stale,attr"`
+	Access  string   `xml:"access,attr"`
 	// UnknownAttrs captures attributes that are not explicitly mapped to
 	// struct fields when unmarshalling.
 	UnknownAttrs []xml.Attr `xml:"-"`
@@ -722,6 +723,8 @@ func (e *Event) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 
 	for _, a := range start.Attr {
 		switch a.Name.Local {
+		case "access":
+			e.Access = a.Value
 		case "version":
 			e.Version = a.Value
 		case "uid":
@@ -2072,6 +2075,11 @@ func (e *Event) ToXML() ([]byte, error) {
 
 	// <event>
 	buf.WriteString("<event")
+	if e.Access != "" {
+		buf.WriteString(` access="`)
+		buf.WriteString(escapeAttr(e.Access))
+		buf.WriteByte('"')
+	}
 	if e.Version != "" {
 		buf.WriteString(` version="`)
 		buf.WriteString(escapeAttr(e.Version))

@@ -50,6 +50,9 @@ func TestNewEvent(t *testing.T) {
 	if evt.Point.Hae != 0.0 {
 		t.Errorf("Point.Hae = %v, want %v", evt.Point.Hae, 0.0)
 	}
+	if evt.Access != "" {
+		t.Errorf("Access = %v, want %v", evt.Access, "")
+	}
 
 	// Test creating an event with hae parameter
 	evt, err = NewEvent("test456", "a-f-G", 30.0, -85.0, 100.0)
@@ -267,6 +270,7 @@ func TestEventValidation(t *testing.T) {
 		Time:    CoTTime(now),
 		Start:   CoTTime(now),
 		Stale:   CoTTime(now.Add(6 * time.Second)),
+		Access:  "U",
 		Point: Point{
 			Lat: 0,
 			Lon: 0,

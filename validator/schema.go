@@ -1,3 +1,5 @@
+//go:build cgo && !novalidator
+
 package validator
 
 /*

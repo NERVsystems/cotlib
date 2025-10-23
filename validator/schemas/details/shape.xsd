@@ -30,7 +30,7 @@
         <xs:element ref="polyline"/>
         <xs:sequence>
           <xs:element ref="ellipse"/>
-          <xs:element maxOccurs="unbounded" ref="link"/>
+          <xs:element minOccurs="0" maxOccurs="unbounded" ref="link"/>
         </xs:sequence>
       </xs:choice>
     </xs:complexType>

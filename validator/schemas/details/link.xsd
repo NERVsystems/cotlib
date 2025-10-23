@@ -4,11 +4,12 @@
     <xs:sequence>
       <xs:element name="point" type="xs:string" minOccurs="0"/>
     </xs:sequence>
+    <xs:attribute name="point" type="xs:string"/>
     <xs:attribute name="parent_callsign" type="xs:NCName"/>
     <xs:attribute name="production_time" type="xs:dateTime"/>
-    <xs:attribute name="relation" use="required" type="xs:NCName"/>
-    <xs:attribute name="type" use="required" type="xs:NCName"/>
-    <xs:attribute name="uid" use="required" type="xs:NMTOKEN"/>
+    <xs:attribute name="relation" type="xs:NCName"/>
+    <xs:attribute name="type" type="xs:NCName"/>
+    <xs:attribute name="uid" type="xs:NMTOKEN"/>
     <xs:attribute name="callsign" type="xs:NCName"/>
     <xs:attribute name="remarks" type="xs:NCName"/>
   </xs:complexType>

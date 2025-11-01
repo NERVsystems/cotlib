@@ -718,12 +718,12 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		if err := evt.Validate(); err != nil {
 			t.Fatalf("valid height rejected: %v", err)
 		}
-		evt.Detail.Height.Raw = []byte(`<height>bad</height>`)
+		evt.Detail.Height.Raw = []byte(`<height value="not-a-decimal"/>`)
 		if err := evt.Validate(); err == nil {
 			t.Fatal("expected error for invalid height")
 		}
 		evt.Detail.Height.Raw = []byte(`<height>1</height>`)
-		evt.Detail.HeightUnit.Raw = []byte(`<height_unit>x</height_unit>`)
+		evt.Detail.HeightUnit.Raw = []byte(`<height_unit value="not-an-integer"/>`)
 		if err := evt.Validate(); err == nil {
 			t.Fatal("expected error for invalid height_unit")
 		}
@@ -759,7 +759,7 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 		if err := evt.Validate(); err != nil {
 			t.Fatalf("valid link detail rejected: %v", err)
 		}
-		evt.Detail.LinkDetail.Raw = []byte(`<link uid="u"/>`)
+		evt.Detail.LinkDetail.Raw = []byte(`<link production_time="not-a-datetime"/>`)
 		if err := evt.Validate(); err == nil {
 			t.Fatal("expected error for invalid link detail")
 		}

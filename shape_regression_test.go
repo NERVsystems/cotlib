@@ -9,7 +9,7 @@ import (
 // Regression test: ATAK accepts circles without link, cotlib should too.
 func TestEllipseWithoutLink(t *testing.T) {
 	xml := `<?xml version='1.0' encoding='UTF-8'?>
-<event version='2.0' uid='test-no-link' type='u-r-b-c-c' time='2025-10-23T02:00:00Z' start='2025-10-23T02:00:00Z' stale='2025-10-24T02:00:00Z' how='h-e'>
+<event version='2.0' uid='test-no-link' type='u-r-b-c-c' time='2025-11-01T02:00:00Z' start='2025-11-01T02:00:00Z' stale='2025-11-02T02:00:00Z' how='h-e'>
 	<point lat='1.0' lon='1.0' hae='0' ce='10' le='10'/>
 	<detail>
 		<shape>
@@ -33,7 +33,7 @@ func TestEllipseWithoutLink(t *testing.T) {
 // TestEllipseWithLink ensures ellipse shapes still work WITH <link> element.
 func TestEllipseWithLink(t *testing.T) {
 	xml := `<?xml version='1.0' encoding='UTF-8'?>
-<event version='2.0' uid='test-with-link' type='u-r-b-c-c' time='2025-10-23T02:00:00Z' start='2025-10-23T02:00:00Z' stale='2025-10-24T02:00:00Z' how='h-e'>
+<event version='2.0' uid='test-with-link' type='u-r-b-c-c' time='2025-11-01T02:00:00Z' start='2025-11-01T02:00:00Z' stale='2025-11-02T02:00:00Z' how='h-e'>
 	<point lat='1.0' lon='1.0' hae='0' ce='10' le='10'/>
 	<detail>
 		<shape>
@@ -71,9 +71,9 @@ func TestColorFlexibleAttributes(t *testing.T) {
 		name string
 		xml  string
 	}{
-		{"only_argb", `<event version='2.0' uid='t1' type='a-f-G' time='2025-10-23T02:00:00Z' start='2025-10-23T02:00:00Z' stale='2025-10-24T02:00:00Z' how='h-e'><point lat='1.0' lon='1.0' hae='0' ce='10' le='10'/><detail><color argb='-1'/></detail></event>`},
-		{"only_value", `<event version='2.0' uid='t2' type='a-f-G' time='2025-10-23T02:00:00Z' start='2025-10-23T02:00:00Z' stale='2025-10-24T02:00:00Z' how='h-e'><point lat='1.0' lon='1.0' hae='0' ce='10' le='10'/><detail><color value='-1'/></detail></event>`},
-		{"both", `<event version='2.0' uid='t3' type='a-f-G' time='2025-10-23T02:00:00Z' start='2025-10-23T02:00:00Z' stale='2025-10-24T02:00:00Z' how='h-e'><point lat='1.0' lon='1.0' hae='0' ce='10' le='10'/><detail><color value='-1' argb='-1'/></detail></event>`},
+		{"only_argb", `<event version='2.0' uid='t1' type='a-f-G' time='2025-11-01T02:00:00Z' start='2025-11-01T02:00:00Z' stale='2025-11-02T02:00:00Z' how='h-e'><point lat='1.0' lon='1.0' hae='0' ce='10' le='10'/><detail><color argb='-1'/></detail></event>`},
+		{"only_value", `<event version='2.0' uid='t2' type='a-f-G' time='2025-11-01T02:00:00Z' start='2025-11-01T02:00:00Z' stale='2025-11-02T02:00:00Z' how='h-e'><point lat='1.0' lon='1.0' hae='0' ce='10' le='10'/><detail><color value='-1'/></detail></event>`},
+		{"both", `<event version='2.0' uid='t3' type='a-f-G' time='2025-11-01T02:00:00Z' start='2025-11-01T02:00:00Z' stale='2025-11-02T02:00:00Z' how='h-e'><point lat='1.0' lon='1.0' hae='0' ce='10' le='10'/><detail><color value='-1' argb='-1'/></detail></event>`},
 	}
 
 	ctx := context.Background()

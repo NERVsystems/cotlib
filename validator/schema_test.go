@@ -279,19 +279,19 @@ func TestValidateRemainingDetailSchemas(t *testing.T) {
 			name:   "color",
 			schema: "tak-details-color",
 			good:   []byte(`<color argb="1"/>`),
-			bad:    []byte(`<color/>`),
+			bad:    []byte(`<color argb="not-an-integer"/>`),
 		},
 		{
 			name:   "height",
 			schema: "tak-details-height",
 			good:   []byte(`<height>1</height>`),
-			bad:    []byte(`<height>bad</height>`),
+			bad:    []byte(`<height value="not-a-decimal"/>`),
 		},
 		{
 			name:   "height_unit",
 			schema: "tak-details-height_unit",
 			good:   []byte(`<height_unit>1</height_unit>`),
-			bad:    []byte(`<height_unit>x</height_unit>`),
+			bad:    []byte(`<height_unit value="not-an-integer"/>`),
 		},
 		{
 			name:   "labels_on",
@@ -303,7 +303,7 @@ func TestValidateRemainingDetailSchemas(t *testing.T) {
 			name:   "link",
 			schema: "tak-details-link",
 			good:   []byte(`<link uid="u" type="a-f-G" relation="p-p"/>`),
-			bad:    []byte(`<link uid="u"/>`),
+			bad:    []byte(`<link production_time="not-a-datetime"/>`),
 		},
 		{
 			name:   "emergency",

@@ -70,6 +70,76 @@ func (b *EventBuilder) WithStaleTime(t time.Time) *EventBuilder {
 	return b
 }
 
+// WithHow sets the how field on the event.
+// Common values: "m-g" (machine generated), "h-e" (human entry).
+func (b *EventBuilder) WithHow(how string) *EventBuilder {
+	if b.err != nil {
+		return b
+	}
+	b.evt.How = how
+	return b
+}
+
+// WithGroupExtension sets the TAK __group extension on the event.
+func (b *EventBuilder) WithGroupExtension(g *GroupExtension) *EventBuilder {
+	if b.err != nil {
+		return b
+	}
+	if b.evt.Detail == nil {
+		b.evt.Detail = &Detail{}
+	}
+	if g != nil {
+		tmp := *g
+		b.evt.Detail.GroupExtension = &tmp
+	}
+	return b
+}
+
+// WithTakv sets the TAK client version extension on the event.
+func (b *EventBuilder) WithTakv(t *Takv) *EventBuilder {
+	if b.err != nil {
+		return b
+	}
+	if b.evt.Detail == nil {
+		b.evt.Detail = &Detail{}
+	}
+	if t != nil {
+		tmp := *t
+		b.evt.Detail.Takv = &tmp
+	}
+	return b
+}
+
+// WithTrack sets the track extension on the event.
+func (b *EventBuilder) WithTrack(t *Track) *EventBuilder {
+	if b.err != nil {
+		return b
+	}
+	if b.evt.Detail == nil {
+		b.evt.Detail = &Detail{}
+	}
+	if t != nil {
+		tmp := *t
+		b.evt.Detail.Track = &tmp
+	}
+	return b
+}
+
+// WithUID sets the TAK uid extension on the event.
+func (b *EventBuilder) WithUID(u *UID) *EventBuilder {
+	if b.err != nil {
+		return b
+	}
+	if b.evt.Detail == nil {
+		b.evt.Detail = &Detail{}
+	}
+	if u != nil {
+		tmp := *u
+		b.evt.Detail.UID = &tmp
+	}
+	return b
+}
+
 // Build validates and returns the constructed Event.
 func (b *EventBuilder) Build() (*Event, error) {
 	if b.err != nil {

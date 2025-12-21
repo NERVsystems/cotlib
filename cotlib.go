@@ -661,6 +661,7 @@ var doctypePattern = regexp.MustCompile(`(?i)<!\s*DOCTYPE`)
 type Contact struct {
 	XMLName  xml.Name `xml:"contact"`
 	Callsign string   `xml:"callsign,attr,omitempty"`
+	Endpoint string   `xml:"endpoint,attr,omitempty"` // Chat routing endpoint (e.g., "*:-1:stcp")
 }
 
 // Detail contains additional information about an event

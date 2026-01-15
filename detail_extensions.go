@@ -203,6 +203,68 @@ type RouteInfo struct {
 	Raw RawMessage
 }
 
+// RoutePlanningMethod represents valid planning methods for routes.
+type RoutePlanningMethod string
+
+const (
+	RoutePlanningInfil RoutePlanningMethod = "Infil"
+	RoutePlanningExfil RoutePlanningMethod = "Exfil"
+)
+
+// RouteMethod represents valid travel methods for routes.
+type RouteMethod string
+
+const (
+	RouteMethodDriving    RouteMethod = "Driving"
+	RouteMethodWalking    RouteMethod = "Walking"
+	RouteMethodFlying     RouteMethod = "Flying"
+	RouteMethodSwimming   RouteMethod = "Swimming"
+	RouteMethodWatercraft RouteMethod = "Watercraft"
+)
+
+// RouteType represents valid route types.
+type RouteType string
+
+const (
+	RouteTypePrimary   RouteType = "Primary"
+	RouteTypeSecondary RouteType = "Secondary"
+)
+
+// RouteOrder represents valid checkpoint ordering for routes.
+type RouteOrder string
+
+const (
+	RouteOrderAscending  RouteOrder = "Ascending Check Points"
+	RouteOrderDescending RouteOrder = "Descending Check Points"
+)
+
+// RouteLink represents a waypoint link element inside detail for routes.
+// Each RouteLink corresponds to a waypoint or control point along the route.
+type RouteLink struct {
+	XMLName  xml.Name `xml:"link"`
+	Uid      string   `xml:"uid,attr"`
+	Callsign string   `xml:"callsign,attr"`
+	Type     string   `xml:"type,attr"`
+	Point    string   `xml:"point,attr"` // Format: "lat,lon"
+	Remarks  string   `xml:"remarks,attr"`
+	Relation string   `xml:"relation,attr"`
+}
+
+// LinkAttr represents the link_attr element containing route metadata.
+type LinkAttr struct {
+	XMLName        xml.Name            `xml:"link_attr"`
+	PlanningMethod RoutePlanningMethod `xml:"planningmethod,attr"`
+	Color          int64               `xml:"color,attr"`
+	Method         RouteMethod         `xml:"method,attr"`
+	Prefix         string              `xml:"prefix,attr"`
+	Type           string              `xml:"type,attr"`
+	Stroke         uint8               `xml:"stroke,attr"`
+	Direction      RoutePlanningMethod `xml:"direction,attr"`
+	RouteType      RouteType           `xml:"routetype,attr"`
+	Order          RouteOrder          `xml:"order,attr"`
+	Raw            RawMessage          `xml:"-"`
+}
+
 // MartiDest represents a destination callsign within a Marti extension.
 type MartiDest struct {
 	Callsign string `xml:"callsign,attr,omitempty"`
@@ -804,4 +866,48 @@ func encodeRaw(enc *xml.Encoder, raw RawMessage) error {
 		}
 	}
 	return nil
+}
+
+func (la *LinkAttr) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	raw, err := captureRaw(dec, start)
+	if err != nil {
+		return err
+	}
+	la.Raw = raw
+
+	// Parse the attributes from the raw XML
+	var helper struct {
+		XMLName        xml.Name `xml:"link_attr"`
+		PlanningMethod string   `xml:"planningmethod,attr"`
+		Color          int64    `xml:"color,attr"`
+		Method         string   `xml:"method,attr"`
+		Prefix         string   `xml:"prefix,attr"`
+		Type           string   `xml:"type,attr"`
+		Stroke         uint8    `xml:"stroke,attr"`
+		Direction      string   `xml:"direction,attr"`
+		RouteType      string   `xml:"routetype,attr"`
+		Order          string   `xml:"order,attr"`
+	}
+	if err := xml.Unmarshal(raw, &helper); err != nil {
+		return err
+	}
+	la.XMLName = helper.XMLName
+	la.PlanningMethod = RoutePlanningMethod(helper.PlanningMethod)
+	la.Color = helper.Color
+	la.Method = RouteMethod(helper.Method)
+	la.Prefix = helper.Prefix
+	la.Type = helper.Type
+	la.Stroke = helper.Stroke
+	la.Direction = RoutePlanningMethod(helper.Direction)
+	la.RouteType = RouteType(helper.RouteType)
+	la.Order = RouteOrder(helper.Order)
+	return nil
+}
+
+func (la LinkAttr) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	if len(la.Raw) > 0 && la.PlanningMethod == "" && la.Method == "" {
+		return encodeRaw(enc, la.Raw)
+	}
+	type alias LinkAttr
+	return enc.EncodeElement(alias(la), start)
 }

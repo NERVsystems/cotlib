@@ -1066,3 +1066,200 @@ func TestTAKDetailSchemaValidation(t *testing.T) {
 	})
 
 }
+
+func TestRouteLinks(t *testing.T) {
+	t.Run("parse_route_with_multiple_links", func(t *testing.T) {
+		now := time.Now().UTC()
+		xmlData := fmt.Sprintf(`<event version="2.0" uid="route-001" type="b-m-r" time="%[1]s" start="%[1]s" stale="%[2]s" how="h-e">`+
+			`<point lat="38.0" lon="-122.0" hae="0" ce="9999999" le="9999999"/>`+
+			`<detail>`+
+			`<link uid="wp-001" callsign="CP1" type="b-m-p-c" point="38.001,-122.001" remarks="Start point" relation="c"/>`+
+			`<link uid="wp-002" callsign="CP2" type="b-m-p-w" point="38.002,-122.002" remarks="Checkpoint 2" relation="c"/>`+
+			`<link uid="wp-003" callsign="CP3" type="b-m-p-w" point="38.003,-122.003" remarks="End point" relation="c"/>`+
+			`<link_attr planningmethod="Infil" color="-1" method="Driving" prefix="CP" type="Route" stroke="3" direction="Infil" routetype="Primary" order="Ascending Check Points"/>`+
+			`<contact callsign="Test Route"/>`+
+			`</detail>`+
+			`</event>`,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+
+		evt, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
+		if err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		defer cotlib.ReleaseEvent(evt)
+
+		if evt.Detail == nil {
+			t.Fatal("expected detail to be set")
+		}
+		if len(evt.Detail.RouteLinks) != 3 {
+			t.Fatalf("expected 3 route links, got %d", len(evt.Detail.RouteLinks))
+		}
+
+		// Check first route link
+		if evt.Detail.RouteLinks[0].Uid != "wp-001" {
+			t.Errorf("expected uid wp-001, got %s", evt.Detail.RouteLinks[0].Uid)
+		}
+		if evt.Detail.RouteLinks[0].Callsign != "CP1" {
+			t.Errorf("expected callsign CP1, got %s", evt.Detail.RouteLinks[0].Callsign)
+		}
+		if evt.Detail.RouteLinks[0].Point != "38.001,-122.001" {
+			t.Errorf("expected point 38.001,-122.001, got %s", evt.Detail.RouteLinks[0].Point)
+		}
+
+		// Check link_attr
+		if evt.Detail.LinkAttr == nil {
+			t.Fatal("expected link_attr to be set")
+		}
+		if evt.Detail.LinkAttr.PlanningMethod != cotlib.RoutePlanningInfil {
+			t.Errorf("expected planning method Infil, got %s", evt.Detail.LinkAttr.PlanningMethod)
+		}
+		if evt.Detail.LinkAttr.Method != cotlib.RouteMethodDriving {
+			t.Errorf("expected method Driving, got %s", evt.Detail.LinkAttr.Method)
+		}
+		if evt.Detail.LinkAttr.RouteType != cotlib.RouteTypePrimary {
+			t.Errorf("expected route type Primary, got %s", evt.Detail.LinkAttr.RouteType)
+		}
+	})
+
+	t.Run("route_roundtrip", func(t *testing.T) {
+		now := time.Now().UTC()
+		xmlData := fmt.Sprintf(`<event version="2.0" uid="route-002" type="b-m-r" time="%[1]s" start="%[1]s" stale="%[2]s" how="h-e">`+
+			`<point lat="38.0" lon="-122.0" hae="0" ce="9999999" le="9999999"/>`+
+			`<detail>`+
+			`<link uid="wp-001" callsign="Start" type="b-m-p-w" point="48.9498,-97.2135" remarks="" relation="c"/>`+
+			`<link uid="wp-002" callsign="End" type="b-m-p-w" point="47.9105,-97.0689" remarks="" relation="c"/>`+
+			`<link_attr planningmethod="Exfil" color="-16776961" method="Flying" prefix="WP" type="b-m-r" stroke="5" direction="Exfil" routetype="Secondary" order="Descending Check Points"/>`+
+			`</detail>`+
+			`</event>`,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+
+		evt, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
+		if err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		defer cotlib.ReleaseEvent(evt)
+
+		// Serialize back to XML
+		out, err := evt.ToXML()
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+
+		// Verify route links are present
+		if !bytes.Contains(out, []byte(`callsign="Start"`)) {
+			t.Error("expected callsign Start in output")
+		}
+		if !bytes.Contains(out, []byte(`point="48.9498,-97.2135"`)) {
+			t.Error("expected point coordinate in output")
+		}
+		if !bytes.Contains(out, []byte(`link_attr`)) {
+			t.Error("expected link_attr in output")
+		}
+		if !bytes.Contains(out, []byte(`planningmethod="Exfil"`)) {
+			t.Error("expected planningmethod Exfil in output")
+		}
+		if !bytes.Contains(out, []byte(`method="Flying"`)) {
+			t.Error("expected method Flying in output")
+		}
+
+		// Re-parse and verify
+		evt2, err := cotlib.UnmarshalXMLEvent(context.Background(), out)
+		if err != nil {
+			t.Fatalf("re-unmarshal: %v", err)
+		}
+		defer cotlib.ReleaseEvent(evt2)
+
+		if len(evt2.Detail.RouteLinks) != 2 {
+			t.Errorf("expected 2 route links after roundtrip, got %d", len(evt2.Detail.RouteLinks))
+		}
+		if evt2.Detail.LinkAttr == nil {
+			t.Error("expected link_attr after roundtrip")
+		}
+	})
+
+	t.Run("event_builder_route", func(t *testing.T) {
+		evt, err := cotlib.NewEventBuilder("route-003", "b-m-r", 38.0, -122.0, 0.0).
+			WithRouteLink(cotlib.RouteLink{
+				Uid:      "wp-001",
+				Callsign: "Start",
+				Type:     "b-m-p-c",
+				Point:    "38.0,-122.0",
+				Remarks:  "Start point",
+				Relation: "c",
+			}).
+			WithRouteLink(cotlib.RouteLink{
+				Uid:      "wp-002",
+				Callsign: "End",
+				Type:     "b-m-p-w",
+				Point:    "38.1,-122.1",
+				Remarks:  "End point",
+				Relation: "c",
+			}).
+			WithLinkAttr(&cotlib.LinkAttr{
+				PlanningMethod: cotlib.RoutePlanningInfil,
+				Color:          -1,
+				Method:         cotlib.RouteMethodDriving,
+				Prefix:         "CP",
+				Type:           "Route",
+				Stroke:         3,
+				Direction:      cotlib.RoutePlanningInfil,
+				RouteType:      cotlib.RouteTypePrimary,
+				Order:          cotlib.RouteOrderAscending,
+			}).
+			WithContact(&cotlib.Contact{Callsign: "Test Route"}).
+			Build()
+
+		if err != nil {
+			t.Fatalf("build: %v", err)
+		}
+		defer cotlib.ReleaseEvent(evt)
+
+		if len(evt.Detail.RouteLinks) != 2 {
+			t.Fatalf("expected 2 route links, got %d", len(evt.Detail.RouteLinks))
+		}
+		if evt.Detail.LinkAttr == nil {
+			t.Fatal("expected link_attr to be set")
+		}
+
+		// Serialize and verify
+		out, err := evt.ToXML()
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		if !bytes.Contains(out, []byte(`<link`)) {
+			t.Error("expected link element in output")
+		}
+		if !bytes.Contains(out, []byte(`<link_attr`)) {
+			t.Error("expected link_attr element in output")
+		}
+	})
+
+	t.Run("detail_link_without_point_is_raw", func(t *testing.T) {
+		// Verify that a detail-level link without point attribute is captured as raw LinkDetail
+		now := time.Now().UTC()
+		xmlData := fmt.Sprintf(`<event version="2.0" uid="link-001" type="a-f-G" time="%[1]s" start="%[1]s" stale="%[2]s" how="h-e">`+
+			`<point lat="38.0" lon="-122.0" hae="0" ce="9999999" le="9999999"/>`+
+			`<detail>`+
+			`<link uid="ref-001" type="a-f-G" relation="p-p"/>`+
+			`</detail>`+
+			`</event>`,
+			now.Format(cotlib.CotTimeFormat),
+			now.Add(10*time.Second).Format(cotlib.CotTimeFormat))
+
+		evt, err := cotlib.UnmarshalXMLEvent(context.Background(), []byte(xmlData))
+		if err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		defer cotlib.ReleaseEvent(evt)
+
+		// Link without point should be captured as raw LinkDetail, not RouteLinks
+		if len(evt.Detail.RouteLinks) != 0 {
+			t.Errorf("expected 0 route links for link without point, got %d", len(evt.Detail.RouteLinks))
+		}
+		if evt.Detail.LinkDetail == nil {
+			t.Error("expected LinkDetail to be set for link without point")
+		}
+	})
+}

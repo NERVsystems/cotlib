@@ -694,6 +694,8 @@ type Detail struct {
 	ColorExtension    *ColorExtension    `xml:"color,omitempty"`
 	Hierarchy         *Hierarchy         `xml:"hierarchy,omitempty"`
 	LinkDetail        *DetailLink        `xml:"link,omitempty"`
+	RouteLinks        []RouteLink        `xml:"-"` // Route waypoints (multiple link elements)
+	LinkAttr          *LinkAttr          `xml:"link_attr,omitempty"`
 	UserIcon          *UserIcon          `xml:"usericon,omitempty"`
 	UID               *UID               `xml:"uid,omitempty"`
 	Bullseye          *Bullseye          `xml:"bullseye,omitempty"`
@@ -971,11 +973,35 @@ func (d *Detail) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 				}
 				d.Hierarchy = &h
 			case "link":
-				var dl DetailLink
-				if err := dec.DecodeElement(&dl, &t); err != nil {
+				// Check if this is a route link (has point attribute) or shape link
+				isRouteLink := false
+				for _, attr := range t.Attr {
+					if attr.Name.Local == "point" {
+						isRouteLink = true
+						break
+					}
+				}
+				if isRouteLink {
+					// Parse as RouteLink for route waypoints
+					var rl RouteLink
+					if err := dec.DecodeElement(&rl, &t); err != nil {
+						return err
+					}
+					d.RouteLinks = append(d.RouteLinks, rl)
+				} else {
+					// Parse as raw DetailLink for shape styling
+					var dl DetailLink
+					if err := dec.DecodeElement(&dl, &t); err != nil {
+						return err
+					}
+					d.LinkDetail = &dl
+				}
+			case "link_attr":
+				var la LinkAttr
+				if err := dec.DecodeElement(&la, &t); err != nil {
 					return err
 				}
-				d.LinkDetail = &dl
+				d.LinkAttr = &la
 			case "usericon":
 				var ui UserIcon
 				if err := dec.DecodeElement(&ui, &t); err != nil {
@@ -1173,6 +1199,16 @@ func (d *Detail) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	}
 	if d.LinkDetail != nil {
 		if err := encodeRaw(enc, d.LinkDetail.Raw); err != nil {
+			return err
+		}
+	}
+	for _, rl := range d.RouteLinks {
+		if err := enc.Encode(rl); err != nil {
+			return err
+		}
+	}
+	if d.LinkAttr != nil {
+		if err := enc.Encode(d.LinkAttr); err != nil {
 			return err
 		}
 	}
@@ -2346,6 +2382,94 @@ func (e *Event) ToXML() ([]byte, error) {
 				} else {
 					buf.WriteString("/>\n")
 				}
+			}
+		}
+		// Route links (waypoints)
+		for _, rl := range e.Detail.RouteLinks {
+			buf.WriteString("    <link")
+			if rl.Uid != "" {
+				buf.WriteString(` uid="`)
+				buf.WriteString(escapeAttr(rl.Uid))
+				buf.WriteByte('"')
+			}
+			if rl.Callsign != "" {
+				buf.WriteString(` callsign="`)
+				buf.WriteString(escapeAttr(rl.Callsign))
+				buf.WriteByte('"')
+			}
+			if rl.Type != "" {
+				buf.WriteString(` type="`)
+				buf.WriteString(escapeAttr(rl.Type))
+				buf.WriteByte('"')
+			}
+			if rl.Point != "" {
+				buf.WriteString(` point="`)
+				buf.WriteString(escapeAttr(rl.Point))
+				buf.WriteByte('"')
+			}
+			if rl.Remarks != "" {
+				buf.WriteString(` remarks="`)
+				buf.WriteString(escapeAttr(rl.Remarks))
+				buf.WriteByte('"')
+			}
+			if rl.Relation != "" {
+				buf.WriteString(` relation="`)
+				buf.WriteString(escapeAttr(rl.Relation))
+				buf.WriteByte('"')
+			}
+			buf.WriteString("/>\n")
+		}
+		// Link attributes (route metadata)
+		if e.Detail.LinkAttr != nil {
+			la := e.Detail.LinkAttr
+			if len(la.Raw) > 0 && la.PlanningMethod == "" && la.Method == "" {
+				buf.WriteString("    ")
+				buf.Write(la.Raw)
+				buf.WriteByte('\n')
+			} else {
+				buf.WriteString("    <link_attr")
+				if la.PlanningMethod != "" {
+					buf.WriteString(` planningmethod="`)
+					buf.WriteString(escapeAttr(string(la.PlanningMethod)))
+					buf.WriteByte('"')
+				}
+				buf.WriteString(` color="`)
+				buf.WriteString(strconv.FormatInt(la.Color, 10))
+				buf.WriteByte('"')
+				if la.Method != "" {
+					buf.WriteString(` method="`)
+					buf.WriteString(escapeAttr(string(la.Method)))
+					buf.WriteByte('"')
+				}
+				if la.Prefix != "" {
+					buf.WriteString(` prefix="`)
+					buf.WriteString(escapeAttr(la.Prefix))
+					buf.WriteByte('"')
+				}
+				if la.Type != "" {
+					buf.WriteString(` type="`)
+					buf.WriteString(escapeAttr(la.Type))
+					buf.WriteByte('"')
+				}
+				buf.WriteString(` stroke="`)
+				buf.WriteString(strconv.FormatUint(uint64(la.Stroke), 10))
+				buf.WriteByte('"')
+				if la.Direction != "" {
+					buf.WriteString(` direction="`)
+					buf.WriteString(escapeAttr(string(la.Direction)))
+					buf.WriteByte('"')
+				}
+				if la.RouteType != "" {
+					buf.WriteString(` routetype="`)
+					buf.WriteString(escapeAttr(string(la.RouteType)))
+					buf.WriteByte('"')
+				}
+				if la.Order != "" {
+					buf.WriteString(` order="`)
+					buf.WriteString(escapeAttr(string(la.Order)))
+					buf.WriteByte('"')
+				}
+				buf.WriteString("/>\n")
 			}
 		}
 		if e.Detail.RouteInfo != nil {

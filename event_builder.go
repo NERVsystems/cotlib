@@ -140,6 +140,34 @@ func (b *EventBuilder) WithUID(u *UID) *EventBuilder {
 	return b
 }
 
+// WithRouteLink adds a route waypoint link to the event.
+// Multiple calls append to the RouteLinks slice.
+func (b *EventBuilder) WithRouteLink(rl RouteLink) *EventBuilder {
+	if b.err != nil {
+		return b
+	}
+	if b.evt.Detail == nil {
+		b.evt.Detail = &Detail{}
+	}
+	b.evt.Detail.RouteLinks = append(b.evt.Detail.RouteLinks, rl)
+	return b
+}
+
+// WithLinkAttr sets the route metadata (link_attr) on the event.
+func (b *EventBuilder) WithLinkAttr(la *LinkAttr) *EventBuilder {
+	if b.err != nil {
+		return b
+	}
+	if b.evt.Detail == nil {
+		b.evt.Detail = &Detail{}
+	}
+	if la != nil {
+		tmp := *la
+		b.evt.Detail.LinkAttr = &tmp
+	}
+	return b
+}
+
 // Build validates and returns the constructed Event.
 func (b *EventBuilder) Build() (*Event, error) {
 	if b.err != nil {

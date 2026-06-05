@@ -2201,6 +2201,14 @@ func (e *Event) ToXML() ([]byte, error) {
 				buf.WriteString(escapeAttr(c.Callsign))
 				buf.WriteByte('"')
 			}
+			// endpoint is what the TAK server uses to register the
+			// callsign->connection mapping; dropping it broke inbound DM
+			// routing to a self-SA presence (INFR-207 / INFR-206).
+			if c.Endpoint != "" {
+				buf.WriteString(` endpoint="`)
+				buf.WriteString(escapeAttr(c.Endpoint))
+				buf.WriteByte('"')
+			}
 			buf.WriteString("/>\n")
 		}
 		if g := e.Detail.Group; g != nil {

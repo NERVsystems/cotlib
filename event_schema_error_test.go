@@ -1,3 +1,9 @@
+//go:build !novalidator
+
+// This test exercises the validator schema-init error path (initErr /
+// eventPointSchema), which only exists in the cgo validator build
+// (event_schema.go is !novalidator). Without this tag it fails to compile
+// under -tags novalidator.
 package cotlib
 
 import (

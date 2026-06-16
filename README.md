@@ -268,6 +268,8 @@ out, _ := evt.ToXML()
 Note: the `groupOwner` attribute is mandatory for TAK chat messages. It must be
 present for schema validation to succeed when using the TAK chat format.
 
+See `examples/group_chat_example.go` for an example of parsing and validating a TAK group chat message.
+
 Delivery or read receipts can be sent by populating `Detail.ChatReceipt` with
 the appropriate `Ack`, `ID`, and `MessageID` fields.
 
